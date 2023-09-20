@@ -1,0 +1,13 @@
+(library
+ (name ola)
+ (modules
+  ast
+  lexer
+  parser
+  interpret)
+ (preprocess (pps sedlex.ppx))
+ (libraries sedlex menhirLib))
+
+(menhir
+  (modules parser)
+)

@@ -1,0 +1,3 @@
+(executable
+ (name ola_interpreter)
+ (libraries sedlex ola))
