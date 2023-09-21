@@ -4,7 +4,7 @@
 
 (using menhir 2.1)
 
-(license https://unlicense.org)
+(license Unlicense)
 
 (authors "Eric Patrizio <epatrizio@mpns.fr>")
 
@@ -12,4 +12,6 @@
 
 (source (github epatrizio/ola))
 
-(generate_opam_files false)
+(generate_opam_files true)
+
+(implicit_transitive_deps false)
