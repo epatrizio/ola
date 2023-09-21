@@ -15,9 +15,9 @@ type ident = string
 (* type unop =
   | Unot not e *)
 
-(* type binop =
-  | Badd
-  | Bsub | Bmul | Bdiv           (* + - * / *)
+type binop =
+  | Badd | Bsub | Bmul
+(*  | Bdiv           (* + - * / *)
   | Beq | Bneq | Blt | Ble | Bgt | Bge  (* == != < <= > >= *)
   | Band | Bor                          && || *)
 
@@ -35,8 +35,8 @@ type value =
 type expr =
   | Evalue of value
   | Eident of ident
-  (* | Eunop of unop * expr
-  | Ebinop of binop * expr * expr *)
+  (* | Eunop of unop * expr *)
+  | Ebinop of binop * expr * expr
 
 type stmt =
   | Sblock of block

@@ -2,18 +2,16 @@
 
 %{ %}
 
-// %token PLUS MINUS MUL DIV
-%token LPAREN RPAREN
-%token BEGIN END
-%token SEMICOLON    // COMMA
+%token PLUS MINUS MUL LPAREN RPAREN SEMICOLON     // DIV COMMA
+%token DO END
 %token PRINT
 %token EOF
 
 %token <Ast.value> VALUE
 %token<string> IDENT
 
-// %left PLUS MINUS
-// %left MUL DIV
+%left PLUS MINUS
+%left MUL      // DIV
 
 // %nonassoc UMINUS
 
@@ -30,7 +28,7 @@
 script : s=stmt EOF { s };
 
 stmt :
-     | BEGIN b=block END { Ast.Sblock b }
+     | DO b=block END { Ast.Sblock b }
      | PRINT LPAREN e=expr RPAREN { Ast.Sprint e }
      ;
 
@@ -41,6 +39,9 @@ block :
 expr :
      | v=VALUE { Ast.Evalue v }
      | i=IDENT { Ast.Eident i }
+     | e1=expr PLUS e2=expr { Ast.Ebinop (Badd, e1, e2) }
+     | e1=expr MINUS e2=expr { Ast.Ebinop (Bsub, e1, e2) }
+     | e1=expr MUL e2=expr { Ast.Ebinop (Bmul, e1, e2) }
      ;
 
 // expr_list :

@@ -14,16 +14,17 @@ let newline = [%sedlex.regexp? '\r' | '\n' | "\r\n"]
 let rec token buf =
   match%sedlex buf with
   | Plus (Chars " \t") -> token buf
+  (* | newline -> token buf *)
   | number -> VALUE (Vnumber (Ninteger (int_of_string (Sedlexing.Latin1.lexeme buf))))
   (* | ',' -> COMMA *)
   | ';' -> SEMICOLON
-  (* | '+' -> PLUS
+  | '+' -> PLUS
   | '-' -> MINUS
   | '*' -> MUL
-  | '/' -> DIV *)
+  (*| '/' -> DIV *)
   | '(' -> LPAREN
   | ')' -> RPAREN
-  | "begin" -> BEGIN
+  | "do" -> DO
   | "end" -> END
   | "print" -> PRINT
   | eof -> EOF
