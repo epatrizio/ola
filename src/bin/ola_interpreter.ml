@@ -20,6 +20,7 @@ let process source_code_file _debug =
     let lexer = Sedlexing.with_tokenizer Lexer.token lexbuf in
     let parser = MenhirLib.Convert.Simplified.traditional2revised Parser.script in
     let stmt_list_script = parser lexer in
+      if !debug then Ast.print_script Format.std_formatter stmt_list_script;
       Interpret.run stmt_list_script;
       close_in ic
   with
