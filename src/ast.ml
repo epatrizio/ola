@@ -12,8 +12,9 @@ type typ =
 
 type ident = string
 
-(* type unop =
-  | Unot not e *)
+type unop =
+  | Uminus
+  (* | Unot not e *)
 
 type binop =
   | Badd | Bsub | Bmul
@@ -35,7 +36,7 @@ type value =
 type expr =
   | Evalue of value
   | Eident of ident
-  (* | Eunop of unop * expr *)
+  | Eunop of unop * expr
   | Ebinop of binop * expr * expr
 
 type stmt =
@@ -53,6 +54,10 @@ type script = stmt list
 let print_ident fmt ident =
   match ident with
   | ident -> Format.pp_print_string fmt ident 
+
+let print_unop fmt unop =
+  match unop with
+  | Uminus -> Format.pp_print_string fmt "-"
 
 let print_binop fmt binop =
   match binop with
@@ -77,6 +82,9 @@ let rec print_expr fmt expr =
   match expr with
   | Evalue v -> print_value fmt v
   | Eident i -> print_ident fmt i
+  | Eunop (uop, e) ->
+    print_unop fmt uop;
+    print_expr fmt e
   | Ebinop (bop, e1, e2) ->
     print_expr fmt e1;
     print_binop fmt bop;

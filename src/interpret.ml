@@ -5,6 +5,7 @@ let rec interpret_expr expr =
   | Evalue (Vnumber (Ninteger i)) -> i
   | Evalue _ -> assert false
   | Eident _i -> assert false
+  | Eunop (Uminus, e) -> - interpret_expr e
   | Ebinop (Badd, e1, e2) -> interpret_expr e1 + interpret_expr e2
   | Ebinop (Bsub, e1, e2) -> interpret_expr e1 - interpret_expr e2
   | Ebinop (Bmul, e1, e2) -> interpret_expr e1 * interpret_expr e2

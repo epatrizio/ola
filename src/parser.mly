@@ -39,6 +39,7 @@ block :
 expr :
      | v=VALUE { Ast.Evalue v }
      | i=IDENT { Ast.Eident i }
+     | MINUS e=expr { Ast.Eunop (Uminus, e) }
      | e1=expr PLUS e2=expr { Ast.Ebinop (Badd, e1, e2) }
      | e1=expr MINUS e2=expr { Ast.Ebinop (Bsub, e1, e2) }
      | e1=expr MUL e2=expr { Ast.Ebinop (Bmul, e1, e2) }
