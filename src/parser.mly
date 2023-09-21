@@ -17,7 +17,7 @@
 
 %start script
 
-%type <Ast.stmt> script
+%type <Ast.script> script
 %type <Ast.stmt> stmt
 %type <Ast.expr> expr
 %type <Ast.stmt list> stmt_list
@@ -25,7 +25,7 @@
 
 %%
 
-script : s=stmt EOF { s };
+script : l=stmt_list EOF { l };
 
 stmt :
      | DO b=block END { Ast.Sblock b }
@@ -53,6 +53,7 @@ expr :
 stmt_list :
      | { [] }
      | s=stmt { [s] }
+     | s=stmt l=stmt_list { s :: l }
      | s=stmt SEMICOLON l=stmt_list { s :: l }
      ;
 

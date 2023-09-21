@@ -46,4 +46,4 @@ type stmt =
 and block =
   | Bstmt of stmt list
 
-type script = stmt
+type script = stmt list

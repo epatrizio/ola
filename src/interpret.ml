@@ -20,5 +20,5 @@ let interpret_stmt stmt =
   | Bstmt [s] -> interpret_stmt s
   | Bstmt (s :: tl) -> interpret_stmt s; interpret_block (Bstmt tl) *)
 
-let run stmt =
-  interpret_stmt stmt
+let run stmt_list =
+  List.iter interpret_stmt stmt_list
