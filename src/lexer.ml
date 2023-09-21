@@ -27,5 +27,21 @@ let rec token buf =
   | "do" -> DO
   | "end" -> END
   | "print" -> PRINT
+  | "--" -> comment buf
+  | "--[[" -> multiline_comment buf
   | eof -> EOF
   | _ -> error "Unexpected character"
+
+and comment buf =
+  match%sedlex buf with
+  | newline -> token buf
+  | any -> comment buf
+  | _ -> assert false
+
+and multiline_comment buf =
+  match%sedlex buf with
+  | "--]]" -> token buf
+  | newline -> multiline_comment buf
+  | eof -> error "Unterminated comment"
+  | any -> multiline_comment buf
+  | _ -> assert false
