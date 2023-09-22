@@ -2,6 +2,10 @@
     Basic stuff
 --]]
 
+-- nil
+
+print(nil)
+
 -- integer
 
 print(42)

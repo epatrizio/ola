@@ -7,8 +7,8 @@
 %token PRINT
 %token EOF
 
-%token <Ast.value> VALUE
-%token<string> IDENT
+%token <Ast.value> NIL VALUE
+%token <Ast.ident> IDENT
 
 %left PLUS MINUS
 %left MUL      // DIV
@@ -37,6 +37,7 @@ block :
      ;
 
 expr :
+     | NIL { Ast.Evalue Vnil }
      | v=VALUE { Ast.Evalue v }
      | i=IDENT { Ast.Eident i }
      | MINUS e=expr { Ast.Eunop (Uminus, e) }

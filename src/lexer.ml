@@ -24,6 +24,7 @@ let rec token buf =
   (*| '/' -> DIV *)
   | '(' -> LPAREN
   | ')' -> RPAREN
+  | "nil" -> NIL Vnil
   | "do" -> DO
   | "end" -> END
   | "print" -> PRINT
