@@ -1,14 +1,29 @@
 (* Abstract Syntax Tree *)
 
+type number_type =
+  | Tinteger
+  | Tfloat
+
 type typ =
   | Tnil
-  | Tnumber
   | Tboolean
+  | Tnumber of number_type
   | Tstring
   | Tfunction
   | Tuserdata
   | Tthread
   | Ttable
+
+type number =
+  | Ninteger of int
+  | Nfloat of float
+
+type value =
+  | Vnil
+  | Vfalse
+  | Vtrue
+  | Vnumber of number
+  | Vstring of string
 
 type ident = string
 
@@ -22,16 +37,10 @@ type binop =
   | Beq | Bneq | Blt | Ble | Bgt | Bge  (* == != < <= > >= *)
   | Band | Bor                          && || *)
 
-type number =
-  | Ninteger of int
-  | Nfloat of float
-
-type value =
-  | Vnil
-  | Vfalse
-  | Vtrue
-  | Vnumber of number
-  | Vstring of string
+type typed_value = {
+  typ : typ;
+  value : value
+}
 
 type expr =
   | Evalue of value
@@ -77,6 +86,10 @@ let print_value fmt value =
   | Vtrue -> Format.pp_print_string fmt "true"
   | Vnumber num -> print_number fmt num
   | Vstring s -> Format.pp_print_string fmt s
+
+let print_typed_value fmt typed_value =
+  let {typ = _; value = v} = typed_value in
+  print_value fmt v
 
 let rec print_expr fmt expr =
   match expr with
