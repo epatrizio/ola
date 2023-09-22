@@ -7,17 +7,22 @@ let error message = raise (Lexing_error message)
 
 let digit = [%sedlex.regexp? '0'..'9']
 let letter = [%sedlex.regexp? 'a'..'z' | 'A'..'Z']
-let nil = [%sedlex.regexp? "nil"]
-let boolean = [%sedlex.regexp? "true" | "false"]
-let number = [%sedlex.regexp? Plus digit]
+let hexdigit = [%sedlex.regexp? digit | 'a' .. 'f' | 'A' .. 'F']
 let blank = [%sedlex.regexp? ' ' | '\t']
 let newline = [%sedlex.regexp? '\r' | '\n' | "\r\n"]
+
+let nil = [%sedlex.regexp? "nil"]
+let boolean = [%sedlex.regexp? "true" | "false"]
+let integer = [%sedlex.regexp? Plus digit]
+let exp = [%sedlex.regexp? ('e' | 'E'), (Opt ('-' | '+')), (Plus digit)]
+let float = [%sedlex.regexp? Opt (Plus digit), Opt '.', Opt (Plus digit), Opt exp]
 
 let rec token buf =
   match%sedlex buf with
   | Plus (Chars " \t") -> token buf
   | newline -> token buf
-  | number -> VALUE (Vnumber (Ninteger (int_of_string (Sedlexing.Latin1.lexeme buf))))
+  | integer -> VALUE (Vnumber (Ninteger (int_of_string (Sedlexing.Latin1.lexeme buf))))
+  | float -> VALUE (Vnumber (Nfloat (float_of_string (Sedlexing.Latin1.lexeme buf))))
   (* | ',' -> COMMA *)
   | ';' -> SEMICOLON
   | '+' -> PLUS

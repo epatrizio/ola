@@ -33,6 +33,8 @@ let rec interpret_expr expr =
   | Evalue Vboolean b -> {typ = Tboolean; value = Vboolean b}
   | Evalue Vnumber Ninteger i ->
     {typ = Tnumber Tinteger; value = Vnumber (Ninteger i)}
+  | Evalue Vnumber Nfloat f ->
+    {typ = Tnumber Tfloat; value = Vnumber (Nfloat f)}
   | Evalue _ -> assert false
   | Eident _i -> assert false
   | Eunop (Unot, e) ->
