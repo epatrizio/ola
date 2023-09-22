@@ -19,7 +19,7 @@ type number =
   | Nfloat of float
 
 type value =
-  | Vnil
+  | Vnil of unit
   | Vfalse
   | Vtrue
   | Vnumber of number
@@ -81,7 +81,7 @@ let print_number fmt number =
 
 let print_value fmt value =
   match value with
-  | Vnil -> Format.pp_print_string fmt "nil"
+  | Vnil _ -> Format.pp_print_string fmt "nil"
   | Vfalse -> Format.pp_print_string fmt "false"
   | Vtrue -> Format.pp_print_string fmt "true"
   | Vnumber num -> print_number fmt num

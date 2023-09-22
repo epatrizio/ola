@@ -15,6 +15,7 @@ let rec interpret_expr expr =
     end
   in
   match expr with
+  | Evalue Vnil _ -> {typ = Tnil; value = Vnil ()}
   | Evalue (Vnumber (Ninteger i)) ->
     {typ = Tnumber Tinteger; value = Vnumber (Ninteger i)}
   | Evalue _ -> assert false
