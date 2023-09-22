@@ -6,6 +6,15 @@
 
 print(nil)
 
+-- boolean
+
+print(true)
+print(false)
+print(not true)
+print(not false)
+print(true and false)
+print(true or false)
+
 -- integer
 
 print(42)

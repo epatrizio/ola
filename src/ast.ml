@@ -20,22 +20,21 @@ type number =
 
 type value =
   | Vnil of unit
-  | Vfalse
-  | Vtrue
+  | Vboolean of bool
   | Vnumber of number
   | Vstring of string
 
 type ident = string
 
 type unop =
+  | Unot
   | Uminus
-  (* | Unot not e *)
 
 type binop =
+  | Band | Bor
   | Badd | Bsub | Bmul
 (*  | Bdiv           (* + - * / *)
-  | Beq | Bneq | Blt | Ble | Bgt | Bge  (* == != < <= > >= *)
-  | Band | Bor                          && || *)
+  | Beq | Bneq | Blt | Ble | Bgt | Bge  (* == != < <= > >= *) *)
 
 type typed_value = {
   typ : typ;
@@ -66,10 +65,13 @@ let print_ident fmt ident =
 
 let print_unop fmt unop =
   match unop with
+  | Unot -> Format.pp_print_string fmt "not "
   | Uminus -> Format.pp_print_string fmt "-"
 
 let print_binop fmt binop =
   match binop with
+  | Band -> Format.pp_print_string fmt " and "
+  | Bor -> Format.pp_print_string fmt " or "
   | Badd -> Format.pp_print_string fmt "+"
   | Bsub -> Format.pp_print_string fmt "-"
   | Bmul -> Format.pp_print_string fmt "*"
@@ -82,8 +84,7 @@ let print_number fmt number =
 let print_value fmt value =
   match value with
   | Vnil _ -> Format.pp_print_string fmt "nil"
-  | Vfalse -> Format.pp_print_string fmt "false"
-  | Vtrue -> Format.pp_print_string fmt "true"
+  | Vboolean b -> Format.pp_print_bool fmt b
   | Vnumber num -> print_number fmt num
   | Vstring s -> Format.pp_print_string fmt s
 

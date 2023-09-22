@@ -7,6 +7,8 @@ let error message = raise (Lexing_error message)
 
 let digit = [%sedlex.regexp? '0'..'9']
 let letter = [%sedlex.regexp? 'a'..'z' | 'A'..'Z']
+let nil = [%sedlex.regexp? "nil"]
+let boolean = [%sedlex.regexp? "true" | "false"]
 let number = [%sedlex.regexp? Plus digit]
 let blank = [%sedlex.regexp? ' ' | '\t']
 let newline = [%sedlex.regexp? '\r' | '\n' | "\r\n"]
@@ -24,7 +26,11 @@ let rec token buf =
   (*| '/' -> DIV *)
   | '(' -> LPAREN
   | ')' -> RPAREN
-  | "nil" -> NIL (Vnil ())
+  | nil -> VALUE (Vnil ())
+  | boolean -> VALUE (Vboolean (bool_of_string (Sedlexing.Latin1.lexeme buf)))
+  | "not" -> NOT
+  | "and" -> AND
+  | "or" -> OR
   | "do" -> DO
   | "end" -> END
   | "print" -> PRINT
