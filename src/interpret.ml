@@ -2,53 +2,49 @@ open Ast
 
 let rec interpret_expr expr =
   let interpret_bbinop_expr binop expr1 expr2 =
-    let {typ = t1; value = v1} = interpret_expr expr1 in
-    let {typ = t2; value = v2} = interpret_expr expr2 in begin
-      match t1, v1, t2, v2 with
-      | Tboolean, Vboolean b1, Tboolean, Vboolean b2 ->
+    let v1 = interpret_expr expr1 in
+    let v2 = interpret_expr expr2 in begin
+      match v1, v2 with
+      | Vboolean b1, Vboolean b2 ->
         begin match binop with
-          | Band -> {typ = Tboolean; value = Vboolean (b1 && b2)}
-          | Bor -> {typ = Tboolean; value = Vboolean (b1 || b2)}
+          | Band -> Vboolean (b1 && b2)
+          | Bor -> Vboolean (b1 || b2)
           | _ -> assert false (* call error *)
         end
       | _ -> assert false (* typing error *)
     end
   in
   let interpret_ibinop_expr binop expr1 expr2 =
-    let {typ = t1; value = v1} = interpret_expr expr1 in
-    let {typ = t2; value = v2} = interpret_expr expr2 in begin
-      match t1, v1, t2, v2 with
-      | Tnumber Tinteger, Vnumber (Ninteger i1), Tnumber Tinteger, Vnumber (Ninteger i2) ->
+    let v1 = interpret_expr expr1 in
+    let v2 = interpret_expr expr2 in begin
+      match v1, v2 with
+      | Vnumber (Ninteger i1), Vnumber (Ninteger i2) ->
         begin match binop with
-          | Badd -> {typ = Tnumber Tinteger; value = Vnumber (Ninteger (i1 + i2))}
-          | Bsub -> {typ = Tnumber Tinteger; value = Vnumber (Ninteger (i1 - i2))}
-          | Bmul -> {typ = Tnumber Tinteger; value = Vnumber (Ninteger (i1 * i2))}
+          | Badd -> Vnumber (Ninteger (i1 + i2))
+          | Bsub -> Vnumber (Ninteger (i1 - i2))
+          | Bmul -> Vnumber (Ninteger (i1 * i2))
           | _ -> assert false (* call error *)
         end
       | _ -> assert false (* typing error *)
     end
   in
   match expr with
-  | Evalue Vnil _ -> {typ = Tnil; value = Vnil ()}
-  | Evalue Vboolean b -> {typ = Tboolean; value = Vboolean b}
-  | Evalue Vnumber Ninteger i ->
-    {typ = Tnumber Tinteger; value = Vnumber (Ninteger i)}
-  | Evalue Vnumber Nfloat f ->
-    {typ = Tnumber Tfloat; value = Vnumber (Nfloat f)}
+  | Evalue Vnil _ -> Vnil ()
+  | Evalue Vboolean b -> Vboolean b
+  | Evalue Vnumber Ninteger i -> Vnumber (Ninteger i)
+  | Evalue Vnumber Nfloat f -> Vnumber (Nfloat f)
   | Evalue _ -> assert false
   | Eident _i -> assert false
   | Eunop (Unot, e) ->
-    let {typ = t; value = v} = interpret_expr e in begin
-      match t, v with
-      | Tboolean, Vboolean b ->
-        {typ = Tboolean; value = Vboolean (not b)}
+    let v = interpret_expr e in begin
+      match v with
+      | Vboolean b -> Vboolean (not b)
       | _ -> assert false (* typing error *)
     end
   | Eunop (Uminus, e) ->
-    let {typ = t; value = v} = interpret_expr e in begin
-      match t, v with
-      | Tnumber Tinteger, Vnumber (Ninteger i) ->
-        {typ = Tnumber Tinteger; value = Vnumber (Ninteger (-i))}
+    let v = interpret_expr e in begin
+      match v with
+      | Vnumber (Ninteger i) -> Vnumber (Ninteger (-i))
       | _ -> assert false (* typing error *)
     end
   | Ebinop (Band, e1, e2) -> interpret_bbinop_expr Band e1 e2
@@ -61,7 +57,7 @@ let interpret_stmt stmt =
   match stmt with
   | Sblock _b -> assert false
   | Sprint e -> 
-    print_typed_value Format.std_formatter (interpret_expr e);
+    print_value Format.std_formatter (interpret_expr e);
     Format.fprintf Format.std_formatter "@."
 
 (* and interpret_block bl =

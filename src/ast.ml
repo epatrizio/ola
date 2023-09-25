@@ -36,11 +36,6 @@ type binop =
 (*  | Bdiv           (* + - * / *)
   | Beq | Bneq | Blt | Ble | Bgt | Bge  (* == != < <= > >= *) *)
 
-type typed_value = {
-  typ : typ;
-  value : value
-}
-
 type expr =
   | Evalue of value
   | Eident of ident
@@ -87,10 +82,6 @@ let print_value fmt value =
   | Vboolean b -> Format.pp_print_bool fmt b
   | Vnumber num -> print_number fmt num
   | Vstring s -> Format.pp_print_string fmt s
-
-let print_typed_value fmt typed_value =
-  let {typ = _; value = v} = typed_value in
-  print_value fmt v
 
 let rec print_expr fmt expr =
   match expr with
