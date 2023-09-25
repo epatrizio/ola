@@ -56,9 +56,8 @@ expr :
 //      ;
 
 stmt_list :
-     | { [] }
-     | s=stmt l=stmt_list { s :: l }
-     | s=stmt SEMICOLON l=stmt_list { s :: l }
+     | l=list(stmt) { l }
+     | l=separated_list(SEMICOLON, stmt) { l }
      ;
 
 %%
