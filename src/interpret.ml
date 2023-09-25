@@ -53,18 +53,20 @@ let rec interpret_expr expr =
   | Ebinop (Bsub, e1, e2) -> interpret_ibinop_expr Bsub e1 e2
   | Ebinop (Bmul, e1, e2) -> interpret_ibinop_expr Bmul e1 e2
 
-let interpret_stmt stmt =
+let rec interpret_stmt stmt =
   match stmt with
-  | Sblock _b -> assert false
+  | Sblock b -> interpret_block b
+  | Swhile (e, b) ->
+    let v = interpret_expr e in begin
+      match v with
+      | Vboolean cond -> if cond then interpret_block b else ()
+      | _ -> assert false (* typing error *)
+    end
   | Sprint e -> 
     print_value Format.std_formatter (interpret_expr e);
     Format.fprintf Format.std_formatter "@."
-
-(* and interpret_block bl =
-  match bl with
-  | Bstmt [] -> ()
-  | Bstmt [s] -> interpret_stmt s
-  | Bstmt (s :: tl) -> interpret_stmt s; interpret_block (Bstmt tl) *)
+and interpret_block b =
+  List.iter interpret_stmt b
 
 let run stmt_list =
   List.iter interpret_stmt stmt_list

@@ -44,11 +44,10 @@ type expr =
 
 type stmt =
   | Sblock of block
+  | Swhile of expr * block
   (* | Sassign of var list * expr list *)
   | Sprint of expr
-
-and block =
-  | Bstmt of stmt list
+and block = stmt list
 
 type script = stmt list
 
@@ -95,13 +94,21 @@ let rec print_expr fmt expr =
     print_binop fmt bop;
     print_expr fmt e2
 
-let print_stmt fmt stmt =
+let rec print_stmt fmt stmt =
   match stmt with
-  | Sblock _b -> print_endline "not implemented"
+  | Sblock b -> print_block fmt b
+  | Swhile (e, b) ->
+    Format.fprintf fmt "while ";
+    print_expr fmt e;
+    Format.fprintf fmt "do";
+    print_block fmt b;
+    Format.fprintf fmt "end@."
   | Sprint e ->
     Format.fprintf fmt "print(";
     print_expr fmt e;
     Format.fprintf fmt ")@."
+and print_block fmt block =
+  List.iter (print_stmt fmt) block
 
 let print_script fmt script =
   List.iter (print_stmt fmt) script

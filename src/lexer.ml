@@ -36,6 +36,7 @@ let rec token buf =
   | "not" -> NOT
   | "and" -> AND
   | "or" -> OR
+  | "while" -> WHILE
   | "do" -> DO
   | "end" -> END
   | "print" -> PRINT

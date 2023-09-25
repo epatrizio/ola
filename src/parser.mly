@@ -4,7 +4,7 @@
 
 %token PLUS MINUS MUL LPAREN RPAREN SEMICOLON     // DIV COMMA
 %token NOT AND OR
-%token DO END
+%token DO END WHILE
 %token PRINT
 %token EOF
 
@@ -30,11 +30,12 @@ script : l=stmt_list EOF { l };
 
 stmt :
      | DO b=block END { Ast.Sblock b }
+     | WHILE e=expr DO b=block END { Ast.Swhile (e, b) }
      | PRINT LPAREN e=expr RPAREN { Ast.Sprint e }
      ;
 
 block :
-     | l=stmt_list { Bstmt l }
+     | l=stmt_list { l }
      ;
 
 expr :
