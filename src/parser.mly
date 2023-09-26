@@ -12,18 +12,20 @@
 %token <Ast.value> VALUE
 %token <Ast.ident> IDENT
 
-%left PLUS MINUS
+%left MINUS PLUS
 %left MUL      // DIV
 
-// %nonassoc UMINUS
+%nonassoc uminus
+// %nonassoc IF
+// %nonassoc ELSE
 
 %start chunk
 
 %type <Ast.chunk> chunk
-%type <Ast.unop> unop
-%type <Ast.binop> binop
-%type <Ast.stmt> stmt
-%type <Ast.expr> expr
+// %type <Ast.unop> unop
+// %type <Ast.binop> binop
+// %type <Ast.stmt> stmt
+// %type <Ast.expr> expr
 // %type <Ast.stmt list> stmt_list
 // %type <Ast.expr list> expr_list
 
@@ -64,8 +66,9 @@ binop :
 expr :
      | v=VALUE { Ast.Evalue v }
      | i=IDENT { Ast.Eident i }
-     | op=unop e=expr { Ast.Eunop (op, e) }
+     | op=unop e=expr %prec uminus { Ast.Eunop (op, e) }
      | e1=expr op=binop e2=expr { Ast.Ebinop (op, e1, e2) }
+     | LPAREN e=expr RPAREN { e }
      ;
 
 // expr_list :

@@ -22,7 +22,15 @@ print(40+2)     -- binary operators
 print(44-2)
 print(21*2)
 print(-42)      -- unary operator
-print(-40-2)
+
+-- priority
+print(-40-2)    -- -42
+print(1+2-4)    -- -1
+print(1-2+3)    -- 2    KO (-4)
+print(-(40-2))  -- -38
+print(1+(2-4))  -- -1
+print(1-(2+3))  -- -4
+print(((10+10)-(-10*3))*2)  -- 100
 
 -- comparaison
 
