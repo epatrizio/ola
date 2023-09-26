@@ -31,6 +31,45 @@ let rec interpret_expr expr =
           | Bneq -> Vboolean (i1 != i2)
           | _ -> assert false (* call error *)
         end
+      | Vnumber (Nfloat f), Vnumber (Ninteger i) ->
+        begin match binop with
+          | Badd -> Vnumber (Nfloat (f +. float_of_int i))
+          | Bsub -> Vnumber (Nfloat (f -. float_of_int i))
+          | Bmul -> Vnumber (Nfloat (f *. float_of_int i))
+          | Blt -> Vboolean (f < float_of_int i)
+          | Ble -> Vboolean (f <= float_of_int i)
+          | Bgt -> Vboolean (f > float_of_int i)
+          | Bge -> Vboolean (f >= float_of_int i)
+          | Beq -> Vboolean (f == float_of_int i)
+          | Bneq -> Vboolean (f != float_of_int i)
+          | _ -> assert false (* call error *)
+        end
+      | Vnumber (Ninteger i), Vnumber (Nfloat f) ->
+        begin match binop with
+          | Badd -> Vnumber (Nfloat (float_of_int i +. f))
+          | Bsub -> Vnumber (Nfloat (float_of_int i -. f))
+          | Bmul -> Vnumber (Nfloat (float_of_int i *. f))
+          | Blt -> Vboolean (float_of_int i < f)
+          | Ble -> Vboolean (float_of_int i <= f)
+          | Bgt -> Vboolean (float_of_int i > f)
+          | Bge -> Vboolean (float_of_int i >= f)
+          | Beq -> Vboolean (float_of_int i == f)
+          | Bneq -> Vboolean (float_of_int i != f)
+          | _ -> assert false (* call error *)
+        end
+      | Vnumber (Nfloat f1), Vnumber (Nfloat f2) ->
+        begin match binop with
+          | Badd -> Vnumber (Nfloat (f1 +. f2))
+          | Bsub -> Vnumber (Nfloat (f1 -. f2))
+          | Bmul -> Vnumber (Nfloat (f1 *. f2))
+          | Blt -> Vboolean (f1 < f2)
+          | Ble -> Vboolean (f1 <= f2)
+          | Bgt -> Vboolean (f1 > f2)
+          | Bge -> Vboolean (f1 >= f2)
+          | Beq -> Vboolean (f1 == f2)
+          | Bneq -> Vboolean (f1 != f2)
+          | _ -> assert false (* call error *)
+        end
       | _ -> assert false (* typing error *)
     end
   in
@@ -51,6 +90,7 @@ let rec interpret_expr expr =
     let v = interpret_expr e in begin
       match v with
       | Vnumber (Ninteger i) -> Vnumber (Ninteger (-i))
+      | Vnumber (Nfloat f) -> Vnumber (Nfloat (-.f))
       | _ -> assert false (* typing error *)
     end
   | Ebinop (Band, e1, e2) -> interpret_bbinop_expr Band e1 e2

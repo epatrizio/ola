@@ -54,3 +54,15 @@ print(42.1E1)
 print(42.1E+1)
 print(42.1E-1)
 print(42e1)
+
+print(-42.)
+print(-.42)
+print(-42.1e1)
+
+-- integer float operations
+
+print(1+2.5)
+print(2.5+1)
+print(2.5+1.5)
+print(-40.0-2)
+print(-42.1e1+1)
