@@ -55,6 +55,7 @@ let rec interpret_expr expr =
 
 let rec interpret_stmt stmt =
   match stmt with
+  | Sempty -> ()
   | Sblock b -> interpret_block b
   | Swhile (e, b) ->
     let v = interpret_expr e in begin

@@ -18,9 +18,9 @@ let process source_code_file _debug =
     let lexbuf = Sedlexing.Utf8.from_channel ic in
     Sedlexing.set_filename lexbuf source_code_file;
     let lexer = Sedlexing.with_tokenizer Lexer.token lexbuf in
-    let parser = MenhirLib.Convert.Simplified.traditional2revised Parser.script in
+    let parser = MenhirLib.Convert.Simplified.traditional2revised Parser.chunk in
     let stmt_list_script = parser lexer in
-      if !debug then Ast.print_script Format.std_formatter stmt_list_script;
+      if !debug then Ast.print_block Format.std_formatter stmt_list_script;
       Interpret.run stmt_list_script;
       close_in ic
   with

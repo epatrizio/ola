@@ -43,13 +43,14 @@ type expr =
   | Ebinop of binop * expr * expr
 
 type stmt =
+  | Sempty
   | Sblock of block
   | Swhile of expr * block
   (* | Sassign of var list * expr list *)
   | Sprint of expr
 and block = stmt list
 
-type script = stmt list
+type chunk = block
 
 (* pretty printer *)
 
@@ -96,6 +97,7 @@ let rec print_expr fmt expr =
 
 let rec print_stmt fmt stmt =
   match stmt with
+  | Sempty -> Format.fprintf fmt "";
   | Sblock b -> print_block fmt b
   | Swhile (e, b) ->
     Format.fprintf fmt "while ";
@@ -110,5 +112,5 @@ let rec print_stmt fmt stmt =
 and print_block fmt block =
   List.iter (print_stmt fmt) block
 
-let print_script fmt script =
-  List.iter (print_stmt fmt) script
+let print_chunk fmt chunk =
+  print_block fmt chunk
