@@ -33,8 +33,8 @@ type unop =
 type binop =
   | Band | Bor
   | Badd | Bsub | Bmul
-(*  | Bdiv           (* + - * / *)
-  | Beq | Bneq | Blt | Ble | Bgt | Bge  (* == != < <= > >= *) *)
+  (*  | Bdiv    *)
+  | Beq | Bneq | Blt | Ble | Bgt | Bge
 
 type expr =
   | Evalue of value
@@ -70,6 +70,12 @@ let print_binop fmt binop =
   | Badd -> Format.pp_print_string fmt "+"
   | Bsub -> Format.pp_print_string fmt "-"
   | Bmul -> Format.pp_print_string fmt "*"
+  | Blt -> Format.pp_print_string fmt "<"
+  | Ble -> Format.pp_print_string fmt "<="
+  | Bgt -> Format.pp_print_string fmt ">"
+  | Bge -> Format.pp_print_string fmt ">="
+  | Beq -> Format.pp_print_string fmt "=="
+  | Bneq -> Format.pp_print_string fmt "~="
 
 let print_number fmt number =
   match number with

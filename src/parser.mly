@@ -3,6 +3,7 @@
 %{ %}
 
 %token PLUS MINUS MUL LPAREN RPAREN SEMICOLON     // DIV COMMA
+%token LT LE GT GE EQ NEQ
 %token NOT AND OR
 %token DO END WHILE
 %token PRINT
@@ -52,6 +53,12 @@ binop :
      | PLUS { Ast.Badd }
      | MINUS { Ast.Bsub }
      | MUL { Ast.Bmul }
+     | LT { Ast.Blt }
+     | LE { Ast.Ble }
+     | GT { Ast.Bgt }
+     | GE { Ast.Bge }
+     | EQ { Ast.Beq }
+     | NEQ { Ast.Bneq }
      ;
 
 expr :

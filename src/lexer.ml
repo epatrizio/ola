@@ -28,6 +28,12 @@ let rec token buf =
   | '+' -> PLUS
   | '-' -> MINUS
   | '*' -> MUL
+  | '<' -> LT
+  | "<=" -> LE
+  | '>' -> GT
+  | ">=" -> GE
+  | "==" -> EQ
+  | "~=" -> NEQ
   (*| '/' -> DIV *)
   | '(' -> LPAREN
   | ')' -> RPAREN

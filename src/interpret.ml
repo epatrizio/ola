@@ -23,6 +23,12 @@ let rec interpret_expr expr =
           | Badd -> Vnumber (Ninteger (i1 + i2))
           | Bsub -> Vnumber (Ninteger (i1 - i2))
           | Bmul -> Vnumber (Ninteger (i1 * i2))
+          | Blt -> Vboolean (i1 < i2)
+          | Ble -> Vboolean (i1 <= i2)
+          | Bgt -> Vboolean (i1 > i2)
+          | Bge -> Vboolean (i1 >= i2)
+          | Beq -> Vboolean (i1 == i2)
+          | Bneq -> Vboolean (i1 != i2)
           | _ -> assert false (* call error *)
         end
       | _ -> assert false (* typing error *)
@@ -52,6 +58,12 @@ let rec interpret_expr expr =
   | Ebinop (Badd, e1, e2) -> interpret_ibinop_expr Badd e1 e2
   | Ebinop (Bsub, e1, e2) -> interpret_ibinop_expr Bsub e1 e2
   | Ebinop (Bmul, e1, e2) -> interpret_ibinop_expr Bmul e1 e2
+  | Ebinop (Blt, e1, e2) -> interpret_ibinop_expr Blt e1 e2
+  | Ebinop (Ble, e1, e2) -> interpret_ibinop_expr Ble e1 e2
+  | Ebinop (Bgt, e1, e2) -> interpret_ibinop_expr Bgt e1 e2
+  | Ebinop (Bge, e1, e2) -> interpret_ibinop_expr Bge e1 e2
+  | Ebinop (Beq, e1, e2) -> interpret_ibinop_expr Beq e1 e2
+  | Ebinop (Bneq, e1, e2) -> interpret_ibinop_expr Bneq e1 e2
 
 let rec interpret_stmt stmt =
   match stmt with

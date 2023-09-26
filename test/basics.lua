@@ -24,6 +24,15 @@ print(21*2)
 print(-42)      -- unary operator
 print(-40-2)
 
+-- comparaison
+
+print(42 < 42)
+print(42 <= 42)
+print(42 > 42)
+print(42 >= 42)
+print(42 == 42)
+print(42 ~= 42)
+
 -- float
 
 print(42.)
