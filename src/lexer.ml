@@ -28,6 +28,7 @@ let rec token buf =
   | '+' -> PLUS
   | '-' -> MINUS
   | '*' -> MUL
+  | '#' -> SHARP
   | '<' -> LT
   | "<=" -> LE
   | '>' -> GT

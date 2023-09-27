@@ -29,6 +29,7 @@ type ident = string
 type unop =
   | Unot
   | Uminus
+  | Usharp
 
 type binop =
   | Band | Bor
@@ -62,6 +63,7 @@ let print_unop fmt unop =
   match unop with
   | Unot -> Format.pp_print_string fmt "not "
   | Uminus -> Format.pp_print_string fmt "-"
+  | Usharp -> Format.pp_print_string fmt "#"
 
 let print_binop fmt binop =
   match binop with

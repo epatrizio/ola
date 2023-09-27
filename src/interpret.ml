@@ -93,6 +93,12 @@ let rec interpret_expr expr =
       | Vnumber (Nfloat f) -> Vnumber (Nfloat (-.f))
       | _ -> assert false (* typing error *)
     end
+  | Eunop (Usharp, e) ->
+    let v = interpret_expr e in begin
+      match v with
+      | Vstring s -> Vnumber (Ninteger (String.length s))
+      | _ -> assert false (* typing error *)
+    end    
   | Ebinop (Band, e1, e2) -> interpret_bbinop_expr Band e1 e2
   | Ebinop (Bor, e1, e2) -> interpret_bbinop_expr Bor e1 e2
   | Ebinop (Badd, e1, e2) -> interpret_ibinop_expr Badd e1 e2

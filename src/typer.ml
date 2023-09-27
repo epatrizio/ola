@@ -41,6 +41,13 @@ let rec typecheck_expr expr =
   | Eident _i -> Tnil (* TODO *)
   | Eunop (Unot, _) -> Tboolean
   | Eunop (Uminus, e) -> typecheck_arith_unop e
+  | Eunop (Usharp, e) ->
+    let typ = typecheck_expr e in begin
+      match typ with
+      | Tstring -> Tnumber Tinteger
+      | Tnil | Tboolean | Tnumber _ -> error "attempt to perform #operator on a not supported type"
+      | _ -> error "#operator on this type: to be implemented ..."
+    end
   | Ebinop (Band, _, _) | Ebinop (Bor, _, _) -> Tboolean (* TODO *)
   | Ebinop (Badd, e1, e2) | Ebinop (Bsub, e1, e2) | Ebinop (Bmul, e1, e2) ->
     typecheck_arith_binop e1 e2

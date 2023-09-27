@@ -4,7 +4,7 @@
 
 %token PLUS MINUS MUL LPAREN RPAREN SEMICOLON     // DIV COMMA
 %token LT LE GT GE EQ NEQ
-%token NOT AND OR
+%token NOT SHARP AND OR
 %token DO END WHILE
 %token PRINT
 %token EOF
@@ -47,6 +47,7 @@ stmt :
 unop :
      | NOT { Ast.Unot }
      | MINUS { Ast.Uminus }
+     | SHARP { Ast.Usharp }
      ;
 
 binop :
