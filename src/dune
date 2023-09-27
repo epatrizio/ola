@@ -4,6 +4,7 @@
   ast
   lexer
   parser
+  typer
   interpret)
  (preprocess (pps sedlex.ppx))
  (libraries sedlex menhirLib))

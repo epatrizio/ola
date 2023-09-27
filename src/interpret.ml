@@ -121,5 +121,5 @@ let rec interpret_stmt stmt =
 and interpret_block b =
   List.iter interpret_stmt b
 
-let run stmt_list =
-  List.iter interpret_stmt stmt_list
+let run chunk =
+  interpret_block chunk
