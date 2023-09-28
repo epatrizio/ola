@@ -2,6 +2,7 @@ open Ast
 
 let rec interpret_expr expr =
   let interpret_bbinop_expr binop expr1 expr2 =
+    (* todo: ok for num values *)
     let v1 = interpret_expr expr1 in
     let v2 = interpret_expr expr2 in
     begin
@@ -75,12 +76,33 @@ let rec interpret_expr expr =
       | _ -> assert false (* typing error *)
     end
   in
+  let interpret_sbinop_expr expr1 expr2 =
+    let v1 = interpret_expr expr1 in
+    let v2 = interpret_expr expr2 in
+    begin
+      match (v1, v2) with
+      | Vstring s1, Vstring s2 -> Vstring (s1 ^ s2)
+      | Vstring s, Vnumber (Ninteger i) -> Vstring (s ^ string_of_int i)
+      | Vstring s, Vnumber (Nfloat f) -> Vstring (s ^ string_of_float f)
+      | Vnumber (Ninteger i), Vstring s -> Vstring (string_of_int i ^ s)
+      | Vnumber (Nfloat f), Vstring s -> Vstring (string_of_float f ^ s)
+      | Vnumber (Ninteger i1), Vnumber (Ninteger i2) ->
+        Vstring (string_of_int i1 ^ string_of_int i2)
+      | Vnumber (Nfloat f1), Vnumber (Nfloat f2) ->
+        Vstring (string_of_float f1 ^ string_of_float f2)
+      | Vnumber (Ninteger i), Vnumber (Nfloat f) ->
+        Vstring (string_of_int i ^ string_of_float f)
+      | Vnumber (Nfloat f), Vnumber (Ninteger i) ->
+        Vstring (string_of_float f ^ string_of_int i)
+      | _ -> assert false (* typing error *)
+    end
+  in
   match expr with
   | Evalue (Vnil _) -> Vnil ()
   | Evalue (Vboolean b) -> Vboolean b
   | Evalue (Vnumber (Ninteger i)) -> Vnumber (Ninteger i)
   | Evalue (Vnumber (Nfloat f)) -> Vnumber (Nfloat f)
-  | Evalue _ -> assert false
+  | Evalue (Vstring s) -> Vstring s
   | Eident _i -> assert false
   | Eunop (Unot, e) ->
     let v = interpret_expr e in
@@ -115,6 +137,7 @@ let rec interpret_expr expr =
   | Ebinop (Bge, e1, e2) -> interpret_ibinop_expr Bge e1 e2
   | Ebinop (Beq, e1, e2) -> interpret_ibinop_expr Beq e1 e2
   | Ebinop (Bneq, e1, e2) -> interpret_ibinop_expr Bneq e1 e2
+  | Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2
 
 let rec interpret_stmt stmt =
   match stmt with

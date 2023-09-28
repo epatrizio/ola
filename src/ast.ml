@@ -44,6 +44,7 @@ type binop =
   | Ble
   | Bgt
   | Bge
+  | Bddot
 
 type expr =
   | Evalue of value
@@ -86,6 +87,7 @@ let print_binop fmt binop =
   | Bge -> Format.pp_print_string fmt ">="
   | Beq -> Format.pp_print_string fmt "=="
   | Bneq -> Format.pp_print_string fmt "~="
+  | Bddot -> Format.pp_print_string fmt ".."
 
 let print_number fmt number =
   match number with

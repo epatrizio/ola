@@ -40,6 +40,25 @@ let rec typecheck_expr expr =
       error "attempt to perform arithmetic on a string value"
     | _ -> assert false (* call error *)
   in
+  let typecheck_str_binop expr1 expr2 =
+    let typ1 = typecheck_expr expr1 in
+    let typ2 = typecheck_expr expr2 in
+    match (typ1, typ2) with
+    | Tstring, Tstring
+    | Tstring, Tnumber Tinteger
+    | Tstring, Tnumber Tfloat
+    | Tnumber Tinteger, Tstring
+    | Tnumber Tfloat, Tstring
+    | Tnumber Tinteger, Tnumber Tinteger
+    | Tnumber Tfloat, Tnumber Tfloat
+    | Tnumber Tinteger, Tnumber Tfloat
+    | Tnumber Tfloat, Tnumber Tinteger ->
+      Tstring
+    | Tnil, _ | _, Tnil -> error "attempt to concatenate a nil value"
+    | Tboolean, _ | _, Tboolean ->
+      error "attempt to concatenate a boolean value"
+    | _ -> assert false (* call error *)
+  in
   match expr with
   | Evalue v -> typecheck_value v
   | Eident _i -> Tnil (* TODO *)
@@ -64,6 +83,7 @@ let rec typecheck_expr expr =
   | Ebinop (Beq, _, _)
   | Ebinop (Bneq, _, _) ->
     Tboolean (* TODO *)
+  | Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2
 
 let rec typecheck_stmt stmt =
   match stmt with

@@ -1,7 +1,5 @@
--- print(#"str")     -- 3 (string length) - str support to be implemented
-
--- print(#nil)
--- print(#42)     -- typing error
--- print(#42.0)   -- typing error
--- print(#true)   -- typing error
--- print(#false)  -- typing error
+print(# "str")     -- 3 (string length)
+print(# "str" .. "str")
+print(# "str" .. 123)
+print(# 123 .. 456)
+print(# 123.456 .. 78.9)

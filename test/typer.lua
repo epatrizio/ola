@@ -19,6 +19,17 @@ print(10+false) -- ko
 -- print(10 or 20) -- ok todo
 -- print(20 or 10) -- ok todo
 
+-- print(#nil)    -- ko
+-- print(#42)     -- ko
+-- print(#42.0)   -- ko
+-- print(#true)   -- ko
+-- print(#false)  -- ko
+
+-- print(1 .. "str")       -- ok 1str
+-- print(1.1 .. "str")     -- ok 1.1str
+-- print(nil .. "str")  -- ko
+-- print(true .. "str") -- ko
+
 --while 0 -- ko pas false mais passe
   --  do
     --    print(4)

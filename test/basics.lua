@@ -66,3 +66,25 @@ print(2.5+1)
 print(2.5+1.5)
 print(-40.0-2)
 print(-42.1e1+1)
+
+-- string
+
+print("")
+print("my string 123")
+print("²&é\"#'{}[]()-|èçàù%*!§/:;,~+-*/=£$¤")
+print('')
+print('my string 123')
+print('²&é"#\'{}[]()-|èçàù%*!§/:;,~+-*/=£$¤')
+
+print("" .. "my string")
+print("my" .. "string")
+print('' .. 'my string')
+print('my' .. 'string')
+
+print("my string" .. 123)
+print("my string" .. 123.345)
+
+print(123 .. 456)
+print(123.456 .. 789.0)
+print(123 .. 456.789)
+print(123.456 .. 789)
