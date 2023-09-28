@@ -32,10 +32,18 @@ type unop =
   | Usharp
 
 type binop =
-  | Band | Bor
-  | Badd | Bsub | Bmul
+  | Band
+  | Bor
+  | Badd
+  | Bsub
+  | Bmul
   (*  | Bdiv    *)
-  | Beq | Bneq | Blt | Ble | Bgt | Bge
+  | Beq
+  | Bneq
+  | Blt
+  | Ble
+  | Bgt
+  | Bge
 
 type expr =
   | Evalue of value
@@ -49,6 +57,7 @@ type stmt =
   | Swhile of expr * block
   (* | Sassign of var list * expr list *)
   | Sprint of expr
+
 and block = stmt list
 
 type chunk = block
@@ -56,8 +65,7 @@ type chunk = block
 (* pretty printer *)
 
 let print_ident fmt ident =
-  match ident with
-  | ident -> Format.pp_print_string fmt ident 
+  match ident with ident -> Format.pp_print_string fmt ident
 
 let print_unop fmt unop =
   match unop with
@@ -105,7 +113,7 @@ let rec print_expr fmt expr =
 
 let rec print_stmt fmt stmt =
   match stmt with
-  | Sempty -> Format.fprintf fmt "";
+  | Sempty -> Format.fprintf fmt ""
   | Sblock b -> print_block fmt b
   | Swhile (e, b) ->
     Format.fprintf fmt "while ";
@@ -117,8 +125,7 @@ let rec print_stmt fmt stmt =
     Format.fprintf fmt "print(";
     print_expr fmt e;
     Format.fprintf fmt ")@."
-and print_block fmt block =
-  List.iter (print_stmt fmt) block
 
-let print_chunk fmt chunk =
-  print_block fmt chunk
+and print_block fmt block = List.iter (print_stmt fmt) block
+
+let print_chunk fmt chunk = print_block fmt chunk
