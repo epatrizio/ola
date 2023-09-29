@@ -31,7 +31,7 @@ let rec interpret_expr expr =
         | Ble -> Vboolean (i1 <= i2)
         | Bgt -> Vboolean (i1 > i2)
         | Bge -> Vboolean (i1 >= i2)
-        | Beq -> Vboolean (i1 == i2)
+        | Beq -> Vboolean (i1 = i2)
         | Bneq -> Vboolean (i1 != i2)
         | _ -> assert false (* call error *)
       end
@@ -45,7 +45,7 @@ let rec interpret_expr expr =
         | Ble -> Vboolean (f <= float_of_int i)
         | Bgt -> Vboolean (f > float_of_int i)
         | Bge -> Vboolean (f >= float_of_int i)
-        | Beq -> Vboolean (f == float_of_int i)
+        | Beq -> Vboolean (f = float_of_int i)
         | Bneq -> Vboolean (f != float_of_int i)
         | _ -> assert false (* call error *)
       end
@@ -59,7 +59,7 @@ let rec interpret_expr expr =
         | Ble -> Vboolean (float_of_int i <= f)
         | Bgt -> Vboolean (float_of_int i > f)
         | Bge -> Vboolean (float_of_int i >= f)
-        | Beq -> Vboolean (float_of_int i == f)
+        | Beq -> Vboolean (float_of_int i = f)
         | Bneq -> Vboolean (float_of_int i != f)
         | _ -> assert false (* call error *)
       end
@@ -73,7 +73,7 @@ let rec interpret_expr expr =
         | Ble -> Vboolean (f1 <= f2)
         | Bgt -> Vboolean (f1 > f2)
         | Bge -> Vboolean (f1 >= f2)
-        | Beq -> Vboolean (f1 == f2)
+        | Beq -> Vboolean (f1 = f2)
         | Bneq -> Vboolean (f1 != f2)
         | _ -> assert false (* call error *)
       end

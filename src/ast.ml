@@ -129,6 +129,8 @@ let rec print_stmt fmt stmt =
     print_expr fmt e;
     Format.fprintf fmt ")@."
 
-and print_block fmt block = List.iter (print_stmt fmt) block
+and print_block fmt block =
+  let pp_sep fmt () = Format.fprintf fmt "" in
+  Format.pp_print_list ~pp_sep:pp_sep print_stmt fmt block
 
 let print_chunk fmt chunk = print_block fmt chunk

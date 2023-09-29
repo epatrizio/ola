@@ -51,7 +51,7 @@ let process source_code_file no_typing debug =
     exit 1
 
 (* OLA entry point : Lua language interpreter *)
-let _ =
+let () =
   Arg.parse options set_file usage;
   if !in_file_name = "" then begin
     eprintf "init error: missing test file name to interpret!@.";
