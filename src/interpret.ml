@@ -26,6 +26,7 @@ let rec interpret_expr expr =
         | Badd -> Vnumber (Ninteger (i1 + i2))
         | Bsub -> Vnumber (Ninteger (i1 - i2))
         | Bmul -> Vnumber (Ninteger (i1 * i2))
+        | Bdiv -> Vnumber (Nfloat (float_of_int i1 /. float_of_int i2))
         | Blt -> Vboolean (i1 < i2)
         | Ble -> Vboolean (i1 <= i2)
         | Bgt -> Vboolean (i1 > i2)
@@ -39,6 +40,7 @@ let rec interpret_expr expr =
         | Badd -> Vnumber (Nfloat (f +. float_of_int i))
         | Bsub -> Vnumber (Nfloat (f -. float_of_int i))
         | Bmul -> Vnumber (Nfloat (f *. float_of_int i))
+        | Bdiv -> Vnumber (Nfloat (f /. float_of_int i))
         | Blt -> Vboolean (f < float_of_int i)
         | Ble -> Vboolean (f <= float_of_int i)
         | Bgt -> Vboolean (f > float_of_int i)
@@ -52,6 +54,7 @@ let rec interpret_expr expr =
         | Badd -> Vnumber (Nfloat (float_of_int i +. f))
         | Bsub -> Vnumber (Nfloat (float_of_int i -. f))
         | Bmul -> Vnumber (Nfloat (float_of_int i *. f))
+        | Bdiv -> Vnumber (Nfloat (float_of_int i /. f))
         | Blt -> Vboolean (float_of_int i < f)
         | Ble -> Vboolean (float_of_int i <= f)
         | Bgt -> Vboolean (float_of_int i > f)
@@ -65,6 +68,7 @@ let rec interpret_expr expr =
         | Badd -> Vnumber (Nfloat (f1 +. f2))
         | Bsub -> Vnumber (Nfloat (f1 -. f2))
         | Bmul -> Vnumber (Nfloat (f1 *. f2))
+        | Bdiv -> Vnumber (Nfloat (f1 /. f2))
         | Blt -> Vboolean (f1 < f2)
         | Ble -> Vboolean (f1 <= f2)
         | Bgt -> Vboolean (f1 > f2)
@@ -131,6 +135,7 @@ let rec interpret_expr expr =
   | Ebinop (Badd, e1, e2) -> interpret_ibinop_expr Badd e1 e2
   | Ebinop (Bsub, e1, e2) -> interpret_ibinop_expr Bsub e1 e2
   | Ebinop (Bmul, e1, e2) -> interpret_ibinop_expr Bmul e1 e2
+  | Ebinop (Bdiv, e1, e2) -> interpret_ibinop_expr Bdiv e1 e2
   | Ebinop (Blt, e1, e2) -> interpret_ibinop_expr Blt e1 e2
   | Ebinop (Ble, e1, e2) -> interpret_ibinop_expr Ble e1 e2
   | Ebinop (Bgt, e1, e2) -> interpret_ibinop_expr Bgt e1 e2

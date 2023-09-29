@@ -66,6 +66,13 @@ print(2.5+1)
 print(2.5+1.5)
 print(-40.0-2)
 print(-42.1e1+1)
+-- division
+print(4/2)
+print(4.0/2)
+print(4/2.0)
+print(4.0/2.0)
+print(2./4.44)
+print(42.42/0) -- inf (infinity)
 
 -- string
 
