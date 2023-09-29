@@ -1,3 +1,4 @@
 (executable
+ (public_name ola)
  (name ola_interpreter)
  (libraries sedlex menhirLib ola))
