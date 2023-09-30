@@ -76,6 +76,14 @@ print(4/2.0)
 print(4.0/2.0)
 print(2./4.44)
 print(42.42/0) -- inf (infinity)
+-- exponentiation
+print(4^2)
+print(4.0^2)
+print(4^2.0)
+print(4.^2.)
+print(4.^2.123)
+print(0^2)
+print(4^0.0)
 
 -- string
 

@@ -2,7 +2,7 @@
 
 %{ %}
 
-%token PLUS MINUS MUL DIV DDOT LPAREN RPAREN SEMICOLON     // COMMA
+%token PLUS MINUS MUL DIV EXP DDOT LPAREN RPAREN SEMICOLON     // COMMA
 %token LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR
 %token DO END WHILE
@@ -57,6 +57,7 @@ binop :
      | MINUS { Ast.Bsub }
      | MUL { Ast.Bmul }
      | DIV { Ast.Bdiv }
+     | EXP { Ast.Bexp }
      | LT { Ast.Blt }
      | LE { Ast.Ble }
      | GT { Ast.Bgt }

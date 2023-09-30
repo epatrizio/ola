@@ -11,6 +11,10 @@ print(10+false) -- ko
 -- print(-false)   -- ko
 -- print(-"str")   -- ko
 
+-- print(42^nil)   -- ko
+-- print(42^true)  -- ko
+-- print(42^"str") -- ko
+
 -- print(1 < true) -- ko todo
 -- print(1 < nil)  -- ko todo
 
