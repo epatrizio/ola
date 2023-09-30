@@ -84,6 +84,19 @@ print(4.^2.)
 print(4.^2.123)
 print(0^2)
 print(4^0.0)
+-- floor division
+print(1//2)
+print(1%2)
+print(1.0//2)
+print(1%2.0)
+print(1.0//2.0)
+print(1.0%2.0)
+print(10.0123//2.234)
+print(10.0123%2.234)
+print(-10.0123//-2.234)
+print(-10.0123%-2.234)
+-- print(1//0)  -- todo error div by 0
+print(1.//0)    -- inf
 
 -- string
 

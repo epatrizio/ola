@@ -38,6 +38,8 @@ type binop =
   | Bsub
   | Bmul
   | Bdiv
+  | Bfldiv
+  | Bmod
   | Bexp
   | Beq
   | Bneq
@@ -83,6 +85,8 @@ let print_binop fmt binop =
   | Bsub -> Format.pp_print_string fmt "-"
   | Bmul -> Format.pp_print_string fmt "*"
   | Bdiv -> Format.pp_print_string fmt "/"
+  | Bfldiv -> Format.pp_print_string fmt "//"
+  | Bmod -> Format.pp_print_string fmt "%"
   | Bexp -> Format.pp_print_string fmt "^"
   | Blt -> Format.pp_print_string fmt "<"
   | Ble -> Format.pp_print_string fmt "<="

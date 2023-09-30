@@ -94,6 +94,8 @@ let rec token buf =
   | '-' -> MINUS
   | '*' -> MUL
   | '/' -> DIV
+  | "//" -> FLDIV
+  | '%' -> MOD
   | '^' -> EXP
   | '#' -> SHARP
   | '<' -> LT

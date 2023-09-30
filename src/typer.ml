@@ -30,8 +30,7 @@ let rec typecheck_expr expr =
     let typ2 = typecheck_expr expr2 in
     match (typ1, typ2) with
     | Tnumber Tinteger, Tnumber Tinteger ->
-      if binop = Bdiv || binop = Bexp then Tnumber Tfloat
-      else Tnumber Tinteger
+      if binop = Bdiv || binop = Bexp then Tnumber Tfloat else Tnumber Tinteger
     | Tnumber Tfloat, Tnumber Tfloat
     | Tnumber Tinteger, Tnumber Tfloat
     | Tnumber Tfloat, Tnumber Tinteger ->
@@ -81,6 +80,8 @@ let rec typecheck_expr expr =
   | Ebinop (Bsub, e1, e2) -> typecheck_arith_binop Bsub e1 e2
   | Ebinop (Bmul, e1, e2) -> typecheck_arith_binop Bmul e1 e2
   | Ebinop (Bdiv, e1, e2) -> typecheck_arith_binop Bdiv e1 e2
+  | Ebinop (Bfldiv, e1, e2) -> typecheck_arith_binop Bfldiv e1 e2
+  | Ebinop (Bmod, e1, e2) -> typecheck_arith_binop Bmod e1 e2
   | Ebinop (Bexp, e1, e2) -> typecheck_arith_binop Bexp e1 e2
   | Ebinop (Blt, _, _)
   | Ebinop (Ble, _, _)

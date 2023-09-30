@@ -27,7 +27,10 @@ let rec interpret_expr expr =
         | Bsub -> Vnumber (Ninteger (i1 - i2))
         | Bmul -> Vnumber (Ninteger (i1 * i2))
         | Bdiv -> Vnumber (Nfloat (float_of_int i1 /. float_of_int i2))
-        | Bexp -> Vnumber (Nfloat (Float.pow (float_of_int i1) (float_of_int i2)))
+        | Bfldiv -> Vnumber (Ninteger (i1 / i2)) (* todo div by 0 error *)
+        | Bmod -> Vnumber (Ninteger (i1 mod i2))
+        | Bexp ->
+          Vnumber (Nfloat (Float.pow (float_of_int i1) (float_of_int i2)))
         | Blt -> Vboolean (i1 < i2)
         | Ble -> Vboolean (i1 <= i2)
         | Bgt -> Vboolean (i1 > i2)
@@ -42,6 +45,13 @@ let rec interpret_expr expr =
         | Bsub -> Vnumber (Nfloat (f -. float_of_int i))
         | Bmul -> Vnumber (Nfloat (f *. float_of_int i))
         | Bdiv -> Vnumber (Nfloat (f /. float_of_int i))
+        | Bfldiv ->
+          let _, q = Float.modf (f /. float_of_int i) in
+          Vnumber (Nfloat q)
+        | Bmod ->
+          let fi = float_of_int i in
+          let _, q = Float.modf (f /. fi) in
+          Vnumber (Nfloat (f -. (fi *. q)))
         | Bexp -> Vnumber (Nfloat (Float.pow f (float_of_int i)))
         | Blt -> Vboolean (f < float_of_int i)
         | Ble -> Vboolean (f <= float_of_int i)
@@ -57,6 +67,13 @@ let rec interpret_expr expr =
         | Bsub -> Vnumber (Nfloat (float_of_int i -. f))
         | Bmul -> Vnumber (Nfloat (float_of_int i *. f))
         | Bdiv -> Vnumber (Nfloat (float_of_int i /. f))
+        | Bfldiv ->
+          let _, q = Float.modf (float_of_int i /. f) in
+          Vnumber (Nfloat q)
+        | Bmod ->
+          let fi = float_of_int i in
+          let _, q = Float.modf (fi /. f) in
+          Vnumber (Nfloat (fi -. (f *. q)))
         | Bexp -> Vnumber (Nfloat (Float.pow (float_of_int i) f))
         | Blt -> Vboolean (float_of_int i < f)
         | Ble -> Vboolean (float_of_int i <= f)
@@ -72,6 +89,12 @@ let rec interpret_expr expr =
         | Bsub -> Vnumber (Nfloat (f1 -. f2))
         | Bmul -> Vnumber (Nfloat (f1 *. f2))
         | Bdiv -> Vnumber (Nfloat (f1 /. f2))
+        | Bfldiv ->
+          let _, q = Float.modf (f1 /. f2) in
+          Vnumber (Nfloat q)
+        | Bmod ->
+          let _, q = Float.modf (f1 /. f2) in
+          Vnumber (Nfloat (f1 -. (f2 *. q)))
         | Bexp -> Vnumber (Nfloat (Float.pow f1 f2))
         | Blt -> Vboolean (f1 < f2)
         | Ble -> Vboolean (f1 <= f2)
@@ -140,6 +163,8 @@ let rec interpret_expr expr =
   | Ebinop (Bsub, e1, e2) -> interpret_ibinop_expr Bsub e1 e2
   | Ebinop (Bmul, e1, e2) -> interpret_ibinop_expr Bmul e1 e2
   | Ebinop (Bdiv, e1, e2) -> interpret_ibinop_expr Bdiv e1 e2
+  | Ebinop (Bfldiv, e1, e2) -> interpret_ibinop_expr Bfldiv e1 e2
+  | Ebinop (Bmod, e1, e2) -> interpret_ibinop_expr Bmod e1 e2
   | Ebinop (Bexp, e1, e2) -> interpret_ibinop_expr Bexp e1 e2
   | Ebinop (Blt, e1, e2) -> interpret_ibinop_expr Blt e1 e2
   | Ebinop (Ble, e1, e2) -> interpret_ibinop_expr Ble e1 e2
