@@ -182,10 +182,20 @@ let rec interpret_stmt stmt =
     let v = interpret_expr e in
     begin
       match v with
-      | Vboolean cond -> if cond then interpret_block b else ()
+      | Vboolean cond ->
+        if cond then begin interpret_block b; interpret_stmt (Swhile (e, b)) end
       | _ -> assert false (* typing error *)
     end
-  | Sprint e ->
+    | Srepeat (b, e) ->
+      let v = interpret_expr e in
+      begin
+        match v with
+        | Vboolean cond ->
+          interpret_block b;
+          if not cond then interpret_stmt (Srepeat (b, e))
+        | _ -> assert false (* typing error *)
+      end
+    | Sprint e ->
     print_value Format.std_formatter (interpret_expr e);
     Format.fprintf Format.std_formatter "@."
 

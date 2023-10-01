@@ -97,6 +97,7 @@ let rec typecheck_stmt stmt =
   | Sempty -> ()
   | Sblock b -> typecheck_block b
   | Swhile (_e, b) -> typecheck_block b
+  | Srepeat (b, _e) -> typecheck_block b
   | Sprint e ->
     let _ = typecheck_expr e in
     ()

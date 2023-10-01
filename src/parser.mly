@@ -5,7 +5,7 @@
 %token PLUS MINUS MUL DIV FLDIV MOD EXP DDOT LPAREN RPAREN SEMICOLON     // COMMA
 %token LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR
-%token DO END WHILE
+%token DO END WHILE REPEAT UNTIL
 %token PRINT
 %token EOF
 
@@ -41,6 +41,7 @@ stmt :
      | SEMICOLON { Ast.Sempty }
      | DO b=block END { Ast.Sblock b }
      | WHILE e=expr DO b=block END { Ast.Swhile (e, b) }
+     | REPEAT b=block UNTIL e=expr { Ast.Srepeat (b, e) }
      | PRINT LPAREN e=expr RPAREN { Ast.Sprint e }          // tmp
      ;
 

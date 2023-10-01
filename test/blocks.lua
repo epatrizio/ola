@@ -9,9 +9,13 @@ do
     print(3);
 end
 
-while false
+while 1 > 2
     do
         print(4)
     end
+
+repeat
+    print(4)
+until 1 < 2
 
 print(0)

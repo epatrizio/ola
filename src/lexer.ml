@@ -113,6 +113,8 @@ let rec token buf =
   | "while" -> WHILE
   | "do" -> DO
   | "end" -> END
+  | "repeat" -> REPEAT
+  | "until" -> UNTIL
   | "print" -> PRINT
   | "--" -> comment buf
   | "--[[" -> multiline_comment buf

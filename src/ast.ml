@@ -59,6 +59,7 @@ type stmt =
   | Sempty
   | Sblock of block
   | Swhile of expr * block
+  | Srepeat of block * expr
   (* | Sassign of var list * expr list *)
   | Sprint of expr
 
@@ -127,9 +128,15 @@ let rec print_stmt fmt stmt =
   | Swhile (e, b) ->
     Format.fprintf fmt "while ";
     print_expr fmt e;
-    Format.fprintf fmt "do";
+    Format.fprintf fmt "@.do ";
     print_block fmt b;
     Format.fprintf fmt "end@."
+  | Srepeat (b, e) ->
+    Format.fprintf fmt "repeat ";
+    print_block fmt b;
+    Format.fprintf fmt "@.until ";
+    print_expr fmt e;
+    Format.fprintf fmt "@."
   | Sprint e ->
     Format.fprintf fmt "print(";
     print_expr fmt e;
