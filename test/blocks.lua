@@ -18,4 +18,11 @@ repeat
     print(4)
 until 1 < 2
 
+if true then print(42) end
+if false then print(24) else print(42) end
+
+if false then print(241)
+elseif false then print(242) elseif true then print(42)
+else print(243) end
+
 print(0)

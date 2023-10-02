@@ -2,15 +2,15 @@
 
 %{ %}
 
-%token PLUS MINUS MUL DIV FLDIV MOD EXP DDOT LPAREN RPAREN SEMICOLON     // COMMA
-%token LT LE GT GE EQ NEQ
+%token PLUS MINUS MUL DIV FLDIV MOD EXP DDOT LPAREN RPAREN SEMICOLON COMMA
+%token AEQ LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR
-%token DO END WHILE REPEAT UNTIL
+%token DO END WHILE REPEAT UNTIL IF THEN ELSE ELSEIF
 %token PRINT
 %token EOF
 
+%token <Ast.var> VAR
 %token <Ast.value> VALUE
-%token <Ast.ident> IDENT
 
 %left MINUS PLUS
 %left MUL DIV
@@ -37,11 +37,19 @@ block :
      | l=list(stmt) { l }
      ;
 
+elseif :
+     | ELSEIF e=expr THEN b=block { (e, b) }
+
+elseop :
+     | ELSE b=block { b }
+
 stmt :
      | SEMICOLON { Ast.Sempty }
+     | vl=separated_nonempty_list(COMMA, VAR) AEQ el=separated_nonempty_list(COMMA, expr) { Ast.Sassign (vl, el) }
      | DO b=block END { Ast.Sblock b }
      | WHILE e=expr DO b=block END { Ast.Swhile (e, b) }
      | REPEAT b=block UNTIL e=expr { Ast.Srepeat (b, e) }
+     | IF e=expr THEN b=block l=list(elseif) o=option(elseop) END { Ast.Sif (e, b, l, o) }
      | PRINT LPAREN e=expr RPAREN { Ast.Sprint e }          // tmp
      ;
 
@@ -71,19 +79,11 @@ binop :
      ;
 
 expr :
+     | v=VAR { Ast.Evar v }
      | v=VALUE { Ast.Evalue v }
-     | i=IDENT { Ast.Eident i }
      | op=unop e=expr %prec uminus { Ast.Eunop (op, e) }
      | e1=expr op=binop e2=expr { Ast.Ebinop (op, e1, e2) }
      | LPAREN e=expr RPAREN { e }
      ;
-
-// expr_list :
-//      | { [] }
-//      | e=expr { [e] }
-//      | e=expr COMMA l=expr_list { e :: l }
-//      | l=separated_list(COMA, expr) { l }
-//      | l=list(expr) { l }
-//      ;
 
 %%

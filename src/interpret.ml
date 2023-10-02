@@ -134,7 +134,7 @@ let rec interpret_expr expr =
   | Evalue (Vnumber (Ninteger i)) -> Vnumber (Ninteger i)
   | Evalue (Vnumber (Nfloat f)) -> Vnumber (Nfloat f)
   | Evalue (Vstring s) -> Vstring s
-  | Eident _i -> assert false
+  | Evar _v -> Vnil () (* todo: to be implemented *)
   | Eunop (Unot, e) ->
     let v = interpret_expr e in
     begin
@@ -177,25 +177,30 @@ let rec interpret_expr expr =
 let rec interpret_stmt stmt =
   match stmt with
   | Sempty -> ()
+  | Sassign (_il, _el) -> () (* todo: to be implemented *)
   | Sblock b -> interpret_block b
   | Swhile (e, b) ->
     let v = interpret_expr e in
     begin
       match v with
       | Vboolean cond ->
-        if cond then begin interpret_block b; interpret_stmt (Swhile (e, b)) end
+        if cond then begin
+          interpret_block b;
+          interpret_stmt (Swhile (e, b))
+        end
       | _ -> assert false (* typing error *)
     end
-    | Srepeat (b, e) ->
-      let v = interpret_expr e in
-      begin
-        match v with
-        | Vboolean cond ->
-          interpret_block b;
-          if not cond then interpret_stmt (Srepeat (b, e))
-        | _ -> assert false (* typing error *)
-      end
-    | Sprint e ->
+  | Srepeat (b, e) ->
+    let v = interpret_expr e in
+    begin
+      match v with
+      | Vboolean cond ->
+        interpret_block b;
+        if not cond then interpret_stmt (Srepeat (b, e))
+      | _ -> assert false (* typing error *)
+    end
+  | Sif (_e, _b, _ebl, _ob) -> () (* todo: to be implemented *)
+  | Sprint e ->
     print_value Format.std_formatter (interpret_expr e);
     Format.fprintf Format.std_formatter "@."
 

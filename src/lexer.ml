@@ -50,6 +50,8 @@ let digit = [%sedlex.regexp? '0' .. '9']
 
 let letter = [%sedlex.regexp? 'a' .. 'z' | 'A' .. 'Z']
 
+let var = [%sedlex.regexp? Plus (letter | digit | '_')]
+
 let hexdigit = [%sedlex.regexp? digit | 'a' .. 'f' | 'A' .. 'F']
 
 let blank = [%sedlex.regexp? ' ' | '\t']
@@ -88,7 +90,7 @@ let rec token buf =
     let s = String.sub s 1 (String.length s - 2) in
     let s = mk_string buf s in
     VALUE (Vstring s)
-  (* | ',' -> COMMA *)
+  | ',' -> COMMA
   | ';' -> SEMICOLON
   | '+' -> PLUS
   | '-' -> MINUS
@@ -98,6 +100,7 @@ let rec token buf =
   | '%' -> MOD
   | '^' -> EXP
   | '#' -> SHARP
+  | '=' -> AEQ
   | '<' -> LT
   | "<=" -> LE
   | '>' -> GT
@@ -115,9 +118,14 @@ let rec token buf =
   | "end" -> END
   | "repeat" -> REPEAT
   | "until" -> UNTIL
+  | "if" -> IF
+  | "then" -> THEN
+  | "else" -> ELSE
+  | "elseif" -> ELSEIF
   | "print" -> PRINT
   | "--" -> comment buf
   | "--[[" -> multiline_comment buf
+  | var -> VAR (Sedlexing.Latin1.lexeme buf)
   | eof -> EOF
   | _ -> error "Unexpected character"
 

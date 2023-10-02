@@ -1,2 +1,2 @@
 (cram
- (deps basics.lua blocks.lua len.lua typer.lua))
+ (deps assign.lua basics.lua blocks.lua len.lua typer.lua))

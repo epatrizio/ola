@@ -24,7 +24,7 @@ type value =
   | Vnumber of number
   | Vstring of string
 
-type ident = string
+type var = string
 
 type unop =
   | Unot
@@ -51,16 +51,17 @@ type binop =
 
 type expr =
   | Evalue of value
-  | Eident of ident
+  | Evar of var
   | Eunop of unop * expr
   | Ebinop of binop * expr * expr
 
 type stmt =
   | Sempty
+  | Sassign of var list * expr list
   | Sblock of block
   | Swhile of expr * block
   | Srepeat of block * expr
-  (* | Sassign of var list * expr list *)
+  | Sif of expr * block * (expr * block) list * block option
   | Sprint of expr
 
 and block = stmt list
@@ -69,8 +70,7 @@ type chunk = block
 
 (* pretty printer *)
 
-let print_ident fmt ident =
-  match ident with ident -> Format.pp_print_string fmt ident
+let print_var fmt var = match var with var -> Format.pp_print_string fmt var
 
 let print_unop fmt unop =
   match unop with
@@ -112,7 +112,7 @@ let print_value fmt value =
 let rec print_expr fmt expr =
   match expr with
   | Evalue v -> print_value fmt v
-  | Eident i -> print_ident fmt i
+  | Evar i -> print_var fmt i
   | Eunop (uop, e) ->
     print_unop fmt uop;
     print_expr fmt e
@@ -124,6 +124,12 @@ let rec print_expr fmt expr =
 let rec print_stmt fmt stmt =
   match stmt with
   | Sempty -> Format.fprintf fmt ""
+  | Sassign (il, el) ->
+    let pp_sep fmt () = Format.fprintf fmt ", " in
+    Format.pp_print_list ~pp_sep print_var fmt il;
+    Format.fprintf fmt " = ";
+    Format.pp_print_list ~pp_sep print_expr fmt el;
+    Format.fprintf fmt "@."
   | Sblock b -> print_block fmt b
   | Swhile (e, b) ->
     Format.fprintf fmt "while ";
@@ -137,13 +143,32 @@ let rec print_stmt fmt stmt =
     Format.fprintf fmt "@.until ";
     print_expr fmt e;
     Format.fprintf fmt "@."
+  | Sif (e, b, ebl, ob) ->
+    let print_elseif fmt (e, b) =
+      Format.fprintf fmt "elseif ";
+      print_expr fmt e;
+      Format.fprintf fmt " then ";
+      print_block fmt b
+    in
+    Format.fprintf fmt "if ";
+    print_expr fmt e;
+    Format.fprintf fmt " then ";
+    print_block fmt b;
+    Format.pp_print_list print_elseif fmt ebl;
+    begin
+      match ob with
+      | Some b ->
+        Format.fprintf fmt "else ";
+        print_block fmt b
+      | None -> ()
+    end
   | Sprint e ->
     Format.fprintf fmt "print(";
     print_expr fmt e;
     Format.fprintf fmt ")@."
 
 and print_block fmt block =
-  let pp_sep fmt () = Format.fprintf fmt "" in
+  let pp_sep _fmt () = () in
   Format.pp_print_list ~pp_sep print_stmt fmt block
 
 let print_chunk fmt chunk = print_block fmt chunk

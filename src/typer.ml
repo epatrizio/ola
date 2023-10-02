@@ -63,7 +63,7 @@ let rec typecheck_expr expr =
   in
   match expr with
   | Evalue v -> typecheck_value v
-  | Eident _i -> Tnil (* TODO *)
+  | Evar _v -> Tnil (* TODO *)
   | Eunop (Unot, _) -> Tboolean
   | Eunop (Uminus, e) -> typecheck_arith_unop e
   | Eunop (Usharp, e) ->
@@ -95,9 +95,11 @@ let rec typecheck_expr expr =
 let rec typecheck_stmt stmt =
   match stmt with
   | Sempty -> ()
+  | Sassign (_il, _el) -> () (* todo: to be implemented *)
   | Sblock b -> typecheck_block b
   | Swhile (_e, b) -> typecheck_block b
   | Srepeat (b, _e) -> typecheck_block b
+  | Sif (_e, _b, _ebl, _ob) -> () (* todo: to be implemented *)
   | Sprint e ->
     let _ = typecheck_expr e in
     ()
