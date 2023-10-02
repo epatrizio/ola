@@ -18,6 +18,21 @@ repeat
     print(4)
 until 1 < 2
 
+-- init, max/min value, incr (1:default)
+for i = 5,10,1
+    do
+        print(i)
+        break
+    end
+--for i=1,f(x) do print(i) end
+
+-- for iterator (todo)
+-- a = {"one", "two", "three"}
+-- for i, v in ipairs(a) do
+--   print(i)
+--   print(v)
+-- end
+
 if true then print(42) end
 if false then print(24) else print(42) end
 

@@ -178,6 +178,7 @@ let rec interpret_stmt stmt =
   match stmt with
   | Sempty -> ()
   | Sassign (_il, _el) -> () (* todo: to be implemented *)
+  | Sbreak -> () (* todo: to be implemented *)
   | Slabel _n -> () (* todo: to be implemented *)
   | Sgoto _n -> () (* todo: to be implemented *)
   | Sblock b -> interpret_block b
@@ -202,6 +203,8 @@ let rec interpret_stmt stmt =
       | _ -> assert false (* typing error *)
     end
   | Sif (_e, _b, _ebl, _ob) -> () (* todo: to be implemented *)
+  | Sfor (_n, _e1, _e2, _oe, _b) -> () (* todo: to be implemented *)
+  | Siterator (_nl, _el, _b) -> () (* todo: to be implemented *)
   | Sprint e ->
     print_value Format.std_formatter (interpret_expr e);
     Format.fprintf Format.std_formatter "@."

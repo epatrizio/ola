@@ -115,7 +115,10 @@ let rec token buf =
   | "not" -> NOT
   | "and" -> AND
   | "or" -> OR
+  | "break" -> BREAK
   | "while" -> WHILE
+  | "for" -> FOR
+  | "in" -> IN
   | "do" -> DO
   | "end" -> END
   | "repeat" -> REPEAT

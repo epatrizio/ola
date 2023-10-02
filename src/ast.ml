@@ -60,12 +60,15 @@ type expr =
 type stmt =
   | Sempty
   | Sassign of var list * expr list
+  | Sbreak
   | Slabel of name
   | Sgoto of name
   | Sblock of block
   | Swhile of expr * block
   | Srepeat of block * expr
   | Sif of expr * block * (expr * block) list * block option
+  | Sfor of name * expr * expr * expr option * block
+  | Siterator of name list * expr list * block
   | Sprint of expr
 
 and block = stmt list
@@ -126,14 +129,15 @@ let rec print_expr fmt expr =
     print_expr fmt e2
 
 let rec print_stmt fmt stmt =
+  let pp_sep fmt () = Format.fprintf fmt ", " in
   match stmt with
   | Sempty -> Format.fprintf fmt ""
   | Sassign (il, el) ->
-    let pp_sep fmt () = Format.fprintf fmt ", " in
     Format.pp_print_list ~pp_sep print_var fmt il;
     Format.fprintf fmt " = ";
     Format.pp_print_list ~pp_sep print_expr fmt el;
     Format.fprintf fmt "@."
+  | Sbreak -> Format.fprintf fmt "break@."
   | Slabel n ->
     Format.fprintf fmt "::";
     Format.pp_print_string fmt n;
@@ -174,6 +178,31 @@ let rec print_stmt fmt stmt =
         print_block fmt b
       | None -> ()
     end
+  | Sfor (n, e1, e2, oe, b) ->
+    Format.fprintf fmt "for ";
+    Format.pp_print_string fmt n;
+    Format.fprintf fmt " = ";
+    print_expr fmt e1;
+    Format.fprintf fmt ", ";
+    print_expr fmt e2;
+    begin
+      match oe with
+      | Some e3 ->
+        Format.fprintf fmt ", ";
+        print_expr fmt e3
+      | None -> ()
+    end;
+    Format.fprintf fmt "@.do ";
+    print_block fmt b;
+    Format.fprintf fmt "end@."
+  | Siterator (nl, el, b) ->
+    Format.fprintf fmt "for ";
+    Format.pp_print_list ~pp_sep Format.pp_print_string fmt nl;
+    Format.fprintf fmt " = ";
+    Format.pp_print_list ~pp_sep print_expr fmt el;
+    Format.fprintf fmt "@.do ";
+    print_block fmt b;
+    Format.fprintf fmt "end@."
   | Sprint e ->
     Format.fprintf fmt "print(";
     print_expr fmt e;

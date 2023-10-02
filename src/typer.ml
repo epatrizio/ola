@@ -96,12 +96,15 @@ let rec typecheck_stmt stmt =
   match stmt with
   | Sempty -> ()
   | Sassign (_il, _el) -> () (* todo: to be implemented *)
+  | Sbreak -> ()
   | Slabel _ -> ()
   | Sgoto _ -> ()
   | Sblock b -> typecheck_block b
   | Swhile (_e, b) -> typecheck_block b
   | Srepeat (b, _e) -> typecheck_block b
   | Sif (_e, _b, _ebl, _ob) -> () (* todo: to be implemented *)
+  | Sfor (_n, _e1, _e2, _oe, _b) -> () (* todo: to be implemented *)
+  | Siterator (_nl, _el, _b) -> () (* todo: to be implemented *)
   | Sprint e ->
     let _ = typecheck_expr e in
     ()
