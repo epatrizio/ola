@@ -178,6 +178,8 @@ let rec interpret_stmt stmt =
   match stmt with
   | Sempty -> ()
   | Sassign (_il, _el) -> () (* todo: to be implemented *)
+  | Slabel _n -> () (* todo: to be implemented *)
+  | Sgoto _n -> () (* todo: to be implemented *)
   | Sblock b -> interpret_block b
   | Swhile (e, b) ->
     let v = interpret_expr e in

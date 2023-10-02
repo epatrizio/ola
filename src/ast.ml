@@ -24,7 +24,9 @@ type value =
   | Vnumber of number
   | Vstring of string
 
-type var = string
+type name = string
+
+type var = Name of name
 
 type unop =
   | Unot
@@ -58,6 +60,8 @@ type expr =
 type stmt =
   | Sempty
   | Sassign of var list * expr list
+  | Slabel of name
+  | Sgoto of name
   | Sblock of block
   | Swhile of expr * block
   | Srepeat of block * expr
@@ -70,7 +74,7 @@ type chunk = block
 
 (* pretty printer *)
 
-let print_var fmt var = match var with var -> Format.pp_print_string fmt var
+let print_var fmt var = match var with Name n -> Format.pp_print_string fmt n
 
 let print_unop fmt unop =
   match unop with
@@ -129,6 +133,14 @@ let rec print_stmt fmt stmt =
     Format.pp_print_list ~pp_sep print_var fmt il;
     Format.fprintf fmt " = ";
     Format.pp_print_list ~pp_sep print_expr fmt el;
+    Format.fprintf fmt "@."
+  | Slabel n ->
+    Format.fprintf fmt "::";
+    Format.pp_print_string fmt n;
+    Format.fprintf fmt "::@."
+  | Sgoto n ->
+    Format.fprintf fmt "goto ";
+    Format.pp_print_string fmt n;
     Format.fprintf fmt "@."
   | Sblock b -> print_block fmt b
   | Swhile (e, b) ->

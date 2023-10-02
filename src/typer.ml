@@ -96,6 +96,8 @@ let rec typecheck_stmt stmt =
   match stmt with
   | Sempty -> ()
   | Sassign (_il, _el) -> () (* todo: to be implemented *)
+  | Slabel _ -> ()
+  | Sgoto _ -> ()
   | Sblock b -> typecheck_block b
   | Swhile (_e, b) -> typecheck_block b
   | Srepeat (b, _e) -> typecheck_block b

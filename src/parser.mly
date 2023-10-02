@@ -2,14 +2,15 @@
 
 %{ %}
 
-%token PLUS MINUS MUL DIV FLDIV MOD EXP DDOT LPAREN RPAREN SEMICOLON COMMA
+%token PLUS MINUS MUL DIV FLDIV MOD EXP DDOT LPAREN RPAREN
+%token COLON DCOLON SEMICOLON COMMA
 %token AEQ LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR
-%token DO END WHILE REPEAT UNTIL IF THEN ELSE ELSEIF
+%token DO END WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO
 %token PRINT
 %token EOF
 
-%token <Ast.var> VAR
+%token <Ast.name> NAME
 %token <Ast.value> VALUE
 
 %left MINUS PLUS
@@ -45,7 +46,9 @@ elseop :
 
 stmt :
      | SEMICOLON { Ast.Sempty }
-     | vl=separated_nonempty_list(COMMA, VAR) AEQ el=separated_nonempty_list(COMMA, expr) { Ast.Sassign (vl, el) }
+     | vl=separated_nonempty_list(COMMA, var) AEQ el=separated_nonempty_list(COMMA, expr) { Ast.Sassign (vl, el) }
+     | DCOLON n=NAME DCOLON { Ast.Slabel n }
+     | GOTO n=NAME { Ast.Sgoto n }
      | DO b=block END { Ast.Sblock b }
      | WHILE e=expr DO b=block END { Ast.Swhile (e, b) }
      | REPEAT b=block UNTIL e=expr { Ast.Srepeat (b, e) }
@@ -78,8 +81,11 @@ binop :
      | DDOT { Ast.Bddot }
      ;
 
+var :
+     | n=NAME { Ast.Name n }
+
 expr :
-     | v=VAR { Ast.Evar v }
+     | v=var { Ast.Evar v }
      | v=VALUE { Ast.Evalue v }
      | op=unop e=expr %prec uminus { Ast.Eunop (op, e) }
      | e1=expr op=binop e2=expr { Ast.Ebinop (op, e1, e2) }
