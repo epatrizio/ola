@@ -2,9 +2,9 @@
 
 open Ast
 
-exception Typing_error of string
+exception Typing_error of location * string
 
-let error message = raise (Typing_error message)
+let error loc message = raise (Typing_error (loc, message))
 
 let rec typecheck_expr expr =
   let typecheck_value value =
@@ -16,16 +16,19 @@ let rec typecheck_expr expr =
     | Vstring _ -> Tstring
   in
   let typecheck_arith_unop expr =
+    let loc, _expr = expr in
     let typ = typecheck_expr expr in
     match typ with
     | Tnumber Tinteger -> Tnumber Tinteger
     | Tnumber Tfloat -> Tnumber Tfloat
-    | Tnil -> error "attempt to perform arithmetic on a nil value"
-    | Tboolean -> error "attempt to perform arithmetic on a boolean value"
-    | Tstring -> error "attempt to perform arithmetic on a string value"
+    | Tnil -> error loc "attempt to perform arithmetic on a nil value"
+    | Tboolean -> error loc "attempt to perform arithmetic on a boolean value"
+    | Tstring -> error loc "attempt to perform arithmetic on a string value"
     | _ -> assert false (* call error *)
   in
   let typecheck_arith_binop binop expr1 expr2 =
+    let loc1, _expr1 = expr1 in
+    let loc2, _expr2 = expr2 in
     let typ1 = typecheck_expr expr1 in
     let typ2 = typecheck_expr expr2 in
     match (typ1, typ2) with
@@ -35,14 +38,19 @@ let rec typecheck_expr expr =
     | Tnumber Tinteger, Tnumber Tfloat
     | Tnumber Tfloat, Tnumber Tinteger ->
       Tnumber Tfloat
-    | Tnil, _ | _, Tnil -> error "attempt to perform arithmetic on a nil value"
-    | Tboolean, _ | _, Tboolean ->
-      error "attempt to perform arithmetic on a boolean value"
-    | Tstring, _ | _, Tstring ->
-      error "attempt to perform arithmetic on a string value"
+    | Tnil, _ -> error loc1 "attempt to perform arithmetic on a nil value"
+    | _, Tnil -> error loc2 "attempt to perform arithmetic on a nil value"
+    | Tboolean, _ ->
+      error loc1 "attempt to perform arithmetic on a boolean value"
+    | _, Tboolean ->
+      error loc2 "attempt to perform arithmetic on a boolean value"
+    | Tstring, _ -> error loc1 "attempt to perform arithmetic on a string value"
+    | _, Tstring -> error loc2 "attempt to perform arithmetic on a string value"
     | _ -> assert false (* call error *)
   in
   let typecheck_str_binop expr1 expr2 =
+    let loc1, _expr1 = expr1 in
+    let loc2, _expr2 = expr2 in
     let typ1 = typecheck_expr expr1 in
     let typ2 = typecheck_expr expr2 in
     match (typ1, typ2) with
@@ -56,41 +64,43 @@ let rec typecheck_expr expr =
     | Tnumber Tinteger, Tnumber Tfloat
     | Tnumber Tfloat, Tnumber Tinteger ->
       Tstring
-    | Tnil, _ | _, Tnil -> error "attempt to concatenate a nil value"
-    | Tboolean, _ | _, Tboolean ->
-      error "attempt to concatenate a boolean value"
+    | Tnil, _ -> error loc1 "attempt to concatenate a nil value"
+    | _, Tnil -> error loc2 "attempt to concatenate a nil value"
+    | Tboolean, _ -> error loc1 "attempt to concatenate a boolean value"
+    | _, Tboolean -> error loc2 "attempt to concatenate a boolean value"
     | _ -> assert false (* call error *)
   in
   match expr with
-  | Evalue v -> typecheck_value v
-  | Evar _v -> Tnil (* TODO *)
-  | Eunop (Unot, _) -> Tboolean
-  | Eunop (Uminus, e) -> typecheck_arith_unop e
-  | Eunop (Usharp, e) ->
+  | _loc, Evalue v -> typecheck_value v
+  | _loc, Evar _v -> Tnil (* TODO *)
+  | _loc, Eunop (Unot, _) -> Tboolean
+  | _loc, Eunop (Uminus, e) -> typecheck_arith_unop e
+  | _loc, Eunop (Usharp, e) ->
+    let l, _e = e in
     let typ = typecheck_expr e in
     begin
       match typ with
       | Tstring -> Tnumber Tinteger
       | Tnil | Tboolean | Tnumber _ ->
-        error "attempt to perform #operator on a not supported type"
-      | _ -> error "#operator on this type: to be implemented ..."
+        error l "attempt to perform #operator on a not supported type"
+      | _ -> error l "#operator on this type: to be implemented ..."
     end
-  | Ebinop (Band, _, _) | Ebinop (Bor, _, _) -> Tboolean (* TODO *)
-  | Ebinop (Badd, e1, e2) -> typecheck_arith_binop Badd e1 e2
-  | Ebinop (Bsub, e1, e2) -> typecheck_arith_binop Bsub e1 e2
-  | Ebinop (Bmul, e1, e2) -> typecheck_arith_binop Bmul e1 e2
-  | Ebinop (Bdiv, e1, e2) -> typecheck_arith_binop Bdiv e1 e2
-  | Ebinop (Bfldiv, e1, e2) -> typecheck_arith_binop Bfldiv e1 e2
-  | Ebinop (Bmod, e1, e2) -> typecheck_arith_binop Bmod e1 e2
-  | Ebinop (Bexp, e1, e2) -> typecheck_arith_binop Bexp e1 e2
-  | Ebinop (Blt, _, _)
-  | Ebinop (Ble, _, _)
-  | Ebinop (Bgt, _, _)
-  | Ebinop (Bge, _, _)
-  | Ebinop (Beq, _, _)
-  | Ebinop (Bneq, _, _) ->
+  | _loc, Ebinop (Band, _, _) | _loc, Ebinop (Bor, _, _) -> Tboolean (* TODO *)
+  | _loc, Ebinop (Badd, e1, e2) -> typecheck_arith_binop Badd e1 e2
+  | _loc, Ebinop (Bsub, e1, e2) -> typecheck_arith_binop Bsub e1 e2
+  | _loc, Ebinop (Bmul, e1, e2) -> typecheck_arith_binop Bmul e1 e2
+  | _loc, Ebinop (Bdiv, e1, e2) -> typecheck_arith_binop Bdiv e1 e2
+  | _loc, Ebinop (Bfldiv, e1, e2) -> typecheck_arith_binop Bfldiv e1 e2
+  | _loc, Ebinop (Bmod, e1, e2) -> typecheck_arith_binop Bmod e1 e2
+  | _loc, Ebinop (Bexp, e1, e2) -> typecheck_arith_binop Bexp e1 e2
+  | _loc, Ebinop (Blt, _, _)
+  | _loc, Ebinop (Ble, _, _)
+  | _loc, Ebinop (Bgt, _, _)
+  | _loc, Ebinop (Bge, _, _)
+  | _loc, Ebinop (Beq, _, _)
+  | _loc, Ebinop (Bneq, _, _) ->
     Tboolean (* TODO *)
-  | Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2
+  | _loc, Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2
 
 let rec typecheck_stmt stmt =
   match stmt with

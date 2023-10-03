@@ -2,9 +2,10 @@
 
 open Parser
 
-exception Lexing_error of string
+exception Lexing_error of string * int * int * string
 
-let error message = raise (Lexing_error message)
+let error ?(file = "") ?(line = 0) ?(char = 0) message =
+  raise (Lexing_error (file, line, char, message))
 
 (* Taken from https://github.com/OCamlPro/owi/blob/main/src/lexer.ml *)
 let mk_string _buf s =
@@ -133,7 +134,11 @@ let rec token buf =
   | "--[[" -> multiline_comment buf
   | name -> NAME (Sedlexing.Latin1.lexeme buf)
   | eof -> EOF
-  | _ -> error "Unexpected character"
+  | _ ->
+    let start, _stop = Sedlexing.lexing_positions buf in
+    error ~file:start.pos_fname ~line:start.pos_lnum
+      ~char:(start.pos_cnum - start.pos_bol)
+      ("unexpected lexeme: " ^ Sedlexing.Utf8.lexeme buf)
 
 and comment buf =
   match%sedlex buf with
@@ -145,6 +150,6 @@ and multiline_comment buf =
   match%sedlex buf with
   | "--]]" -> token buf
   | newline -> multiline_comment buf
-  | eof -> error "Unterminated comment"
+  | eof -> error "eof: unterminated comment"
   | any -> multiline_comment buf
   | _ -> assert false

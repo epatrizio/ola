@@ -26,7 +26,7 @@
 // %type <Ast.unop> unop
 // %type <Ast.binop> binop
 // %type <Ast.stmt> stmt
-// %type <Ast.expr> expr
+%type <Ast.expr'> expr
 // %type <Ast.stmt list> stmt_list
 // %type <Ast.expr list> expr_list
 
@@ -38,28 +38,31 @@ block :
      | l=list(stmt) { l }
      ;
 
+lexpr :
+     | e=expr { (($startpos,$endpos), e) }
+
 elseif :
-     | ELSEIF e=expr THEN b=block { (e, b) }
+     | ELSEIF e=lexpr THEN b=block { (e, b) }
 
 elseop :
      | ELSE b=block { b }
 
 cexpr :
-     | COMMA e=expr { e }
+     | COMMA e=lexpr { e }
 
 stmt :
      | SEMICOLON { Ast.Sempty }
-     | vl=separated_nonempty_list(COMMA, var) AEQ el=separated_nonempty_list(COMMA, expr) { Ast.Sassign (vl, el) }
+     | vl=separated_nonempty_list(COMMA, var) AEQ el=separated_nonempty_list(COMMA, lexpr) { Ast.Sassign (vl, el) }
      | BREAK { Ast.Sbreak }
      | DCOLON n=NAME DCOLON { Ast.Slabel n }
      | GOTO n=NAME { Ast.Sgoto n }
      | DO b=block END { Ast.Sblock b }
-     | WHILE e=expr DO b=block END { Ast.Swhile (e, b) }
-     | REPEAT b=block UNTIL e=expr { Ast.Srepeat (b, e) }
-     | IF e=expr THEN b=block l=list(elseif) o=option(elseop) END { Ast.Sif (e, b, l, o) }
-     | FOR n=NAME AEQ e1=expr COMMA e2=expr oe=option(cexpr) DO b=block END { Ast.Sfor (n, e1, e2, oe, b) }
-     | FOR nl=separated_nonempty_list(COMMA, NAME) IN el=separated_nonempty_list(COMMA, expr) DO b=block END { Ast.Siterator (nl, el, b) }
-     | PRINT LPAREN e=expr RPAREN { Ast.Sprint e }          // tmp
+     | WHILE e=lexpr DO b=block END { Ast.Swhile (e, b) }
+     | REPEAT b=block UNTIL e=lexpr { Ast.Srepeat (b, e) }
+     | IF e=lexpr THEN b=block l=list(elseif) o=option(elseop) END { Ast.Sif (e, b, l, o) }
+     | FOR n=NAME AEQ e1=lexpr COMMA e2=lexpr oe=option(cexpr) DO b=block END { Ast.Sfor (n, e1, e2, oe, b) }
+     | FOR nl=separated_nonempty_list(COMMA, NAME) IN el=separated_nonempty_list(COMMA, lexpr) DO b=block END { Ast.Siterator (nl, el, b) }
+     | PRINT LPAREN e=lexpr RPAREN { Ast.Sprint e }          // tmp
      ;
 
 unop :
@@ -93,8 +96,8 @@ var :
 expr :
      | v=var { Ast.Evar v }
      | v=VALUE { Ast.Evalue v }
-     | op=unop e=expr %prec uminus { Ast.Eunop (op, e) }
-     | e1=expr op=binop e2=expr { Ast.Ebinop (op, e1, e2) }
+     | op=unop e=lexpr %prec uminus { Ast.Eunop (op, e) }
+     | e1=lexpr op=binop e2=lexpr { Ast.Ebinop (op, e1, e2) }
      | LPAREN e=expr RPAREN { e }
      ;
 

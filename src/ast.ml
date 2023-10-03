@@ -1,5 +1,7 @@
 (* Abstract Syntax Tree *)
 
+type location = Lexing.position * Lexing.position
+
 type number_type =
   | Tinteger
   | Tfloat
@@ -51,7 +53,10 @@ type binop =
   | Bge
   | Bddot
 
-type expr =
+type expr = location * expr'
+
+and expr' =
+  (* type expr = *)
   | Evalue of value
   | Evar of var
   | Eunop of unop * expr
@@ -120,22 +125,23 @@ let rec print_expr fmt expr =
   match expr with
   | Evalue v -> print_value fmt v
   | Evar i -> print_var fmt i
-  | Eunop (uop, e) ->
+  | Eunop (uop, (_, e)) ->
     print_unop fmt uop;
     print_expr fmt e
-  | Ebinop (bop, e1, e2) ->
+  | Ebinop (bop, (_, e1), (_, e2)) ->
     print_expr fmt e1;
     print_binop fmt bop;
     print_expr fmt e2
 
 let rec print_stmt fmt stmt =
   let pp_sep fmt () = Format.fprintf fmt ", " in
+  let to_el = List.map (fun (_, e) -> e) in
   match stmt with
   | Sempty -> Format.fprintf fmt ""
-  | Sassign (il, el) ->
+  | Sassign (il, lel) ->
     Format.pp_print_list ~pp_sep print_var fmt il;
     Format.fprintf fmt " = ";
-    Format.pp_print_list ~pp_sep print_expr fmt el;
+    Format.pp_print_list ~pp_sep print_expr fmt (to_el lel);
     Format.fprintf fmt "@."
   | Sbreak -> Format.fprintf fmt "break@."
   | Slabel n ->
@@ -147,19 +153,20 @@ let rec print_stmt fmt stmt =
     Format.pp_print_string fmt n;
     Format.fprintf fmt "@."
   | Sblock b -> print_block fmt b
-  | Swhile (e, b) ->
+  | Swhile ((_, e), b) ->
     Format.fprintf fmt "while ";
     print_expr fmt e;
     Format.fprintf fmt "@.do ";
     print_block fmt b;
     Format.fprintf fmt "end@."
-  | Srepeat (b, e) ->
+  | Srepeat (b, (_, e)) ->
     Format.fprintf fmt "repeat ";
     print_block fmt b;
     Format.fprintf fmt "@.until ";
     print_expr fmt e;
     Format.fprintf fmt "@."
-  | Sif (e, b, ebl, ob) ->
+  | Sif ((_, e), b, lebl, ob) ->
+    let to_ebl = List.map (fun ((_, e), b) -> (e, b)) in
     let print_elseif fmt (e, b) =
       Format.fprintf fmt "elseif ";
       print_expr fmt e;
@@ -170,7 +177,7 @@ let rec print_stmt fmt stmt =
     print_expr fmt e;
     Format.fprintf fmt " then ";
     print_block fmt b;
-    Format.pp_print_list print_elseif fmt ebl;
+    Format.pp_print_list print_elseif fmt (to_ebl lebl);
     begin
       match ob with
       | Some b ->
@@ -178,7 +185,7 @@ let rec print_stmt fmt stmt =
         print_block fmt b
       | None -> ()
     end
-  | Sfor (n, e1, e2, oe, b) ->
+  | Sfor (n, (_, e1), (_, e2), oe, b) ->
     Format.fprintf fmt "for ";
     Format.pp_print_string fmt n;
     Format.fprintf fmt " = ";
@@ -187,7 +194,7 @@ let rec print_stmt fmt stmt =
     print_expr fmt e2;
     begin
       match oe with
-      | Some e3 ->
+      | Some (_, e3) ->
         Format.fprintf fmt ", ";
         print_expr fmt e3
       | None -> ()
@@ -195,15 +202,15 @@ let rec print_stmt fmt stmt =
     Format.fprintf fmt "@.do ";
     print_block fmt b;
     Format.fprintf fmt "end@."
-  | Siterator (nl, el, b) ->
+  | Siterator (nl, lel, b) ->
     Format.fprintf fmt "for ";
     Format.pp_print_list ~pp_sep Format.pp_print_string fmt nl;
     Format.fprintf fmt " = ";
-    Format.pp_print_list ~pp_sep print_expr fmt el;
+    Format.pp_print_list ~pp_sep print_expr fmt (to_el lel);
     Format.fprintf fmt "@.do ";
     print_block fmt b;
     Format.fprintf fmt "end@."
-  | Sprint e ->
+  | Sprint (_, e) ->
     Format.fprintf fmt "print(";
     print_expr fmt e;
     Format.fprintf fmt ")@."

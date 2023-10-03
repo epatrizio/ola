@@ -129,20 +129,20 @@ let rec interpret_expr expr =
     end
   in
   match expr with
-  | Evalue (Vnil _) -> Vnil ()
-  | Evalue (Vboolean b) -> Vboolean b
-  | Evalue (Vnumber (Ninteger i)) -> Vnumber (Ninteger i)
-  | Evalue (Vnumber (Nfloat f)) -> Vnumber (Nfloat f)
-  | Evalue (Vstring s) -> Vstring s
-  | Evar _v -> Vnil () (* todo: to be implemented *)
-  | Eunop (Unot, e) ->
+  | _loc, Evalue (Vnil _) -> Vnil ()
+  | _loc, Evalue (Vboolean b) -> Vboolean b
+  | _loc, Evalue (Vnumber (Ninteger i)) -> Vnumber (Ninteger i)
+  | _loc, Evalue (Vnumber (Nfloat f)) -> Vnumber (Nfloat f)
+  | _loc, Evalue (Vstring s) -> Vstring s
+  | _loc, Evar _v -> Vnil () (* todo: to be implemented *)
+  | _loc, Eunop (Unot, e) ->
     let v = interpret_expr e in
     begin
       match v with
       | Vboolean b -> Vboolean (not b)
       | _ -> assert false (* typing error *)
     end
-  | Eunop (Uminus, e) ->
+  | _loc, Eunop (Uminus, e) ->
     let v = interpret_expr e in
     begin
       match v with
@@ -150,29 +150,29 @@ let rec interpret_expr expr =
       | Vnumber (Nfloat f) -> Vnumber (Nfloat (-.f))
       | _ -> assert false (* typing error *)
     end
-  | Eunop (Usharp, e) ->
+  | _loc, Eunop (Usharp, e) ->
     let v = interpret_expr e in
     begin
       match v with
       | Vstring s -> Vnumber (Ninteger (String.length s))
       | _ -> assert false (* typing error *)
     end
-  | Ebinop (Band, e1, e2) -> interpret_bbinop_expr Band e1 e2
-  | Ebinop (Bor, e1, e2) -> interpret_bbinop_expr Bor e1 e2
-  | Ebinop (Badd, e1, e2) -> interpret_ibinop_expr Badd e1 e2
-  | Ebinop (Bsub, e1, e2) -> interpret_ibinop_expr Bsub e1 e2
-  | Ebinop (Bmul, e1, e2) -> interpret_ibinop_expr Bmul e1 e2
-  | Ebinop (Bdiv, e1, e2) -> interpret_ibinop_expr Bdiv e1 e2
-  | Ebinop (Bfldiv, e1, e2) -> interpret_ibinop_expr Bfldiv e1 e2
-  | Ebinop (Bmod, e1, e2) -> interpret_ibinop_expr Bmod e1 e2
-  | Ebinop (Bexp, e1, e2) -> interpret_ibinop_expr Bexp e1 e2
-  | Ebinop (Blt, e1, e2) -> interpret_ibinop_expr Blt e1 e2
-  | Ebinop (Ble, e1, e2) -> interpret_ibinop_expr Ble e1 e2
-  | Ebinop (Bgt, e1, e2) -> interpret_ibinop_expr Bgt e1 e2
-  | Ebinop (Bge, e1, e2) -> interpret_ibinop_expr Bge e1 e2
-  | Ebinop (Beq, e1, e2) -> interpret_ibinop_expr Beq e1 e2
-  | Ebinop (Bneq, e1, e2) -> interpret_ibinop_expr Bneq e1 e2
-  | Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2
+  | _loc, Ebinop (Band, e1, e2) -> interpret_bbinop_expr Band e1 e2
+  | _loc, Ebinop (Bor, e1, e2) -> interpret_bbinop_expr Bor e1 e2
+  | _loc, Ebinop (Badd, e1, e2) -> interpret_ibinop_expr Badd e1 e2
+  | _loc, Ebinop (Bsub, e1, e2) -> interpret_ibinop_expr Bsub e1 e2
+  | _loc, Ebinop (Bmul, e1, e2) -> interpret_ibinop_expr Bmul e1 e2
+  | _loc, Ebinop (Bdiv, e1, e2) -> interpret_ibinop_expr Bdiv e1 e2
+  | _loc, Ebinop (Bfldiv, e1, e2) -> interpret_ibinop_expr Bfldiv e1 e2
+  | _loc, Ebinop (Bmod, e1, e2) -> interpret_ibinop_expr Bmod e1 e2
+  | _loc, Ebinop (Bexp, e1, e2) -> interpret_ibinop_expr Bexp e1 e2
+  | _loc, Ebinop (Blt, e1, e2) -> interpret_ibinop_expr Blt e1 e2
+  | _loc, Ebinop (Ble, e1, e2) -> interpret_ibinop_expr Ble e1 e2
+  | _loc, Ebinop (Bgt, e1, e2) -> interpret_ibinop_expr Bgt e1 e2
+  | _loc, Ebinop (Bge, e1, e2) -> interpret_ibinop_expr Bge e1 e2
+  | _loc, Ebinop (Beq, e1, e2) -> interpret_ibinop_expr Beq e1 e2
+  | _loc, Ebinop (Bneq, e1, e2) -> interpret_ibinop_expr Bneq e1 e2
+  | _loc, Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2
 
 let rec interpret_stmt stmt =
   match stmt with
