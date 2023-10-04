@@ -103,22 +103,30 @@ let rec typecheck_expr expr =
   | _loc, Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2
 
 let rec typecheck_stmt stmt =
-  match stmt with
-  | Sempty -> ()
-  | Sassign (_il, _el) -> () (* todo: to be implemented *)
-  | Sbreak -> ()
-  | Slabel _ -> ()
-  | Sgoto _ -> ()
-  | Sblock b -> typecheck_block b
-  | Swhile (_e, b) -> typecheck_block b
-  | Srepeat (b, _e) -> typecheck_block b
-  | Sif (_e, _b, _ebl, _ob) -> () (* todo: to be implemented *)
-  | Sfor (_n, _e1, _e2, _oe, _b) -> () (* todo: to be implemented *)
-  | Siterator (_nl, _el, _b) -> () (* todo: to be implemented *)
-  | Sprint e ->
-    let _ = typecheck_expr e in
-    ()
+  try
+    match stmt with
+    | Sempty -> Ok ()
+    | Sassign (_il, _el) -> Ok () (* todo: to be implemented *)
+    | Sbreak -> Ok ()
+    | Slabel _ -> Ok ()
+    | Sgoto _ -> Ok ()
+    | Sblock b -> typecheck_block b
+    | Swhile (_e, b) -> typecheck_block b
+    | Srepeat (b, _e) -> typecheck_block b
+    | Sif (_e, _b, _ebl, _ob) -> Ok () (* todo: to be implemented *)
+    | Sfor (_n, _e1, _e2, _oe, _b) -> Ok () (* todo: to be implemented *)
+    | Siterator (_nl, _el, _b) -> Ok () (* todo: to be implemented *)
+    | Sprint e ->
+      let _ = typecheck_expr e in
+      Ok ()
+  with Typing_error (loc, message) -> Error (loc, message)
 
-and typecheck_block b = List.iter typecheck_stmt b
+and typecheck_block b =
+  match b with
+  | [] -> Ok ()
+  | [ s ] -> typecheck_stmt s
+  | s :: tl -> (
+    match typecheck_stmt s with Ok _ -> typecheck_block tl | e -> e )
+(* List.iter typecheck_stmt b *)
 
 let typecheck chunk = typecheck_block chunk

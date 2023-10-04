@@ -28,16 +28,26 @@ let process source_code_file no_typing debug =
       MenhirLib.Convert.Simplified.traditional2revised Parser.chunk
     in
     let chunk = parser lexer in
+    let typing_checks =
+      if not no_typing then begin
+        print_endline "typing checks ...";
+        Typer.typecheck chunk
+      end
+      else Ok ()
+    in
     if debug then begin
       print_endline "debug mode";
       Ast.print_chunk Format.std_formatter chunk
     end;
-    if not no_typing then begin
-      print_endline "typing checks ...";
-      Typer.typecheck chunk
+    begin
+      match typing_checks with
+      | Ok _ ->
+        print_endline "interprete ...";
+        Interpret.run chunk
+      | Error (loc, message) ->
+        eprintf "Typing error: %s@."
+          (Utils.location_info ~message:(Some message) loc)
     end;
-    print_endline "interprete ...";
-    Interpret.run chunk;
     close_in ic
   with
   | Lexer.Lexing_error message ->
@@ -47,10 +57,10 @@ let process source_code_file no_typing debug =
     let loc = Sedlexing.lexing_positions lexbuf in
     eprintf "Syntax error: %s@." (Utils.location_info ~message:None loc);
     exit 1
-  | Typer.Typing_error (loc, message) ->
-    eprintf "Typing error: %s@."
-      (Utils.location_info ~message:(Some message) loc);
-    exit 1
+(* | Typer.Typing_error (loc, message) ->
+   eprintf "Typing error: %s@."
+     (Utils.location_info ~message:(Some message) loc);
+   exit 1 *)
 
 (* OLA entry point : Lua language interpreter *)
 let () =
