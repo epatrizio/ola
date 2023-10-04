@@ -1,6 +1,6 @@
 (library
  (name ola)
- (modules ast lexer parser typer interpret)
+ (modules ast interpret lexer parser typer utils)
  (preprocess
   (pps sedlex.ppx))
  (libraries sedlex menhirLib))

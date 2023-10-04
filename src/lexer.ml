@@ -2,10 +2,9 @@
 
 open Parser
 
-exception Lexing_error of string * int * int * string
+exception Lexing_error of string
 
-let error ?(file = "") ?(line = 0) ?(char = 0) message =
-  raise (Lexing_error (file, line, char, message))
+let error message = raise (Lexing_error message)
 
 (* Taken from https://github.com/OCamlPro/owi/blob/main/src/lexer.ml *)
 let mk_string _buf s =
@@ -135,10 +134,10 @@ let rec token buf =
   | name -> NAME (Sedlexing.Latin1.lexeme buf)
   | eof -> EOF
   | _ ->
-    let start, _stop = Sedlexing.lexing_positions buf in
-    error ~file:start.pos_fname ~line:start.pos_lnum
-      ~char:(start.pos_cnum - start.pos_bol)
-      ("unexpected lexeme: " ^ Sedlexing.Utf8.lexeme buf)
+    error
+      (Utils.location_info
+         ~message:(Some ("unexpected lexeme: " ^ Sedlexing.Utf8.lexeme buf))
+         (Sedlexing.lexing_positions buf) )
 
 and comment buf =
   match%sedlex buf with

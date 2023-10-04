@@ -1,11 +1,6 @@
 open Format
 open Ola
 
-let localisation (pos : Lexing.position) filename =
-  let l = pos.pos_lnum in
-  let c = pos.pos_cnum - pos.pos_bol + 1 in
-  eprintf "File \"%s\", line %d, characters %d-%d:@." filename l (c - 1) c
-
 let debug = ref false
 
 let no_typing = ref false
@@ -24,9 +19,9 @@ let usage =
    [options]"
 
 let process source_code_file no_typing debug =
+  let ic = open_in source_code_file in
+  let lexbuf = Sedlexing.Utf8.from_channel ic in
   try
-    let ic = open_in source_code_file in
-    let lexbuf = Sedlexing.Utf8.from_channel ic in
     Sedlexing.set_filename lexbuf source_code_file;
     let lexer = Sedlexing.with_tokenizer Lexer.token lexbuf in
     let parser =
@@ -45,17 +40,16 @@ let process source_code_file no_typing debug =
     Interpret.run chunk;
     close_in ic
   with
-  | Lexer.Lexing_error (file, line, char, message) ->
-    eprintf "Lexical error: File %s, line %i, character %i: %s@." file line char
-      message;
+  | Lexer.Lexing_error message ->
+    eprintf "Lexical error: %s@." message;
     exit 1
   | Parser.Error ->
-    eprintf "Syntax error@.";
+    let loc = Sedlexing.lexing_positions lexbuf in
+    eprintf "Syntax error: %s@." (Utils.location_info ~message:None loc);
     exit 1
-  | Typer.Typing_error ((p1, p2), message) ->
-    localisation p1 source_code_file;
-    localisation p2 source_code_file;
-    eprintf "Typing error: %s@." message;
+  | Typer.Typing_error (loc, message) ->
+    eprintf "Typing error: %s@."
+      (Utils.location_info ~message:(Some message) loc);
     exit 1
 
 (* OLA entry point : Lua language interpreter *)
