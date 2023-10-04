@@ -139,81 +139,50 @@ let rec print_stmt fmt stmt =
   match stmt with
   | Sempty -> Format.fprintf fmt ""
   | Sassign (il, lel) ->
-    Format.pp_print_list ~pp_sep print_var fmt il;
-    Format.fprintf fmt " = ";
-    Format.pp_print_list ~pp_sep print_expr fmt (to_el lel);
-    Format.fprintf fmt "@."
+    Format.fprintf fmt "%a = %a@."
+      (Format.pp_print_list ~pp_sep print_var)
+      il
+      (Format.pp_print_list ~pp_sep print_expr)
+      (to_el lel)
   | Sbreak -> Format.fprintf fmt "break@."
-  | Slabel n ->
-    Format.fprintf fmt "::";
-    Format.pp_print_string fmt n;
-    Format.fprintf fmt "::@."
-  | Sgoto n ->
-    Format.fprintf fmt "goto ";
-    Format.pp_print_string fmt n;
-    Format.fprintf fmt "@."
+  | Slabel n -> Format.fprintf fmt "::%a::@." Format.pp_print_string n
+  | Sgoto n -> Format.fprintf fmt "goto %a@." Format.pp_print_string n
   | Sblock b -> print_block fmt b
   | Swhile ((_, e), b) ->
-    Format.fprintf fmt "while ";
-    print_expr fmt e;
-    Format.fprintf fmt "@.do ";
-    print_block fmt b;
-    Format.fprintf fmt "end@."
+    Format.fprintf fmt "while %a do@.@[<v>%a@]end@." print_expr e print_block b
   | Srepeat (b, (_, e)) ->
-    Format.fprintf fmt "repeat ";
-    print_block fmt b;
-    Format.fprintf fmt "@.until ";
-    print_expr fmt e;
-    Format.fprintf fmt "@."
+    Format.fprintf fmt "repeat@.@[<v>%a@]until %a@." print_block b print_expr e
   | Sif ((_, e), b, lebl, ob) ->
     let to_ebl = List.map (fun ((_, e), b) -> (e, b)) in
     let print_elseif fmt (e, b) =
-      Format.fprintf fmt "elseif ";
-      print_expr fmt e;
-      Format.fprintf fmt " then ";
-      print_block fmt b
+      Format.fprintf fmt "elseif %a then %a@." print_expr e print_block b
     in
-    Format.fprintf fmt "if ";
-    print_expr fmt e;
-    Format.fprintf fmt " then ";
-    print_block fmt b;
-    Format.pp_print_list print_elseif fmt (to_ebl lebl);
+    Format.fprintf fmt "if %a then %a %a" print_expr e print_block b
+      (Format.pp_print_list print_elseif)
+      (to_ebl lebl);
     begin
       match ob with
-      | Some b ->
-        Format.fprintf fmt "else ";
-        print_block fmt b
-      | None -> ()
+      | Some b -> Format.fprintf fmt "else %a end@." print_block b
+      | None -> Format.fprintf fmt "end@."
     end
   | Sfor (n, (_, e1), (_, e2), oe, b) ->
-    Format.fprintf fmt "for ";
-    Format.pp_print_string fmt n;
-    Format.fprintf fmt " = ";
-    print_expr fmt e1;
-    Format.fprintf fmt ", ";
-    print_expr fmt e2;
-    begin
-      match oe with
-      | Some (_, e3) ->
-        Format.fprintf fmt ", ";
-        print_expr fmt e3
-      | None -> ()
-    end;
-    Format.fprintf fmt "@.do ";
-    print_block fmt b;
-    Format.fprintf fmt "end@."
+    let print_oe fmt oe =
+      begin
+        match oe with
+        | Some (_, e) -> Format.fprintf fmt ", %a" print_expr e
+        | None -> ()
+      end
+    in
+    Format.fprintf fmt "for %a = %a, %a%a do@.@[<v>%a@]end@."
+      Format.pp_print_string n print_expr e1 print_expr e2 print_oe oe
+      print_block b
   | Siterator (nl, lel, b) ->
-    Format.fprintf fmt "for ";
-    Format.pp_print_list ~pp_sep Format.pp_print_string fmt nl;
-    Format.fprintf fmt " = ";
-    Format.pp_print_list ~pp_sep print_expr fmt (to_el lel);
-    Format.fprintf fmt "@.do ";
-    print_block fmt b;
-    Format.fprintf fmt "end@."
-  | Sprint (_, e) ->
-    Format.fprintf fmt "print(";
-    print_expr fmt e;
-    Format.fprintf fmt ")@."
+    Format.fprintf fmt "for %a = %a do@.@[<v>%a@]end@."
+      (Format.pp_print_list ~pp_sep Format.pp_print_string)
+      nl
+      (Format.pp_print_list ~pp_sep print_expr)
+      (to_el lel) print_block b
+  | Sprint (_, e) -> Format.fprintf fmt "print(%a)@." print_expr e
 
 and print_block fmt block =
   let pp_sep _fmt () = () in
