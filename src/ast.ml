@@ -56,7 +56,6 @@ type binop =
 type expr = location * expr'
 
 and expr' =
-  (* type expr = *)
   | Evalue of value
   | Evar of var
   | Eunop of unop * expr

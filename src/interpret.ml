@@ -1,5 +1,18 @@
 open Ast
 
+exception Goto_catch of string
+
+exception Interpretation_error of location option * string
+
+let error loc message = raise (Interpretation_error (loc, message))
+
+let rec block_from_label label stmt_list =
+  match (label, stmt_list) with
+  | None, _ -> stmt_list
+  | Some lab, [] -> error None ("no visible label for <goto> " ^ lab)
+  | Some lab, Slabel n :: tl when lab = n -> tl
+  | Some _, _stmt :: tl -> block_from_label label tl
+
 let rec interpret_expr expr =
   let interpret_bbinop_expr binop expr1 expr2 =
     (* todo: ok for num values *)
@@ -179,8 +192,8 @@ let rec interpret_stmt stmt =
   | Sempty -> ()
   | Sassign (_il, _el) -> () (* todo: to be implemented *)
   | Sbreak -> () (* todo: to be implemented *)
-  | Slabel _n -> () (* todo: to be implemented *)
-  | Sgoto _n -> () (* todo: to be implemented *)
+  | Slabel _ -> ()
+  | Sgoto n -> raise (Goto_catch n)
   | Sblock b -> interpret_block b
   | Swhile (e, b) ->
     let v = interpret_expr e in
@@ -211,4 +224,8 @@ let rec interpret_stmt stmt =
 
 and interpret_block b = List.iter interpret_stmt b
 
-let run chunk = interpret_block chunk
+let rec run ?(label = None) chunk =
+  try
+    let bl = block_from_label label chunk in
+    interpret_block bl
+  with Goto_catch label -> run ~label:(Some label) chunk

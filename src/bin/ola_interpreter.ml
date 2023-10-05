@@ -57,10 +57,13 @@ let process source_code_file no_typing debug =
     let loc = Sedlexing.lexing_positions lexbuf in
     eprintf "Syntax error: %s@." (Utils.location_info ~message:None loc);
     exit 1
-(* | Typer.Typing_error (loc, message) ->
-   eprintf "Typing error: %s@."
-     (Utils.location_info ~message:(Some message) loc);
-   exit 1 *)
+  (* | Typer.Typing_error (loc, message) ->
+     eprintf "Typing error: %s@."
+       (Utils.location_info ~message:(Some message) loc);
+     exit 1 *)
+  | Interpret.Interpretation_error (_loc, message) ->
+    eprintf "Interpretation error: %s@." message;
+    exit 1
 
 (* OLA entry point : Lua language interpreter *)
 let () =

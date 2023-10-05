@@ -4,8 +4,7 @@ goto operations:
   interprete ...
   1
   2
-  3
-  4
   5
-  6
   7
+  Interpretation error: no visible label for <goto> l42
+  [1]
