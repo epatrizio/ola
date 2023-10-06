@@ -41,12 +41,12 @@
 -- print(nil .. "str")  -- ko
 -- print(true .. "str") -- ko
 
--- while "0" -- ok
---     do
---         print(4)
---     end
-
 if false then print(0)
 elseif false then print(0)
 elseif true then print(0+false)
 else print(0) end
+
+-- for i = nil,10,1
+--     do
+--         print(i)
+--     end

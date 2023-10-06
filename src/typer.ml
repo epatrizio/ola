@@ -135,7 +135,27 @@ let rec typecheck_stmt stmt =
       begin
         match ob with None -> Ok () | Some b -> typecheck_block b
       end
-    | Sfor (_n, _e1, _e2, _oe, _b) -> Ok () (* todo: to be implemented *)
+    | Sfor (_n, e1, e2, oe, b) ->
+      let typecheck_init expr =
+        begin
+          match typecheck_expr expr with
+          | Tnumber Tinteger | Tnumber Tfloat | Tstring ->
+            (* string will be cast in float value during interpretation *)
+            Ok ()
+          | _ ->
+            let loc, _e = expr in
+            error loc "bad 'for' initial, limit, step (number expected)"
+        end
+      in
+      let* _ = typecheck_init e1 in
+      let* _ = typecheck_init e2 in
+      begin
+        match oe with
+        | Some e ->
+          let* _ = typecheck_init e in
+          typecheck_block b
+        | None -> typecheck_block b
+      end
     | Siterator (_nl, _el, _b) -> Ok () (* todo: to be implemented *)
     | Sprint e ->
       let _ = typecheck_expr e in

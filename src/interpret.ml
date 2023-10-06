@@ -238,7 +238,50 @@ let rec interpret_stmt stmt =
       end
       | _ -> interpret_block b
     end
-  | Sfor (_n, _e1, _e2, _oe, _b) -> () (* todo: to be implemented *)
+  | Sfor (_n, e1, e2, oe, b) ->
+    (* todo: environment for _n *)
+    let init_val expr =
+      match interpret_expr expr with
+      | Vnumber (Ninteger i) -> Vnumber (Ninteger i)
+      | Vnumber (Nfloat f) -> Vnumber (Nfloat f)
+      | Vstring s -> begin
+        match float_of_string_opt s with
+        | Some f -> Vnumber (Nfloat f)
+        | None -> assert false (* typing error *)
+      end
+      | _ -> assert false (* typing error *)
+    in
+    let interpret_cond exp1 exp2 step =
+      let op =
+        match step with
+        | Vnumber (Ninteger i) -> if i >= 0 then Ble else Bge
+        | Vnumber (Nfloat f) -> if f >= 0. then Ble else Bge
+        | _ -> assert false (* call error *)
+      in
+      let loc1, _e1 = exp1 in
+      match interpret_expr (loc1, Ebinop (op, exp1, exp2)) with
+      | Vboolean b -> b
+      | _ -> assert false (* call error *)
+    in
+    let incr_init initial step =
+      let loc, _e = initial in
+      match interpret_expr (loc, Ebinop (Badd, initial, step)) with
+      | Vnumber (Ninteger i) -> Vnumber (Ninteger i)
+      | Vnumber (Nfloat f) -> Vnumber (Nfloat f)
+      | _ -> assert false (* call error *)
+    in
+    let l1, _e1 = e1 in
+    let l2, _e2 = e2 in
+    let initial = ref (init_val e1) in
+    let limit = init_val e2 in
+    let step =
+      match oe with Some e -> init_val e | None -> Vnumber (Ninteger 1)
+    in
+    while interpret_cond (l1, Evalue !initial) (l2, Evalue limit) step do
+      (* initial <= limit *)
+      interpret_block b;
+      initial := incr_init (l1, Evalue !initial) (l1, Evalue step)
+    done
   | Siterator (_nl, _el, _b) -> () (* todo: to be implemented *)
   | Sprint e ->
     print_value Format.std_formatter (interpret_expr e);

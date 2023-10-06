@@ -7,6 +7,34 @@ block basic operations:
   2
   3
   4
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
   42
   42
   42

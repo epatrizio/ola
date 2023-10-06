@@ -19,10 +19,15 @@ repeat
 until 1 < 2
 
 -- init, max/min value, incr (1:default)
-for i = 5,10,1
+for i = 4+1.0,10
+    do
+        print(i) -- todo: need environment
+        -- if i > 7 then break end
+    end
+
+for i = 41+1.0,10,"-1"..".5"
     do
         print(i)
-        break
     end
 --for i=1,f(x) do print(i) end
 
