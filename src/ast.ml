@@ -144,8 +144,8 @@ let rec print_stmt fmt stmt =
       (Format.pp_print_list ~pp_sep print_expr)
       (to_el lel)
   | Sbreak -> Format.fprintf fmt "break@."
-  | Slabel n -> Format.fprintf fmt "::%a::@." Format.pp_print_string n
-  | Sgoto n -> Format.fprintf fmt "goto %a@." Format.pp_print_string n
+  | Slabel n -> Format.fprintf fmt "::%s::@." n
+  | Sgoto n -> Format.fprintf fmt "goto %s@." n
   | Sblock b -> print_block fmt b
   | Swhile ((_, e), b) ->
     Format.fprintf fmt "while %a do@.@[<v>%a@]end@." print_expr e print_block b

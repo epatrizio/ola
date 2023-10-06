@@ -135,9 +135,9 @@ let rec token buf =
   | eof -> EOF
   | _ ->
     error
-      (Utils.location_info
-         ~message:(Some ("unexpected lexeme: " ^ Sedlexing.Utf8.lexeme buf))
-         (Sedlexing.lexing_positions buf) )
+      (Format.asprintf "%a: unexpected lexeme %s" Utils.location_info
+         (Sedlexing.lexing_positions buf)
+         (Sedlexing.Utf8.lexeme buf) )
 
 and comment buf =
   match%sedlex buf with

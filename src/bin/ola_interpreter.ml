@@ -41,12 +41,11 @@ let process source_code_file no_typing debug =
     end;
     begin
       match typing_checks with
-      | Ok _ ->
+      | Ok () ->
         print_endline "interprete ...";
         Interpret.run chunk
       | Error (loc, message) ->
-        eprintf "Typing error: %s@."
-          (Utils.location_info ~message:(Some message) loc)
+        eprintf "Typing error: %a: %s@." Utils.location_info loc message
     end;
     close_in ic
   with
@@ -55,7 +54,7 @@ let process source_code_file no_typing debug =
     exit 1
   | Parser.Error ->
     let loc = Sedlexing.lexing_positions lexbuf in
-    eprintf "Syntax error: %s@." (Utils.location_info ~message:None loc);
+    eprintf "Syntax error: %a@." Utils.location_info loc;
     exit 1
   (* | Typer.Typing_error (loc, message) ->
      eprintf "Typing error: %s@."
