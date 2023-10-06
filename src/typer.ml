@@ -6,6 +6,19 @@ exception Typing_error of location * string
 
 let error loc message = raise (Typing_error (loc, message))
 
+let ( let* ) = Result.bind
+
+let list_iter fct list =
+  try
+    List.iter
+      (fun (_, elt) ->
+        match fct elt with
+        | Error (loc, message) -> error loc message
+        | Ok () -> () )
+      list;
+    Ok ()
+  with Typing_error (loc, message) -> Error (loc, message)
+
 let rec typecheck_expr expr =
   let typecheck_value value =
     match value with
@@ -111,9 +124,17 @@ let rec typecheck_stmt stmt =
     | Slabel _ -> Ok ()
     | Sgoto _ -> Ok ()
     | Sblock b -> typecheck_block b
-    | Swhile (_e, b) -> typecheck_block b
-    | Srepeat (b, _e) -> typecheck_block b
-    | Sif (_e, _b, _ebl, _ob) -> Ok () (* todo: to be implemented *)
+    | Swhile (_e, b) ->
+      (* Doc: The condition expression _e of a control structure can return any value *)
+      typecheck_block b
+    | Srepeat (b, _e) -> typecheck_block b (* Memo: Same Swhile *)
+    | Sif (_e, b, ebl, ob) ->
+      (* Memo: Same Swhile *)
+      let* _ = typecheck_block b in
+      let* _ = list_iter typecheck_block ebl in
+      begin
+        match ob with None -> Ok () | Some b -> typecheck_block b
+      end
     | Sfor (_n, _e1, _e2, _oe, _b) -> Ok () (* todo: to be implemented *)
     | Siterator (_nl, _el, _b) -> Ok () (* todo: to be implemented *)
     | Sprint e ->
@@ -124,9 +145,7 @@ let rec typecheck_stmt stmt =
 and typecheck_block b =
   match b with
   | [] -> Ok ()
-  | [ s ] -> typecheck_stmt s
   | s :: tl -> (
-    match typecheck_stmt s with Ok _ -> typecheck_block tl | e -> e )
-(* List.iter typecheck_stmt b *)
+    match typecheck_stmt s with Ok () -> typecheck_block tl | e -> e )
 
 let typecheck chunk = typecheck_block chunk

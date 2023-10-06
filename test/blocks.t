@@ -7,4 +7,7 @@ block basic operations:
   2
   3
   4
+  42
+  42
+  42
   0

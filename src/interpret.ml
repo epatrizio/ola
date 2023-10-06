@@ -196,26 +196,48 @@ let rec interpret_stmt stmt =
   | Sgoto n -> raise (Goto_catch n)
   | Sblock b -> interpret_block b
   | Swhile (e, b) ->
-    let v = interpret_expr e in
+    (* Doc: The condition expression of a control structure can return any value.
+       Both false and nil test false. *)
+    let cond = interpret_expr e in
     begin
-      match v with
-      | Vboolean cond ->
-        if cond then begin
-          interpret_block b;
-          interpret_stmt (Swhile (e, b))
-        end
-      | _ -> assert false (* typing error *)
+      match cond with
+      | Vboolean false | Vnil () -> ()
+      | _ ->
+        interpret_block b;
+        interpret_stmt (Swhile (e, b))
     end
   | Srepeat (b, e) ->
-    let v = interpret_expr e in
+    interpret_block b;
+    let cond = interpret_expr e in
     begin
-      match v with
-      | Vboolean cond ->
-        interpret_block b;
-        if not cond then interpret_stmt (Srepeat (b, e))
-      | _ -> assert false (* typing error *)
+      match cond with
+      | Vboolean false | Vnil () -> interpret_stmt (Srepeat (b, e))
+      | _ -> ()
     end
-  | Sif (_e, _b, _ebl, _ob) -> () (* todo: to be implemented *)
+  | Sif (e, b, ebl, ob) ->
+    let rec interpret_elseif ebl =
+      match ebl with
+      | [] -> None
+      | (e, b) :: tl ->
+        let cond = interpret_expr e in
+        begin
+          match cond with
+          | Vboolean false | Vnil () -> interpret_elseif tl
+          | _ -> Some (interpret_block b)
+        end
+    in
+    let cond = interpret_expr e in
+    begin
+      match cond with
+      | Vboolean false | Vnil () -> begin
+        match interpret_elseif ebl with
+        | Some () -> ()
+        | None -> begin
+          match ob with Some b -> interpret_block b | None -> ()
+        end
+      end
+      | _ -> interpret_block b
+    end
   | Sfor (_n, _e1, _e2, _oe, _b) -> () (* todo: to be implemented *)
   | Siterator (_nl, _el, _b) -> () (* todo: to be implemented *)
   | Sprint e ->

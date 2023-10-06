@@ -2,7 +2,7 @@
 -- print(not 10.5) -- ok todo
 -- print(not nil)  -- ok todo
 
-print(10+false) -- ko
+-- print(10+false) -- ko
 -- print(false+10) -- ko
 -- print(10+nil)   -- ko
 -- print(10+"str") -- ko
@@ -41,7 +41,12 @@ print(10+false) -- ko
 -- print(nil .. "str")  -- ko
 -- print(true .. "str") -- ko
 
---while 0 -- ko pas false mais passe
-  --  do
-    --    print(4)
-    --end
+-- while "0" -- ok
+--     do
+--         print(4)
+--     end
+
+if false then print(0)
+elseif false then print(0)
+elseif true then print(0+false)
+else print(0) end
