@@ -34,6 +34,7 @@ type unop =
   | Unot
   | Uminus
   | Usharp
+  | Ulnot
 
 type binop =
   | Band
@@ -45,6 +46,11 @@ type binop =
   | Bfldiv
   | Bmod
   | Bexp
+  | Bland
+  | Blor
+  | Blxor
+  | Blsl
+  | Blsr
   | Beq
   | Bneq
   | Blt
@@ -88,6 +94,7 @@ let print_unop fmt unop =
   | Unot -> Format.pp_print_string fmt "not "
   | Uminus -> Format.pp_print_string fmt "-"
   | Usharp -> Format.pp_print_string fmt "#"
+  | Ulnot -> Format.pp_print_string fmt "~"
 
 let print_binop fmt binop =
   match binop with
@@ -100,6 +107,11 @@ let print_binop fmt binop =
   | Bfldiv -> Format.pp_print_string fmt "//"
   | Bmod -> Format.pp_print_string fmt "%"
   | Bexp -> Format.pp_print_string fmt "^"
+  | Bland -> Format.pp_print_string fmt "&"
+  | Blor -> Format.pp_print_string fmt "|"
+  | Blxor -> Format.pp_print_string fmt "~"
+  | Blsl -> Format.pp_print_string fmt "<<"
+  | Blsr -> Format.pp_print_string fmt ">>"
   | Blt -> Format.pp_print_string fmt "<"
   | Ble -> Format.pp_print_string fmt "<="
   | Bgt -> Format.pp_print_string fmt ">"

@@ -22,6 +22,16 @@
 -- print(42^true)  -- ko
 -- print(42^"str") -- ko
 
+-- print(1&nil)    -- ko
+-- print(true|2)   -- ko
+-- print(1~"str")  -- ko
+-- print(nil<<2)   -- ko
+-- print(1>>false) -- ko
+-- print(~nil)     -- ko
+-- print(~true)    -- ko
+-- print(~"str")   -- ko
+-- print(1&1.5)    -- ok > interpretation error (1.5 not integer - 1&1.0 ok)
+
 -- print(1 < true) -- ko todo
 -- print(1 < nil)  -- ko todo
 

@@ -102,6 +102,11 @@ let rec token buf =
   | '%' -> MOD
   | '^' -> EXP
   | '#' -> SHARP
+  | '~' -> TILDE
+  | '&' -> LAND
+  | '|' -> LOR
+  | "<<" -> LSL
+  | ">>" -> LSR
   | '=' -> AEQ
   | '<' -> LT
   | "<=" -> LE

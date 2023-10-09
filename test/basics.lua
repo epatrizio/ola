@@ -98,6 +98,21 @@ print(-10.0123%-2.234)
 -- print(1//0)  -- todo error div by 0
 print(1.//0)    -- inf
 
+-- bitwise
+
+print(1&2)
+print(1.0&1.5+0.5)
+print(1|2.0)
+print((1.0+0)|1)
+print(1~2)
+print(1.0~2.0)
+print(1<<2)
+print(1.0<<2.0)
+print(1>>2)
+print(1.0>>2.0)
+print(~1)
+print(~(1.5+2.5))
+
 -- string
 
 print("")

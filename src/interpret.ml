@@ -14,6 +14,15 @@ let rec block_from_label label stmt_list =
   | Some _, _stmt :: tl -> block_from_label label tl
 
 let rec interpret_expr expr =
+  let get_int f loc =
+    begin
+      match Float.is_integer f with
+      | true -> int_of_float f
+      | false ->
+        error (Some loc)
+          ("number has no integer representation: " ^ string_of_float f)
+    end
+  in
   let interpret_bbinop_expr binop expr1 expr2 =
     (* todo: ok for num values *)
     let v1 = interpret_expr expr1 in
@@ -30,6 +39,8 @@ let rec interpret_expr expr =
     end
   in
   let interpret_ibinop_expr binop expr1 expr2 =
+    let loc1, _expr1 = expr1 in
+    let loc2, _expr2 = expr2 in
     let v1 = interpret_expr expr1 in
     let v2 = interpret_expr expr2 in
     begin
@@ -44,6 +55,11 @@ let rec interpret_expr expr =
         | Bmod -> Vnumber (Ninteger (i1 mod i2))
         | Bexp ->
           Vnumber (Nfloat (Float.pow (float_of_int i1) (float_of_int i2)))
+        | Bland -> Vnumber (Ninteger (i1 land i2))
+        | Blor -> Vnumber (Ninteger (i1 lor i2))
+        | Blxor -> Vnumber (Ninteger (i1 lxor i2))
+        | Blsl -> Vnumber (Ninteger (i1 lsl i2))
+        | Blsr -> Vnumber (Ninteger (i1 lsr i2))
         | Blt -> Vboolean (i1 < i2)
         | Ble -> Vboolean (i1 <= i2)
         | Bgt -> Vboolean (i1 > i2)
@@ -66,6 +82,11 @@ let rec interpret_expr expr =
           let _, q = Float.modf (f /. fi) in
           Vnumber (Nfloat (f -. (fi *. q)))
         | Bexp -> Vnumber (Nfloat (Float.pow f (float_of_int i)))
+        | Bland -> Vnumber (Ninteger (get_int f loc1 land i))
+        | Blor -> Vnumber (Ninteger (get_int f loc1 lor i))
+        | Blxor -> Vnumber (Ninteger (get_int f loc1 lxor i))
+        | Blsl -> Vnumber (Ninteger (get_int f loc1 lsl i))
+        | Blsr -> Vnumber (Ninteger (get_int f loc1 lsr i))
         | Blt -> Vboolean (f < float_of_int i)
         | Ble -> Vboolean (f <= float_of_int i)
         | Bgt -> Vboolean (f > float_of_int i)
@@ -88,6 +109,11 @@ let rec interpret_expr expr =
           let _, q = Float.modf (fi /. f) in
           Vnumber (Nfloat (fi -. (f *. q)))
         | Bexp -> Vnumber (Nfloat (Float.pow (float_of_int i) f))
+        | Bland -> Vnumber (Ninteger (i land get_int f loc2))
+        | Blor -> Vnumber (Ninteger (i lor get_int f loc2))
+        | Blxor -> Vnumber (Ninteger (i lxor get_int f loc2))
+        | Blsl -> Vnumber (Ninteger (i lsl get_int f loc2))
+        | Blsr -> Vnumber (Ninteger (i lsr get_int f loc2))
         | Blt -> Vboolean (float_of_int i < f)
         | Ble -> Vboolean (float_of_int i <= f)
         | Bgt -> Vboolean (float_of_int i > f)
@@ -109,6 +135,11 @@ let rec interpret_expr expr =
           let _, q = Float.modf (f1 /. f2) in
           Vnumber (Nfloat (f1 -. (f2 *. q)))
         | Bexp -> Vnumber (Nfloat (Float.pow f1 f2))
+        | Bland -> Vnumber (Ninteger (get_int f1 loc1 land get_int f2 loc2))
+        | Blor -> Vnumber (Ninteger (get_int f1 loc1 lor get_int f2 loc2))
+        | Blxor -> Vnumber (Ninteger (get_int f1 loc1 lxor get_int f2 loc2))
+        | Blsl -> Vnumber (Ninteger (get_int f1 loc1 lsl get_int f2 loc2))
+        | Blsr -> Vnumber (Ninteger (get_int f1 loc1 lsr get_int f2 loc2))
         | Blt -> Vboolean (f1 < f2)
         | Ble -> Vboolean (f1 <= f2)
         | Bgt -> Vboolean (f1 > f2)
@@ -170,6 +201,14 @@ let rec interpret_expr expr =
       | Vstring s -> Vnumber (Ninteger (String.length s))
       | _ -> assert false (* typing error *)
     end
+  | loc, Eunop (Ulnot, e) ->
+    let v = interpret_expr e in
+    begin
+      match v with
+      | Vnumber (Ninteger i) -> Vnumber (Ninteger (lnot i))
+      | Vnumber (Nfloat f) -> Vnumber (Ninteger (lnot (get_int f loc)))
+      | _ -> assert false (* typing error *)
+    end
   | _loc, Ebinop (Band, e1, e2) -> interpret_bbinop_expr Band e1 e2
   | _loc, Ebinop (Bor, e1, e2) -> interpret_bbinop_expr Bor e1 e2
   | _loc, Ebinop (Badd, e1, e2) -> interpret_ibinop_expr Badd e1 e2
@@ -179,6 +218,11 @@ let rec interpret_expr expr =
   | _loc, Ebinop (Bfldiv, e1, e2) -> interpret_ibinop_expr Bfldiv e1 e2
   | _loc, Ebinop (Bmod, e1, e2) -> interpret_ibinop_expr Bmod e1 e2
   | _loc, Ebinop (Bexp, e1, e2) -> interpret_ibinop_expr Bexp e1 e2
+  | _loc, Ebinop (Bland, e1, e2) -> interpret_ibinop_expr Bland e1 e2
+  | _loc, Ebinop (Blor, e1, e2) -> interpret_ibinop_expr Blor e1 e2
+  | _loc, Ebinop (Blxor, e1, e2) -> interpret_ibinop_expr Blxor e1 e2
+  | _loc, Ebinop (Blsl, e1, e2) -> interpret_ibinop_expr Blsl e1 e2
+  | _loc, Ebinop (Blsr, e1, e2) -> interpret_ibinop_expr Blsr e1 e2
   | _loc, Ebinop (Blt, e1, e2) -> interpret_ibinop_expr Blt e1 e2
   | _loc, Ebinop (Ble, e1, e2) -> interpret_ibinop_expr Ble e1 e2
   | _loc, Ebinop (Bgt, e1, e2) -> interpret_ibinop_expr Bgt e1 e2

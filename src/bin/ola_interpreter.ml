@@ -60,9 +60,13 @@ let process source_code_file no_typing debug =
      eprintf "Typing error: %s@."
        (Utils.location_info ~message:(Some message) loc);
      exit 1 *)
-  | Interpret.Interpretation_error (_loc, message) ->
-    eprintf "Interpretation error: %s@." message;
-    exit 1
+  | Interpret.Interpretation_error (loc, message) -> (
+    match loc with
+    | Some loc ->
+      eprintf "Interpretation error: %a: %s@." Utils.location_info loc message
+    | None ->
+      eprintf "Interpretation error: %s@." message;
+      exit 1 )
 
 (* OLA entry point : Lua language interpreter *)
 let () =

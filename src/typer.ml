@@ -39,6 +39,21 @@ let rec typecheck_expr expr =
     | Tstring -> error loc "attempt to perform arithmetic on a string value"
     | _ -> assert false (* call error *)
   in
+  let typecheck_bitwise_unop expr =
+    let loc, _expr = expr in
+    let typ = typecheck_expr expr in
+    match typ with
+    | Tnumber Tinteger -> Tnumber Tinteger
+    | Tnumber Tfloat ->
+      Tnumber
+        Tfloat (* must be an integer (ex: 42.0) : check during interpretation *)
+    | Tnil -> error loc "attempt to perform bitwise operation on a nil value"
+    | Tboolean ->
+      error loc "attempt to perform bitwise operation on a boolean value"
+    | Tstring ->
+      error loc "attempt to perform bitwise operation on a string value"
+    | _ -> assert false (* call error *)
+  in
   let typecheck_arith_binop binop expr1 expr2 =
     let loc1, _expr1 = expr1 in
     let loc2, _expr2 = expr2 in
@@ -59,6 +74,31 @@ let rec typecheck_expr expr =
       error loc2 "attempt to perform arithmetic on a boolean value"
     | Tstring, _ -> error loc1 "attempt to perform arithmetic on a string value"
     | _, Tstring -> error loc2 "attempt to perform arithmetic on a string value"
+    | _ -> assert false (* call error *)
+  in
+  let typecheck_bitwise_binop expr1 expr2 =
+    let loc1, _expr1 = expr1 in
+    let loc2, _expr2 = expr2 in
+    let typ1 = typecheck_expr expr1 in
+    let typ2 = typecheck_expr expr2 in
+    match (typ1, typ2) with
+    | Tnumber Tinteger, Tnumber Tinteger
+    | Tnumber Tfloat, Tnumber Tfloat
+    | Tnumber Tinteger, Tnumber Tfloat
+    | Tnumber Tfloat, Tnumber Tinteger ->
+      Tnumber Tinteger
+    | Tnil, _ ->
+      error loc1 "attempt to perform bitwise operation on a nil value"
+    | _, Tnil ->
+      error loc2 "attempt to perform bitwise operation on a nil value"
+    | Tboolean, _ ->
+      error loc1 "attempt to perform bitwise operation on a boolean value"
+    | _, Tboolean ->
+      error loc2 "attempt to perform bitwise operation on a boolean value"
+    | Tstring, _ ->
+      error loc1 "attempt to perform bitwise operation on a string value"
+    | _, Tstring ->
+      error loc2 "attempt to perform bitwise operation on a string value"
     | _ -> assert false (* call error *)
   in
   let typecheck_str_binop expr1 expr2 =
@@ -98,6 +138,7 @@ let rec typecheck_expr expr =
         error l "attempt to perform #operator on a not supported type"
       | _ -> error l "#operator on this type: to be implemented ..."
     end
+  | _loc, Eunop (Ulnot, e) -> typecheck_bitwise_unop e
   | _loc, Ebinop (Band, _, _) | _loc, Ebinop (Bor, _, _) -> Tboolean (* TODO *)
   | _loc, Ebinop (Badd, e1, e2) -> typecheck_arith_binop Badd e1 e2
   | _loc, Ebinop (Bsub, e1, e2) -> typecheck_arith_binop Bsub e1 e2
@@ -106,6 +147,12 @@ let rec typecheck_expr expr =
   | _loc, Ebinop (Bfldiv, e1, e2) -> typecheck_arith_binop Bfldiv e1 e2
   | _loc, Ebinop (Bmod, e1, e2) -> typecheck_arith_binop Bmod e1 e2
   | _loc, Ebinop (Bexp, e1, e2) -> typecheck_arith_binop Bexp e1 e2
+  | _loc, Ebinop (Bland, e1, e2)
+  | _loc, Ebinop (Blor, e1, e2)
+  | _loc, Ebinop (Blxor, e1, e2)
+  | _loc, Ebinop (Blsl, e1, e2)
+  | _loc, Ebinop (Blsr, e1, e2) ->
+    typecheck_bitwise_binop e1 e2
   | _loc, Ebinop (Blt, _, _)
   | _loc, Ebinop (Ble, _, _)
   | _loc, Ebinop (Bgt, _, _)

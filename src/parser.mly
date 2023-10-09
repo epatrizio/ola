@@ -5,7 +5,7 @@
 %token PLUS MINUS MUL DIV FLDIV MOD EXP DDOT LPAREN RPAREN
 %token COLON DCOLON SEMICOLON COMMA
 %token AEQ LT LE GT GE EQ NEQ
-%token NOT SHARP AND OR
+%token NOT SHARP AND OR LAND LOR LSL LSR TILDE
 %token DO END BREAK WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN
 %token PRINT
 %token EOF
@@ -69,6 +69,7 @@ unop :
      | NOT { Ast.Unot }
      | MINUS { Ast.Uminus }
      | SHARP { Ast.Usharp }
+     | TILDE { Ast.Ulnot }
      ;
 
 binop :
@@ -81,6 +82,11 @@ binop :
      | FLDIV { Ast.Bfldiv }
      | MOD { Ast.Bmod }
      | EXP { Ast.Bexp }
+     | LAND { Ast.Bland }
+     | LOR { Ast.Blor }
+     | TILDE { Ast.Blxor }
+     | LSL { Ast.Blsl }
+     | LSR { Ast.Blsr }
      | LT { Ast.Blt }
      | LE { Ast.Ble }
      | GT { Ast.Bgt }
