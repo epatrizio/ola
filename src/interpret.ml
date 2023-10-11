@@ -235,6 +235,7 @@ let rec interpret_stmt stmt =
   match stmt with
   | Sempty -> ()
   | Sassign (_il, _el) -> () (* todo: to be implemented *)
+  | SassignLocal (_nal, _elo) -> () (* todo: to be implemented *)
   | Sbreak -> () (* todo: to be implemented *)
   | Slabel _ -> ()
   | Sgoto n -> raise (Goto_catch n)

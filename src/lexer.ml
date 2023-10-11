@@ -62,6 +62,8 @@ let nil = [%sedlex.regexp? "nil"]
 
 let boolean = [%sedlex.regexp? "true" | "false"]
 
+let attrib = [%sedlex.regexp? "const" | "close"]
+
 let integer = [%sedlex.regexp? Plus digit]
 
 let exp = [%sedlex.regexp? ('e' | 'E'), Opt ('-' | '+'), Plus digit]
@@ -81,6 +83,7 @@ let rec token buf =
   | newline -> token buf
   | nil -> VALUE (Vnil ())
   | boolean -> VALUE (Vboolean (bool_of_string (Sedlexing.Latin1.lexeme buf)))
+  | attrib -> ATTRIB (Sedlexing.Latin1.lexeme buf)
   | integer ->
     VALUE (Vnumber (Ninteger (int_of_string (Sedlexing.Latin1.lexeme buf))))
   | float ->
@@ -120,6 +123,7 @@ let rec token buf =
   | "not" -> NOT
   | "and" -> AND
   | "or" -> OR
+  | "local" -> LOCAL
   | "break" -> BREAK
   | "while" -> WHILE
   | "for" -> FOR

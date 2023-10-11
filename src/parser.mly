@@ -6,11 +6,12 @@
 %token COLON DCOLON SEMICOLON COMMA
 %token AEQ LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR LAND LOR LSL LSR TILDE
-%token DO END BREAK WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN
+%token DO END BREAK WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL
 %token PRINT
 %token EOF
 
 %token <Ast.name> NAME
+%token <Ast.attrib> ATTRIB
 %token <Ast.value> VALUE
 
 %left MINUS PLUS
@@ -38,8 +39,20 @@ block :
      | l=list(stmt) { l }
      ;
 
+var :
+     | n=NAME { Ast.Name n }
+
+attrib :
+     | LT a=ATTRIB GT { a }
+
+attname :
+     | n=NAME oa=option(attrib) { (n, oa) }
+
 lexpr :
      | e=expr { (($startpos,$endpos), e) }
+
+exprlist :
+     | AEQ el=separated_nonempty_list(COMMA, lexpr) { el }
 
 elseif :
      | ELSEIF e=lexpr THEN b=block { (e, b) }
@@ -52,7 +65,8 @@ cexpr :
 
 stmt :
      | SEMICOLON { Ast.Sempty }
-     | vl=separated_nonempty_list(COMMA, var) AEQ el=separated_nonempty_list(COMMA, lexpr) { Ast.Sassign (vl, el) }
+     | vl=separated_nonempty_list(COMMA, var) el=exprlist { Ast.Sassign (vl, el) }
+     | LOCAL nal=separated_nonempty_list(COMMA, attname) elo=option(exprlist) { Ast.SassignLocal (nal, elo) }
      | BREAK { Ast.Sbreak }
      | DCOLON n=NAME DCOLON { Ast.Slabel n }
      | GOTO n=NAME { Ast.Sgoto n }
@@ -95,9 +109,6 @@ binop :
      | NEQ { Ast.Bneq }
      | DDOT { Ast.Bddot }
      ;
-
-var :
-     | n=NAME { Ast.Name n }
 
 expr :
      | v=var { Ast.Evar v }

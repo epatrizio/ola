@@ -167,6 +167,7 @@ let rec typecheck_stmt stmt =
     match stmt with
     | Sempty -> Ok ()
     | Sassign (_il, _el) -> Ok () (* todo: to be implemented *)
+    | SassignLocal (_nal, _elo) -> Ok () (* todo: to be implemented *)
     | Sbreak -> Ok ()
     | Slabel _ -> Ok ()
     | Sgoto _ -> Ok ()

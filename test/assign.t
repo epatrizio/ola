@@ -12,3 +12,12 @@ assignment operations:
   nil
   nil
   nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil
+  nil

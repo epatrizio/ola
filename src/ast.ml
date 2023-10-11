@@ -28,6 +28,8 @@ type value =
 
 type name = string
 
+type attrib = name
+
 type var = Name of name
 
 type unop =
@@ -70,6 +72,7 @@ and expr' =
 type stmt =
   | Sempty
   | Sassign of var list * expr list
+  | SassignLocal of (name * attrib option) list * expr list option
   | Sbreak
   | Slabel of name
   | Sgoto of name
@@ -86,6 +89,8 @@ and block = stmt list
 type chunk = block
 
 (* pretty printer *)
+
+let print_attrib fmt attrib = Format.fprintf fmt "<%s>" attrib
 
 let print_var fmt var = match var with Name n -> Format.pp_print_string fmt n
 
@@ -145,8 +150,22 @@ let rec print_expr fmt expr =
     print_expr fmt e2
 
 let rec print_stmt fmt stmt =
-  let pp_sep fmt () = Format.fprintf fmt ", " in
   let to_el = List.map (fun (_, e) -> e) in
+  let pp_sep fmt () = Format.fprintf fmt ", " in
+  let pp_name_attrib fmt (name, attrib_opt) =
+    Format.fprintf fmt "%s" name;
+    match attrib_opt with
+    | Some attrib -> Format.fprintf fmt " %a " print_attrib attrib
+    | None -> ()
+  in
+  let pp_exprlist_opt fmt exprlist_opt =
+    match exprlist_opt with
+    | Some exprlist ->
+      Format.fprintf fmt " = %a"
+        (Format.pp_print_list ~pp_sep print_expr)
+        (to_el exprlist)
+    | None -> ()
+  in
   match stmt with
   | Sempty -> Format.fprintf fmt ""
   | Sassign (il, lel) ->
@@ -155,10 +174,14 @@ let rec print_stmt fmt stmt =
       il
       (Format.pp_print_list ~pp_sep print_expr)
       (to_el lel)
+  | SassignLocal (nal, elo) ->
+    Format.fprintf fmt "local %a%a@."
+      (Format.pp_print_list ~pp_sep pp_name_attrib)
+      nal pp_exprlist_opt elo
   | Sbreak -> Format.fprintf fmt "break@."
   | Slabel n -> Format.fprintf fmt "::%s::@." n
   | Sgoto n -> Format.fprintf fmt "goto %s@." n
-  | Sblock b -> print_block fmt b
+  | Sblock b -> Format.fprintf fmt "do@.@[<v>%a@]end@." print_block b
   | Swhile ((_, e), b) ->
     Format.fprintf fmt "while %a do@.@[<v>%a@]end@." print_expr e print_block b
   | Srepeat (b, (_, e)) ->
