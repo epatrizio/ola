@@ -12,3 +12,14 @@ end
 ::l2::
 print(7)
 goto l42
+
+-- TODO: nested function restriction
+-- ::lab::
+-- print(x)
+
+-- function f()
+--     x = 3
+--     goto lab     -- error, lab not visible
+-- end
+
+-- f()

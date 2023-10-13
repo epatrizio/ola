@@ -27,9 +27,9 @@ for i = 4+1.0,10
 
 for i = 41+1.0,10,"-1"..".5"
     do
-        print(i)
+        print(i) -- todo: need environment
     end
---for i=1,f(x) do print(i) end
+-- for i=1,f(x) do print(i) end
 
 -- for iterator (todo)
 -- a = {"one", "two", "three"}
