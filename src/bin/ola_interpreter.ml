@@ -36,14 +36,20 @@ let process source_code_file no_typing debug =
       else Ok ()
     in
     if debug then begin
-      print_endline "debug mode";
+      print_endline "debug mode: initial source view ...";
       Ast.print_chunk Format.std_formatter chunk
     end;
     begin
       match typing_checks with
       | Ok () ->
         print_endline "interprete ...";
-        Interpret.run chunk
+        let env = Env.empty () in
+        let chunk, env = Scope.analysis chunk env in
+        if debug then begin
+          print_endline "debug mode: source after scope analysis view ...";
+          Ast.print_chunk Format.std_formatter chunk
+        end;
+        Interpret.run chunk env
       | Error (loc, message) ->
         eprintf "Typing error: %a: %s@." Utils.location_info loc message
     end;

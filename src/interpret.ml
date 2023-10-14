@@ -1,6 +1,6 @@
 open Ast
 
-exception Goto_catch of string
+exception Goto_catch of string * Env.t
 
 exception Interpretation_error of location option * string
 
@@ -257,7 +257,7 @@ let rec interpret_stmt stmt env =
   | SassignLocal (_nal, _elo) -> env (* todo: to be implemented *)
   | Sbreak -> env (* todo: to be implemented *)
   | Slabel _ -> env
-  | Sgoto n -> raise (Goto_catch n)
+  | Sgoto n -> raise (Goto_catch (n, env))
   | Sblock b -> interpret_block b env
   | Swhile (e, b) ->
     (* Doc: The condition expression of a control structure can return any value.
@@ -376,12 +376,9 @@ let rec interpret_stmt stmt env =
 and interpret_block b env =
   List.fold_left (fun e stmt -> interpret_stmt stmt e) env b
 
-let rec run ?(label = None) chunk =
-  let env = Env.empty () in
-  let chunk, env = Scope.analysis chunk env in
-  (* Ast.print_chunk Format.std_formatter chunk; *)
+let rec run ?(label = None) chunk env =
   try
     let bl = block_from_label label chunk in
     let _env = interpret_block bl env in
     ()
-  with Goto_catch label -> run ~label:(Some label) chunk
+  with Goto_catch (label, env) -> run ~label:(Some label) chunk env
