@@ -49,7 +49,8 @@ let process source_code_file no_typing debug =
           print_endline "debug mode: source after scope analysis view ...";
           Ast.print_chunk Format.std_formatter chunk
         end;
-        Interpret.run chunk env
+        let _ = Interpret.run chunk env in
+        ()
       | Error (loc, message) ->
         eprintf "Typing error: %a: %s@." Utils.location_info loc message
     end;
@@ -77,9 +78,5 @@ let process source_code_file no_typing debug =
 (* OLA entry point : Lua language interpreter *)
 let () =
   Arg.parse options set_file usage;
-  if !in_file_name = "" then begin
-    eprintf "init error: missing test file name to interpret!@.";
-    Arg.usage options usage;
-    exit 1
-  end;
-  process !in_file_name !no_typing !debug
+  if !in_file_name = "" then Repl.run ()
+  else process !in_file_name !no_typing !debug

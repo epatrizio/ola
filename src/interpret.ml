@@ -1,17 +1,25 @@
 open Ast
 
-exception Goto_catch of string * Env.t
+type block_pointer =
+  | Begin
+  | Last
+  | Label of string
+
+exception Goto_catch of block_pointer * Env.t
 
 exception Interpretation_error of location option * string
 
 let error loc message = raise (Interpretation_error (loc, message))
 
-let rec block_from_label label stmt_list =
-  match (label, stmt_list) with
-  | None, _ -> stmt_list
-  | Some lab, [] -> error None ("no visible label for <goto> " ^ lab)
-  | Some lab, Slabel n :: tl when lab = n -> tl
-  | Some _, _stmt :: tl -> block_from_label label tl
+let rec block_from_pointer pt stmt_list =
+  match (pt, stmt_list) with
+  | Begin, _ -> stmt_list
+  | Last, [] -> stmt_list
+  | Last, [ _stmt ] -> stmt_list
+  | Last, _stmt :: tl -> block_from_pointer Last tl
+  | Label l, [] -> error None ("no visible label for <goto> " ^ l)
+  | Label l, Slabel n :: tl when l = n -> tl
+  | Label l, _stmt :: tl -> block_from_pointer (Label l) tl
 
 let rec interpret_expr expr env =
   let get_int f loc =
@@ -257,7 +265,7 @@ let rec interpret_stmt stmt env =
   | SassignLocal (_nal, _elo) -> env (* todo: to be implemented *)
   | Sbreak -> env (* todo: to be implemented *)
   | Slabel _ -> env
-  | Sgoto n -> raise (Goto_catch (n, env))
+  | Sgoto n -> raise (Goto_catch (Label n, env))
   | Sblock b -> interpret_block b env
   | Swhile (e, b) ->
     (* Doc: The condition expression of a control structure can return any value.
@@ -376,9 +384,8 @@ let rec interpret_stmt stmt env =
 and interpret_block b env =
   List.fold_left (fun e stmt -> interpret_stmt stmt e) env b
 
-let rec run ?(label = None) chunk env =
+let rec run ?(pt = Begin) chunk env =
   try
-    let bl = block_from_label label chunk in
-    let _env = interpret_block bl env in
-    ()
-  with Goto_catch (label, env) -> run ~label:(Some label) chunk env
+    let bl = block_from_pointer pt chunk in
+    interpret_block bl env
+  with Goto_catch (label, env) -> run ~pt:label chunk env
