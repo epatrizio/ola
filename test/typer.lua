@@ -53,7 +53,12 @@
 
 if false then print(0)
 elseif false then print(0)
-elseif true then print(0+false)
+elseif true then
+    a = 2
+    b = 40
+    print(a+b)
+    b = false
+    print(a+b)
 else print(0) end
 
 -- for i = nil,10,1

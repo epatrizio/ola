@@ -18,7 +18,6 @@ let rec loop (chunk : Ast.chunk) (env : Env.t) =
     in
     let stmt = parser lexer in
     let stmt, env = Scope.analysis stmt env in
-    (* todo : typecheck *)
     let chunk = chunk @ stmt in
     let env = Interpret.run ~pt:Interpret.Last chunk env in
     loop chunk env

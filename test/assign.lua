@@ -16,12 +16,15 @@ print(a1)
 print(a2)
 print(a3)
 
+-- a4 = "a4"
 print(a4)       -- nil, not an error
 
 -- blocks
 
 do
     local a4, b = 0, 0
+    local a4 = 11
+    --a4 = 22     -- local scope
     c = 1       -- global var
     local d <const> = 2
     local e <close> = false     -- nil or false or __close metamethod
@@ -37,8 +40,8 @@ print(a4)       -- always nil
 print(b)
 print(c)
 
--- b = 2
--- print(b+c)   -- ALERT: typechecking design error
+b = 2
+print(b+c)
 
 -- if
 

@@ -1,6 +1,5 @@
 basic operations:
   $ dune exec ola basics.lua
-  typing checks ...
   interprete ...
   nil
   true

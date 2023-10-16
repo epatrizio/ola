@@ -11,6 +11,13 @@ exception Interpretation_error of location option * string
 
 let error loc message = raise (Interpretation_error (loc, message))
 
+let typecheck_expr expr env =
+  try
+    let _ = Typer.typecheck_expr expr env in
+    ()
+  with Typer.Typing_error (loc, message) ->
+    error (Some loc) ("Typing error: " ^ message)
+
 let rec block_from_pointer pt stmt_list =
   match (pt, stmt_list) with
   | Begin, _ -> stmt_list
@@ -33,8 +40,10 @@ let rec interpret_expr expr env =
   in
   let interpret_bbinop_expr binop expr1 expr2 env =
     (* todo: ok for num values *)
+    let loc1, _expr1 = expr1 in
     let v1, env = interpret_expr expr1 env in
     let v2, env = interpret_expr expr2 env in
+    let _ = typecheck_expr (loc1, Ebinop (binop, expr1, expr2)) env in
     begin
       match (v1, v2) with
       | Vboolean b1, Vboolean b2 -> begin
@@ -51,6 +60,7 @@ let rec interpret_expr expr env =
     let loc2, _expr2 = expr2 in
     let v1, env = interpret_expr expr1 env in
     let v2, env = interpret_expr expr2 env in
+    let _ = typecheck_expr (loc1, Ebinop (binop, expr1, expr2)) env in
     begin
       match (v1, v2) with
       | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
@@ -162,8 +172,10 @@ let rec interpret_expr expr env =
     end
   in
   let interpret_sbinop_expr expr1 expr2 env =
+    let loc1, _expr1 = expr1 in
     let v1, env = interpret_expr expr1 env in
     let v2, env = interpret_expr expr2 env in
+    let _ = typecheck_expr (loc1, Ebinop (Bddot, expr1, expr2)) env in
     begin
       match (v1, v2) with
       | Vstring s1, Vstring s2 -> (Vstring (s1 ^ s2), env)
@@ -189,23 +201,26 @@ let rec interpret_expr expr env =
   | _loc, Evalue (Vnumber (Nfloat f)) -> (Vnumber (Nfloat f), env)
   | _loc, Evalue (Vstring s) -> (Vstring s, env)
   | _loc, Evar (Name n) -> (Env.get_value n env, env)
-  | _loc, Eunop (Unot, e) ->
+  | loc, Eunop (Unot, e) ->
     let v, env = interpret_expr e env in
+    let _ = typecheck_expr (loc, Eunop (Unot, e)) env in
     begin
       match v with
       | Vboolean b -> (Vboolean (not b), env)
       | _ -> assert false (* typing error *)
     end
-  | _loc, Eunop (Uminus, e) ->
+  | loc, Eunop (Uminus, e) ->
     let v, env = interpret_expr e env in
+    let _ = typecheck_expr (loc, Eunop (Uminus, e)) env in
     begin
       match v with
       | Vnumber (Ninteger i) -> (Vnumber (Ninteger (-i)), env)
       | Vnumber (Nfloat f) -> (Vnumber (Nfloat (-.f)), env)
       | _ -> assert false (* typing error *)
     end
-  | _loc, Eunop (Usharp, e) ->
+  | loc, Eunop (Usharp, e) ->
     let v, env = interpret_expr e env in
+    let _ = typecheck_expr (loc, Eunop (Usharp, e)) env in
     begin
       match v with
       | Vstring s -> (Vnumber (Ninteger (String.length s)), env)
@@ -213,6 +228,7 @@ let rec interpret_expr expr env =
     end
   | loc, Eunop (Ulnot, e) ->
     let v, env = interpret_expr e env in
+    let _ = typecheck_expr (loc, Eunop (Ulnot, e)) env in
     begin
       match v with
       | Vnumber (Ninteger i) -> (Vnumber (Ninteger (lnot i)), env)

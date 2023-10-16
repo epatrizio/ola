@@ -1,6 +1,5 @@
 assignment operations:
   $ dune exec ola assign.lua
-  typing checks ...
   interprete ...
   0
   40
@@ -21,6 +20,7 @@ assignment operations:
   nil
   nil
   1
+  3
   true
   nil
   true

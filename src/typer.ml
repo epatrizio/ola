@@ -1,5 +1,10 @@
 (* Typer *)
 
+(* Note :
+   Now typecheck is performed during interpretation.
+   So, statement typecheck is no longer used.
+*)
+
 open Ast
 
 exception Typing_error of location * string
@@ -8,18 +13,18 @@ let error loc message = raise (Typing_error (loc, message))
 
 let ( let* ) = Result.bind
 
-let list_iter fct list =
+let list_iter fct list env =
   try
     List.iter
       (fun (_, elt) ->
-        match fct elt with
+        match fct elt env with
         | Error (loc, message) -> error loc message
         | Ok () -> () )
       list;
     Ok ()
   with Typing_error (loc, message) -> Error (loc, message)
 
-let rec typecheck_expr expr =
+let rec typecheck_expr expr env =
   let typecheck_value value =
     match value with
     | Vnil _ -> Tnil
@@ -28,9 +33,9 @@ let rec typecheck_expr expr =
     | Vnumber (Nfloat _) -> Tnumber Tfloat
     | Vstring _ -> Tstring
   in
-  let typecheck_arith_unop expr =
+  let typecheck_arith_unop expr env =
     let loc, _expr = expr in
-    let typ = typecheck_expr expr in
+    let typ = typecheck_expr expr env in
     match typ with
     | Tnumber Tinteger -> Tnumber Tinteger
     | Tnumber Tfloat -> Tnumber Tfloat
@@ -39,9 +44,9 @@ let rec typecheck_expr expr =
     | Tstring -> error loc "attempt to perform arithmetic on a string value"
     | _ -> assert false (* call error *)
   in
-  let typecheck_bitwise_unop expr =
+  let typecheck_bitwise_unop expr env =
     let loc, _expr = expr in
-    let typ = typecheck_expr expr in
+    let typ = typecheck_expr expr env in
     match typ with
     | Tnumber Tinteger -> Tnumber Tinteger
     | Tnumber Tfloat ->
@@ -54,11 +59,11 @@ let rec typecheck_expr expr =
       error loc "attempt to perform bitwise operation on a string value"
     | _ -> assert false (* call error *)
   in
-  let typecheck_arith_binop binop expr1 expr2 =
+  let typecheck_arith_binop binop expr1 expr2 env =
     let loc1, _expr1 = expr1 in
     let loc2, _expr2 = expr2 in
-    let typ1 = typecheck_expr expr1 in
-    let typ2 = typecheck_expr expr2 in
+    let typ1 = typecheck_expr expr1 env in
+    let typ2 = typecheck_expr expr2 env in
     match (typ1, typ2) with
     | Tnumber Tinteger, Tnumber Tinteger ->
       if binop = Bdiv || binop = Bexp then Tnumber Tfloat else Tnumber Tinteger
@@ -76,11 +81,11 @@ let rec typecheck_expr expr =
     | _, Tstring -> error loc2 "attempt to perform arithmetic on a string value"
     | _ -> assert false (* call error *)
   in
-  let typecheck_bitwise_binop expr1 expr2 =
+  let typecheck_bitwise_binop expr1 expr2 env =
     let loc1, _expr1 = expr1 in
     let loc2, _expr2 = expr2 in
-    let typ1 = typecheck_expr expr1 in
-    let typ2 = typecheck_expr expr2 in
+    let typ1 = typecheck_expr expr1 env in
+    let typ2 = typecheck_expr expr2 env in
     match (typ1, typ2) with
     | Tnumber Tinteger, Tnumber Tinteger
     | Tnumber Tfloat, Tnumber Tfloat
@@ -101,11 +106,11 @@ let rec typecheck_expr expr =
       error loc2 "attempt to perform bitwise operation on a string value"
     | _ -> assert false (* call error *)
   in
-  let typecheck_str_binop expr1 expr2 =
+  let typecheck_str_binop expr1 expr2 env =
     let loc1, _expr1 = expr1 in
     let loc2, _expr2 = expr2 in
-    let typ1 = typecheck_expr expr1 in
-    let typ2 = typecheck_expr expr2 in
+    let typ1 = typecheck_expr expr1 env in
+    let typ2 = typecheck_expr expr2 env in
     match (typ1, typ2) with
     | Tstring, Tstring
     | Tstring, Tnumber Tinteger
@@ -125,12 +130,14 @@ let rec typecheck_expr expr =
   in
   match expr with
   | _loc, Evalue v -> typecheck_value v
-  | _loc, Evar _v -> Tnil (* TODO *)
+  | _loc, Evar (Name n) ->
+    let v = Env.get_value n env in
+    typecheck_value v
   | _loc, Eunop (Unot, _) -> Tboolean
-  | _loc, Eunop (Uminus, e) -> typecheck_arith_unop e
+  | _loc, Eunop (Uminus, e) -> typecheck_arith_unop e env
   | _loc, Eunop (Usharp, e) ->
     let l, _e = e in
-    let typ = typecheck_expr e in
+    let typ = typecheck_expr e env in
     begin
       match typ with
       | Tstring -> Tnumber Tinteger
@@ -138,21 +145,21 @@ let rec typecheck_expr expr =
         error l "attempt to perform #operator on a not supported type"
       | _ -> error l "#operator on this type: to be implemented ..."
     end
-  | _loc, Eunop (Ulnot, e) -> typecheck_bitwise_unop e
+  | _loc, Eunop (Ulnot, e) -> typecheck_bitwise_unop e env
   | _loc, Ebinop (Band, _, _) | _loc, Ebinop (Bor, _, _) -> Tboolean (* TODO *)
-  | _loc, Ebinop (Badd, e1, e2) -> typecheck_arith_binop Badd e1 e2
-  | _loc, Ebinop (Bsub, e1, e2) -> typecheck_arith_binop Bsub e1 e2
-  | _loc, Ebinop (Bmul, e1, e2) -> typecheck_arith_binop Bmul e1 e2
-  | _loc, Ebinop (Bdiv, e1, e2) -> typecheck_arith_binop Bdiv e1 e2
-  | _loc, Ebinop (Bfldiv, e1, e2) -> typecheck_arith_binop Bfldiv e1 e2
-  | _loc, Ebinop (Bmod, e1, e2) -> typecheck_arith_binop Bmod e1 e2
-  | _loc, Ebinop (Bexp, e1, e2) -> typecheck_arith_binop Bexp e1 e2
+  | _loc, Ebinop (Badd, e1, e2) -> typecheck_arith_binop Badd e1 e2 env
+  | _loc, Ebinop (Bsub, e1, e2) -> typecheck_arith_binop Bsub e1 e2 env
+  | _loc, Ebinop (Bmul, e1, e2) -> typecheck_arith_binop Bmul e1 e2 env
+  | _loc, Ebinop (Bdiv, e1, e2) -> typecheck_arith_binop Bdiv e1 e2 env
+  | _loc, Ebinop (Bfldiv, e1, e2) -> typecheck_arith_binop Bfldiv e1 e2 env
+  | _loc, Ebinop (Bmod, e1, e2) -> typecheck_arith_binop Bmod e1 e2 env
+  | _loc, Ebinop (Bexp, e1, e2) -> typecheck_arith_binop Bexp e1 e2 env
   | _loc, Ebinop (Bland, e1, e2)
   | _loc, Ebinop (Blor, e1, e2)
   | _loc, Ebinop (Blxor, e1, e2)
   | _loc, Ebinop (Blsl, e1, e2)
   | _loc, Ebinop (Blsr, e1, e2) ->
-    typecheck_bitwise_binop e1 e2
+    typecheck_bitwise_binop e1 e2 env
   | _loc, Ebinop (Blt, _, _)
   | _loc, Ebinop (Ble, _, _)
   | _loc, Ebinop (Bgt, _, _)
@@ -160,9 +167,9 @@ let rec typecheck_expr expr =
   | _loc, Ebinop (Beq, _, _)
   | _loc, Ebinop (Bneq, _, _) ->
     Tboolean (* TODO *)
-  | _loc, Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2
+  | _loc, Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
 
-let rec typecheck_stmt stmt =
+let rec typecheck_stmt stmt env =
   try
     match stmt with
     | Sempty -> Ok ()
@@ -171,22 +178,22 @@ let rec typecheck_stmt stmt =
     | Sbreak -> Ok ()
     | Slabel _ -> Ok ()
     | Sgoto _ -> Ok ()
-    | Sblock b -> typecheck_block b
+    | Sblock b -> typecheck_block b env
     | Swhile (_e, b) ->
       (* Doc: The condition expression _e of a control structure can return any value *)
-      typecheck_block b
-    | Srepeat (b, _e) -> typecheck_block b (* Memo: Same Swhile *)
+      typecheck_block b env
+    | Srepeat (b, _e) -> typecheck_block b env (* Memo: Same Swhile *)
     | Sif (_e, b, ebl, ob) ->
       (* Memo: Same Swhile *)
-      let* _ = typecheck_block b in
-      let* _ = list_iter typecheck_block ebl in
+      let* _ = typecheck_block b env in
+      let* _ = list_iter typecheck_block ebl env in
       begin
-        match ob with None -> Ok () | Some b -> typecheck_block b
+        match ob with None -> Ok () | Some b -> typecheck_block b env
       end
     | Sfor (_n, e1, e2, oe, b) ->
-      let typecheck_init expr =
+      let typecheck_init expr env =
         begin
-          match typecheck_expr expr with
+          match typecheck_expr expr env with
           | Tnumber Tinteger | Tnumber Tfloat | Tstring ->
             (* string will be cast in float value during interpretation *)
             Ok ()
@@ -195,25 +202,25 @@ let rec typecheck_stmt stmt =
             error loc "bad 'for' initial, limit, step (number expected)"
         end
       in
-      let* _ = typecheck_init e1 in
-      let* _ = typecheck_init e2 in
+      let* _ = typecheck_init e1 env in
+      let* _ = typecheck_init e2 env in
       begin
         match oe with
         | Some e ->
-          let* _ = typecheck_init e in
-          typecheck_block b
-        | None -> typecheck_block b
+          let* _ = typecheck_init e env in
+          typecheck_block b env
+        | None -> typecheck_block b env
       end
     | Siterator (_nl, _el, _b) -> Ok () (* todo: to be implemented *)
     | Sprint e ->
-      let _ = typecheck_expr e in
+      let _ = typecheck_expr e env in
       Ok ()
   with Typing_error (loc, message) -> Error (loc, message)
 
-and typecheck_block b =
+and typecheck_block b env =
   match b with
   | [] -> Ok ()
   | s :: tl -> (
-    match typecheck_stmt s with Ok () -> typecheck_block tl | e -> e )
+    match typecheck_stmt s env with Ok () -> typecheck_block tl env | e -> e )
 
-let typecheck chunk = typecheck_block chunk
+let typecheck chunk env = typecheck_block chunk env
