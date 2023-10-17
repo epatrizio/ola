@@ -1,5 +1,9 @@
+a = b
+local a = 0
 a = 0
+a = 1
 print(a)
+print(b)    -- nil, not an error
 
 a1, a2, a3 = 40, 41, 40+2
 print(a1)
@@ -16,19 +20,21 @@ print(a1)
 print(a2)
 print(a3)
 
--- a4 = "a4"
-print(a4)       -- nil, not an error
+print(a4)   -- nil, not an error
+a4 = "a4"
+print(a4)
 
 -- blocks
 
 do
     local a4, b = 0, 0
     local a4 = 11
-    --a4 = 22     -- local scope
+    a4 = 22     -- local scope
     c = 1       -- global var
     local d <const> = 2
     local e <close> = false     -- nil or false or __close metamethod
-    print(a4)   -- 0, local block scope, not the same var!
+    print(a)
+    print(a4)   -- 11, local block scope, not the same var!
     print(b)
     print(c)
     print(d)
@@ -36,7 +42,7 @@ do
     print(e)
 end
 
-print(a4)       -- always nil
+print(a4)       -- "a4"
 print(b)
 print(c)
 
@@ -72,3 +78,17 @@ for i = 0,2
         a6 = true
         print(a6)
     end
+
+-- doc §3.5 https://www.lua.org/manual/5.4/manual.html#3.5
+x = 10                -- global variable
+do                    -- new block
+  local x = x         -- new 'x', with value 10
+  print(x)            --> 10
+  x = x+1
+  do                  -- another block
+    local x = x+1     -- another 'x'
+    print(x)          --> 12
+  end
+  print(x)            --> 11
+end
+print(x)              --> 10  (the global one)

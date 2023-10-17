@@ -261,13 +261,7 @@ let rec interpret_stmt stmt env =
   let rec lists_assign vl el env =
     begin
       match (vl, el) with
-      | [], [] | [], _ -> env
-      | vl, [] ->
-        List.fold_left
-          (fun e v ->
-            let (Name n) = v in
-            Env.set_value n (Ast.Vnil ()) e )
-          env vl
+      | [], [] | [], _ | _, [] -> env
       | v :: vl, e :: el ->
         let (Name n) = v in
         let va, env = interpret_expr e env in
@@ -275,10 +269,20 @@ let rec interpret_stmt stmt env =
         lists_assign vl el env
     end
   in
+  let rec lists_lassign nal elo env =
+    begin
+      match (nal, elo) with
+      | [], Some [] | [], None | [], _ | _, Some [] | _, None -> env
+      | (n, _on) :: vl, Some (e :: el) ->
+        let va, env = interpret_expr e env in
+        let env = Env.set_value n va env in
+        lists_lassign vl (Some el) env
+    end
+  in
   match stmt with
   | Sempty -> env
   | Sassign (vl, el) -> lists_assign vl el env
-  | SassignLocal (_nal, _elo) -> env (* todo: to be implemented *)
+  | SassignLocal (nal, elo) -> lists_lassign nal elo env
   | Sbreak -> env (* todo: to be implemented *)
   | Slabel _ -> env
   | Sgoto n -> raise (Goto_catch (Label n, env))

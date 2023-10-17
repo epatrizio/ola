@@ -1,7 +1,8 @@
 assignment operations:
   $ dune exec ola assign.lua
   interprete ...
-  0
+  1
+  nil
   40
   41
   42
@@ -12,12 +13,14 @@ assignment operations:
   46
   nil
   nil
-  nil
-  nil
+  a4
   1
-  nil
-  nil
-  nil
+  22
+  0
+  1
+  2
+  false
+  a4
   nil
   1
   3
@@ -26,3 +29,7 @@ assignment operations:
   true
   true
   true
+  10
+  12
+  11
+  10

@@ -6,7 +6,7 @@ let rec analyse_expr expr env =
   match expr with
   | loc, Evalue v -> ((loc, Evalue v), env)
   | loc, Evar (Name n) ->
-    let fresh_n, env = Env.add_name n env in
+    let fresh_n, env = Env.get_name n env in
     ((loc, Evar (Name fresh_n)), env)
   | loc, Eunop (op, e) ->
     let e, env = analyse_expr e env in
@@ -17,19 +17,30 @@ let rec analyse_expr expr env =
     ((loc, Ebinop (op, e1, e2)), env)
 
 let rec analyse_stmt stmt env =
-  let analyse_var var env =
+  let analyse_var is_local var env =
     match var with
     | Name n ->
-      let fresh_n, env = Env.add_name n env in
+      let fresh_n, env =
+        (if is_local then Env.add_local else Env.add_name) n env
+      in
       (Name fresh_n, env)
   in
   let rec analyse_vl vl env =
     match vl with
     | [] -> ([], env)
     | v :: tl ->
-      let v, env = analyse_var v env in
+      let v, env = analyse_var false v env in
       let tl, env = analyse_vl tl env in
       (v :: tl, env)
+  in
+  let rec analyse_nal nal env =
+    (* todo : local name attrib (const/close) support *)
+    match nal with
+    | [] -> ([], env)
+    | (n, on) :: tl ->
+      let Name n, env = analyse_var true (Name n) env in
+      let tl, env = analyse_nal tl env in
+      ((n, on) :: tl, env)
   in
   let rec analyse_el el env =
     match el with
@@ -51,11 +62,19 @@ let rec analyse_stmt stmt env =
   match stmt with
   | Sempty -> (Sempty, env)
   | Sassign (vl, el) ->
-    let vl, env = analyse_vl vl env in
     let el, env = analyse_el el env in
+    let vl, env = analyse_vl vl env in
     (Sassign (vl, el), env)
   | SassignLocal (nal, elo) ->
-    (SassignLocal (nal, elo), env (* todo: to be implemented *))
+    let elo, env =
+      match elo with
+      | None -> (None, env)
+      | Some el ->
+        let el, env = analyse_el el env in
+        (Some el, env)
+    in
+    let nal, env = analyse_nal nal env in
+    (SassignLocal (nal, elo), env)
   | Sbreak -> (Sbreak, env)
   | Slabel n -> (Slabel n, env)
   | Sgoto n -> (Sgoto n, env)
@@ -103,11 +122,17 @@ let rec analyse_stmt stmt env =
     (Sprint e, env)
 
 and analyse_block b env =
-  match b with
-  | [] -> ([], env)
-  | stmt :: tl ->
-    let stmt, env = analyse_stmt stmt env in
-    let tl, env = analyse_block tl env in
-    (stmt :: tl, env)
+  let rec analyse_bl b env =
+    match b with
+    | [] -> ([], env)
+    | stmt :: tl ->
+      let stmt, env = analyse_stmt stmt env in
+      let tl, env = analyse_bl tl env in
+      (stmt :: tl, env)
+  in
+  let env = Env.scope_open env in
+  let b, env = analyse_bl b env in
+  let env = Env.scope_close env in
+  (b, env)
 
 let analysis chunk env = analyse_block chunk env
