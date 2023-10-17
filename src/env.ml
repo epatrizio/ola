@@ -34,36 +34,47 @@ let scope_close env =
   }
 
 let add_global n env =
-  let fresh_name = mk_fresh_name () in
-  let env_n = Names.add fresh_name n env.names in
-  let env_v = Values.add fresh_name (Ast.Vnil ()) env.values in
-  let env_g = Names.add n fresh_name env.globals in
-  ( fresh_name
-  , { names = env_n; values = env_v; globals = env_g; locals = env.locals } )
+  match Names.find_opt n env.globals with
+  | Some fn -> (fn, env)
+  | None ->
+    let fresh_name = mk_fresh_name () in
+    let env_n = Names.add fresh_name n env.names in
+    let env_v = Values.add fresh_name (Ast.Vnil ()) env.values in
+    let env_g = Names.add n fresh_name env.globals in
+    ( fresh_name
+    , { names = env_n; values = env_v; globals = env_g; locals = env.locals } )
 
 let add_local n env =
   (* in current scope *)
   match env.locals with
   | [] -> assert false
-  | names :: tl ->
-    let fresh_name = mk_fresh_name () in
-    let env_n = Names.add fresh_name n env.names in
-    let env_v = Values.add fresh_name (Ast.Vnil ()) env.values in
-    let env_l = Names.add n fresh_name names in
-    ( fresh_name
-    , { names = env_n
-      ; values = env_v
-      ; globals = env.globals
-      ; locals = env_l :: tl
-      } )
+  | names :: tl -> (
+    match Names.find_opt n names with
+    | Some fn -> (fn, env)
+    | None ->
+      let fresh_name = mk_fresh_name () in
+      let env_n = Names.add fresh_name n env.names in
+      let env_v = Values.add fresh_name (Ast.Vnil ()) env.values in
+      let env_l = Names.add n fresh_name names in
+      ( fresh_name
+      , { names = env_n
+        ; values = env_v
+        ; globals = env.globals
+        ; locals = env_l :: tl
+        } ) )
 
 let add_name n env =
-  match env.locals with
-  | [] -> assert false
-  | names :: _tl -> (
-    match Names.find_opt n names with
-    | None -> add_global n env
-    | Some _ -> add_local n env )
+  let rec add_n n locals =
+    match locals with
+    | [] -> None
+    | names :: tl -> (
+      match Names.find_opt n names with
+      | None -> add_n n tl
+      | Some fn -> Some (fn, env) )
+  in
+  match add_n n env.locals with
+  | None -> add_global n env
+  | Some (fn, env) -> (fn, env)
 
 let get_name n env =
   let rec get_local_name n scopes =

@@ -16,7 +16,7 @@ assignment operations:
   a4
   1
   22
-  0
+  nil
   1
   2
   false
@@ -25,7 +25,16 @@ assignment operations:
   1
   3
   true
-  nil
+  0
+  1
+  2
+  3
+  4
+  0
+  1
+  2
+  3
+  4
   true
   true
   true

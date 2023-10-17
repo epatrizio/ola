@@ -261,7 +261,13 @@ let rec interpret_stmt stmt env =
   let rec lists_assign vl el env =
     begin
       match (vl, el) with
-      | [], [] | [], _ | _, [] -> env
+      | [], [] | [], _ -> env
+      | vl, [] ->
+        List.fold_left
+          (fun e v ->
+            let (Name n) = v in
+            Env.set_value n (Ast.Vnil ()) e )
+          env vl
       | v :: vl, e :: el ->
         let (Name n) = v in
         let va, env = interpret_expr e env in
@@ -272,7 +278,11 @@ let rec interpret_stmt stmt env =
   let rec lists_lassign nal elo env =
     begin
       match (nal, elo) with
-      | [], Some [] | [], None | [], _ | _, Some [] | _, None -> env
+      | [], Some [] | [], None | [], _ | _, None -> env
+      | nal, Some [] ->
+        List.fold_left
+          (fun e (n, _on) -> Env.set_value n (Ast.Vnil ()) e)
+          env nal
       | (n, _on) :: vl, Some (e :: el) ->
         let va, env = interpret_expr e env in
         let env = Env.set_value n va env in

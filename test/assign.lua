@@ -28,7 +28,7 @@ print(a4)
 
 do
     local a4, b = 0, 0
-    local a4 = 11
+    local a4, b = 11
     a4 = 22     -- local scope
     c = 1       -- global var
     local d <const> = 2
@@ -60,16 +60,20 @@ else print(a3) end
 
 -- while
 
-while 1 > 2
-    do
-        print(a6)
-    end
+cnt = 0
+while cnt < 5
+  do
+    print(cnt)
+    cnt = cnt + 1
+  end
 
 -- repeat
 
+local cnt = 0
 repeat
-    print(a7)
-until 1 < 2
+    print(cnt)
+    cnt = cnt + 1
+until cnt >= 5
 
 -- for
 
