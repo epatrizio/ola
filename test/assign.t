@@ -17,13 +17,12 @@ assignment operations:
   1
   22
   nil
-  1
+  nil
   2
   false
   a4
   nil
-  1
-  3
+  nil
   true
   0
   1

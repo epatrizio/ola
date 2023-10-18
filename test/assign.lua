@@ -30,11 +30,11 @@ do
     local a4, b = 0, 0
     local a4, b = 11
     a4 = 22     -- local scope
-    c = 1       -- global var
+    --c = 1       -- global var
     local d <const> = 2
     local e <close> = false     -- nil or false or __close metamethod
     print(a)
-    print(a4)   -- 11, local block scope, not the same var!
+    print(a4)   -- 22, local block scope, not the same var!
     print(b)
     print(c)
     print(d)
@@ -46,8 +46,8 @@ print(a4)       -- "a4"
 print(b)
 print(c)
 
-b = 2
-print(b+c)
+-- b = 2
+-- print(b+c)
 
 -- if
 

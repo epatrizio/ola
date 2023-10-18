@@ -21,7 +21,7 @@ let rec analyse_stmt stmt env =
     match var with
     | Name n ->
       let fresh_n, env =
-        (if is_local then Env.add_local else Env.add_name) n env
+        (if is_local then Env.add_name else Env.get_name) n env
       in
       (Name fresh_n, env)
   in
@@ -122,17 +122,12 @@ let rec analyse_stmt stmt env =
     (Sprint e, env)
 
 and analyse_block b env =
-  let rec analyse_bl b env =
-    match b with
-    | [] -> ([], env)
-    | stmt :: tl ->
-      let stmt, env = analyse_stmt stmt env in
-      let tl, env = analyse_bl tl env in
-      (stmt :: tl, env)
-  in
-  let env = Env.scope_open env in
-  let b, env = analyse_bl b env in
-  let env = Env.scope_close env in
-  (b, env)
+  match b with
+  | [] -> ([], env)
+  | stmt :: tl ->
+    let stmt, env_s = analyse_stmt stmt env in
+    let tl, env_b = analyse_block tl env_s in
+    ( stmt :: tl
+    , { names = env_b.names; values = env_b.values; scope = env.scope } )
 
 let analysis chunk env = analyse_block chunk env
