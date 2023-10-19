@@ -344,9 +344,7 @@ let rec interpret_stmt stmt env =
         end
       | _ -> interpret_block b env
     end
-  | Sfor (_n, e1, e2, oe, b) ->
-    (* TODO refacto implem *)
-    (* todo: need local environment for _n *)
+  | Sfor (n, e1, e2, oe, b) ->
     let init_val expr env =
       let v, env = interpret_expr expr env in
       match v with
@@ -359,51 +357,33 @@ let rec interpret_stmt stmt env =
       end
       | _ -> assert false (* typing error *)
     in
-    let interpret_cond exp1 exp2 step env =
+    let cond_expr loc limit step _env =
       let op =
         match step with
         | Vnumber (Ninteger i) -> if i >= 0 then Ble else Bge
         | Vnumber (Nfloat f) -> if f >= 0. then Ble else Bge
         | _ -> assert false (* call error *)
       in
-      let loc1, _e1 = exp1 in
-      let v, env = interpret_expr (loc1, Ebinop (op, exp1, exp2)) env in
-      match v with Vboolean b -> (b, env) | _ -> assert false (* call error *)
+      (loc, Ebinop (op, (loc, Evar (Name n)), (loc, Evalue limit)))
     in
-    let incr_init initial step env =
-      let loc, _e = initial in
-      let v, env = interpret_expr (loc, Ebinop (Badd, initial, step)) env in
-      match v with
-      | Vnumber (Ninteger i) -> (Vnumber (Ninteger i), env)
-      | Vnumber (Nfloat f) -> (Vnumber (Nfloat f), env)
-      | _ -> assert false (* call error *)
+    let incr_cnt_stmt loc step =
+      Sassign
+        ( [ Name n ]
+        , [ (loc, Ebinop (Badd, (loc, Evar (Name n)), (loc, Evalue step))) ] )
     in
     let l1, _e1 = e1 in
-    let l2, _e2 = e2 in
     let ival, env = init_val e1 env in
-    let initial = ref ival in
+    let env = Env.set_value n ival env in
     let limit, env = init_val e2 env in
     let step, env =
       match oe with
       | Some e -> init_val e env
       | None -> (Vnumber (Ninteger 1), env)
     in
-    let cond = ref false in
-    (* initial <= limit *)
-    let c, env =
-      interpret_cond (l1, Evalue !initial) (l2, Evalue limit) step env
-    in
-    cond := c;
-    while !cond do
-      let env = interpret_block b env in
-      let i, _env = incr_init (l1, Evalue !initial) (l1, Evalue step) env in
-      initial := i;
-      let c, _env =
-        interpret_cond (l1, Evalue !initial) (l2, Evalue limit) step env
-      in
-      cond := c
-    done;
-    env
+    (* Syntactic sugar *)
+    interpret_stmt
+      (Swhile (cond_expr l1 limit step env, b @ [ incr_cnt_stmt l1 step ]))
+      env
   | Siterator (_nl, _el, _b) -> env (* todo: to be implemented *)
   | Sprint e ->
     let v, _env = interpret_expr e env in

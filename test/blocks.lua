@@ -3,32 +3,43 @@
 print(0)
 
 do
-    ;
-    print(1);
-    print(2)
-    print(3);
+  ;
+  print(1);
+  print(2)
+  print(3);
 end
 
 while 1 > 2
-    do
-        print(4)
-    end
+  do
+    print(4)
+  end
 
 repeat
-    print(4)
+  print(4)
 until 1 < 2
 
 -- init, max/min value, incr (1:default)
 for i = 4+1.0,10
-    do
-        print(i) -- todo: need environment
-        -- if i > 7 then break end
-    end
+  do
+    print(i)
+    -- if i > 7 then break end
+  end
 
 for i = 41+1.0,10,"-1"..".5"
-    do
-        print(i) -- todo: need environment
-    end
+  do
+    print(i)
+  end
+
+local cnt = 0
+while cnt < 2
+  do
+    for i = "20.5","10"..".5","-2"..".1"
+      do
+        print(i)
+      end
+    cnt = cnt + 1
+  end
+
 -- for i=1,f(x) do print(i) end
 
 -- for iterator (todo)

@@ -25,6 +25,7 @@ assignment operations:
   1
   3
   true
+  nil
   0
   1
   2
@@ -35,9 +36,11 @@ assignment operations:
   2
   3
   4
-  true
-  true
-  true
+  0
+  1
+  2
+  3
+  4
   10
   12
   11

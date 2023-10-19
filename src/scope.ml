@@ -102,7 +102,9 @@ let rec analyse_stmt stmt env =
     in
     (Sif (e, b, ebl, ob), env)
   | Sfor (n, e1, e2, oe, b) ->
-    (* todo: local environment for n *)
+    let get_n e = match e with Evar (Name n) -> n | _ -> assert false in
+    let loc1, _e1 = e1 in
+    let (_loc1, v), env = analyse_expr (loc1, Evar (Name n)) env in
     let e1, env = analyse_expr e1 env in
     let e2, env = analyse_expr e2 env in
     let oe, env =
@@ -113,7 +115,7 @@ let rec analyse_stmt stmt env =
         (Some e, env)
     in
     let b, env = analyse_block b env in
-    (Sfor (n, e1, e2, oe, b), env)
+    (Sfor (get_n v, e1, e2, oe, b), env)
   | Siterator (nl, el, b) ->
     (* todo: to be implemented *)
     (Siterator (nl, el, b), env)

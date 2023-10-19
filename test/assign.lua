@@ -27,19 +27,19 @@ print(a4)
 -- blocks
 
 do
-    local a4, b = 0, 0
-    local a4, b = 11
-    a4 = 22     -- local scope
-    c = 1       -- global var
-    local d <const> = 2
-    local e <close> = false     -- nil or false or __close metamethod
-    print(a)
-    print(a4)   -- 22, local block scope, not the same var!
-    print(b)
-    print(c)
-    print(d)
-    -- d = 3       -- error : d is a constant local var
-    print(e)
+  local a4, b = 0, 0
+  local a4, b = 11
+  a4 = 22     -- local scope
+  c = 1       -- global var
+  local d <const> = 2
+  local e <close> = false     -- nil or false or __close metamethod
+  print(a)
+  print(a4)   -- 22, local block scope, not the same var!
+  print(b)
+  print(c)
+  print(d)
+  -- d = 3       -- error : d is a constant local var
+  print(e)
 end
 
 print(a4)       -- "a4"
@@ -54,9 +54,10 @@ print(b+c)
 if false then print(a1)
 elseif false then print(a2)
 elseif true then
-    a5 = true
-    print(a5)
+  local a5 <const> = true
+  print(a5)
 else print(a3) end
+print(a5)
 
 -- while
 
@@ -71,17 +72,17 @@ while cnt < 5
 
 local cnt = 0
 repeat
-    print(cnt)
-    cnt = cnt + 1
+  print(cnt)
+  cnt = cnt + 1
 until cnt >= 5
 
 -- for
 
-for i = 0,2
-    do
-        a6 = true
-        print(a6)
-    end
+for i = 0,4
+  do
+    print(i)
+  end
+--print(i)
 
 -- doc §3.5 https://www.lua.org/manual/5.4/manual.html#3.5
 x = 10                -- global variable

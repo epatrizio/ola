@@ -6,34 +6,44 @@ block basic operations:
   2
   3
   4
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
-  nil
+  5.
+  6.
+  7.
+  8.
+  9.
+  10.
+  42.
+  40.5
+  39.
+  37.5
+  36.
+  34.5
+  33.
+  31.5
+  30.
+  28.5
+  27.
+  25.5
+  24.
+  22.5
+  21.
+  19.5
+  18.
+  16.5
+  15.
+  13.5
+  12.
+  10.5
+  20.5
+  18.4
+  16.3
+  14.2
+  12.1
+  20.5
+  18.4
+  16.3
+  14.2
+  12.1
   42
   42
   42
