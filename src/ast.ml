@@ -74,6 +74,7 @@ type stmt =
   | Sassign of var list * expr list
   | SassignLocal of (name * attrib option) list * expr list option
   | Sbreak
+  | Sreturn of expr list option * stmt option
   | Slabel of name
   | Sgoto of name
   | Sblock of block
@@ -166,6 +167,9 @@ let rec print_stmt fmt stmt =
         (to_el exprlist)
     | None -> ()
   in
+  let pp_stmt_opt fmt stmt_opt =
+    match stmt_opt with Some stmt -> print_stmt fmt stmt | None -> ()
+  in
   match stmt with
   | Sempty -> Format.fprintf fmt ""
   | Sassign (il, lel) ->
@@ -179,6 +183,8 @@ let rec print_stmt fmt stmt =
       (Format.pp_print_list ~pp_sep pp_name_attrib)
       nal pp_exprlist_opt elo
   | Sbreak -> Format.fprintf fmt "break@."
+  | Sreturn (elo, so) ->
+    Format.fprintf fmt "return %a%a@." pp_exprlist_opt elo pp_stmt_opt so
   | Slabel n -> Format.fprintf fmt "::%s::@." n
   | Sgoto n -> Format.fprintf fmt "goto %s@." n
   | Sblock b -> Format.fprintf fmt "do@.@[<v>%a@]end@." print_block b

@@ -6,7 +6,7 @@
 %token COLON DCOLON SEMICOLON COMMA
 %token AEQ LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR LAND LOR LSL LSR TILDE
-%token DO END BREAK WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL
+%token DO END BREAK RETURN WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL
 %token PRINT
 %token EOF
 
@@ -52,7 +52,10 @@ lexpr :
      | e=expr { (($startpos,$endpos), e) }
 
 exprlist :
-     | AEQ el=separated_nonempty_list(COMMA, lexpr) { el }
+     | el=separated_nonempty_list(COMMA, lexpr) { el }
+
+exprlistopt :
+     | AEQ el=exprlist { el }
 
 elseif :
      | ELSEIF e=lexpr THEN b=block { (e, b) }
@@ -63,11 +66,15 @@ elseop :
 cexpr :
      | COMMA e=lexpr { e }
 
-stmt :
+sempty :
      | SEMICOLON { Ast.Sempty }
-     | vl=separated_nonempty_list(COMMA, var) el=exprlist { Ast.Sassign (vl, el) }
-     | LOCAL nal=separated_nonempty_list(COMMA, attname) elo=option(exprlist) { Ast.SassignLocal (nal, elo) }
+
+stmt :
+     | s=sempty { s }
+     | vl=separated_nonempty_list(COMMA, var) AEQ el=exprlist { Ast.Sassign (vl, el) }
+     | LOCAL nal=separated_nonempty_list(COMMA, attname) elo=option(exprlistopt) { Ast.SassignLocal (nal, elo) }
      | BREAK { Ast.Sbreak }
+     | RETURN elo=option(exprlist) so=option(sempty) { Ast.Sreturn (elo, so) }
      | DCOLON n=NAME DCOLON { Ast.Slabel n }
      | GOTO n=NAME { Ast.Sgoto n }
      | DO b=block END { Ast.Sblock b }

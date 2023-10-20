@@ -294,6 +294,7 @@ let rec interpret_stmt stmt env =
   | Sassign (vl, el) -> lists_assign vl el env
   | SassignLocal (nal, elo) -> lists_lassign nal elo env
   | Sbreak -> env (* todo: to be implemented *)
+  | Sreturn (_elo, _so) -> env (* todo: to be implemented *)
   | Slabel _ -> env
   | Sgoto n -> raise (Goto_catch (Label n, env))
   | Sblock b -> interpret_block b env

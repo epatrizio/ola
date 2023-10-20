@@ -50,6 +50,13 @@ let rec analyse_stmt stmt env =
       let tl, env = analyse_el tl env in
       (e :: tl, env)
   in
+  let analyse_elo elo env =
+    match elo with
+    | None -> (None, env)
+    | Some el ->
+      let el, env = analyse_el el env in
+      (Some el, env)
+  in
   let rec analyse_ebl ebl env =
     match ebl with
     | [] -> ([], env)
@@ -66,16 +73,20 @@ let rec analyse_stmt stmt env =
     let vl, env = analyse_vl vl env in
     (Sassign (vl, el), env)
   | SassignLocal (nal, elo) ->
-    let elo, env =
-      match elo with
-      | None -> (None, env)
-      | Some el ->
-        let el, env = analyse_el el env in
-        (Some el, env)
-    in
+    let elo, env = analyse_elo elo env in
     let nal, env = analyse_nal nal env in
     (SassignLocal (nal, elo), env)
   | Sbreak -> (Sbreak, env)
+  | Sreturn (elo, so) ->
+    let elo, env = analyse_elo elo env in
+    let so, env =
+      match so with
+      | None -> (None, env)
+      | Some s ->
+        let s, env = analyse_stmt s env in
+        (Some s, env)
+    in
+    (Sreturn (elo, so), env)
   | Slabel n -> (Slabel n, env)
   | Sgoto n -> (Sgoto n, env)
   | Sblock b ->

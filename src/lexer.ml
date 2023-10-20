@@ -125,6 +125,7 @@ let rec token buf =
   | "or" -> OR
   | "local" -> LOCAL
   | "break" -> BREAK
+  | "return" -> RETURN
   | "while" -> WHILE
   | "for" -> FOR
   | "in" -> IN

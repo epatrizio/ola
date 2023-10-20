@@ -56,4 +56,16 @@ if false then print(241)
 elseif false then print(242) elseif true then print(42)
 else print(243) end
 
+-- warning, todo: full return semantic implem'
+do
+  local tmp = 1
+  print(tmp)
+  --return      -- ok & only one return in a block
+  --return 1, 2 -- only at the end of the block
+  print(tmp + 1)
+  return tmp, tmp+1;
+end
+
+--return
+
 print(0)

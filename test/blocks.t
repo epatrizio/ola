@@ -47,4 +47,6 @@ block basic operations:
   42
   42
   42
+  1
+  2
   0

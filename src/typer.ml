@@ -176,6 +176,7 @@ let rec typecheck_stmt stmt env =
     | Sassign (_il, _el) -> Ok () (* todo: to be implemented *)
     | SassignLocal (_nal, _elo) -> Ok () (* todo: to be implemented *)
     | Sbreak -> Ok ()
+    | Sreturn (_elo, _so) -> Ok ()
     | Slabel _ -> Ok ()
     | Sgoto _ -> Ok ()
     | Sblock b -> typecheck_block b env
