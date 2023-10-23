@@ -1,0 +1,3 @@
+basics functions:
+  $ dune exec ola function.lua
+  interprete ...

@@ -15,8 +15,13 @@ let rec analyse_expr expr env =
     let e1, env = analyse_expr e1 env in
     let e2, env = analyse_expr e2 env in
     ((loc, Ebinop (op, e1, e2)), env)
+  | loc, Evariadic -> ((loc, Evariadic), env)
+  | loc, Efunctiondef ((nl, eo), b) ->
+    (* memo: name list scope *)
+    ((loc, Efunctiondef ((nl, eo), b)), env)
+  | loc, Eprefix p -> ((loc, Eprefix p), env)
 
-let rec analyse_stmt stmt env =
+and analyse_stmt stmt env =
   let analyse_var is_local var env =
     match var with
     | Name n ->
@@ -130,6 +135,9 @@ let rec analyse_stmt stmt env =
   | Siterator (nl, el, b) ->
     (* todo: to be implemented *)
     (Siterator (nl, el, b), env)
+  | Sfunction (n, fb) -> (Sfunction (n, fb), env)
+  | SfunctionLocal (n, fb) -> (SfunctionLocal (n, fb), env)
+  | SfunctionCall fc -> (SfunctionCall fc, env)
   | Sprint e ->
     let e, env = analyse_expr e env in
     (Sprint e, env)

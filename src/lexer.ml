@@ -117,7 +117,9 @@ let rec token buf =
   | ">=" -> GE
   | "==" -> EQ
   | "~=" -> NEQ
+  | '.' -> DOT
   | ".." -> DDOT
+  | "..." -> TDOT
   | '(' -> LPAREN
   | ')' -> RPAREN
   | "not" -> NOT
@@ -138,6 +140,7 @@ let rec token buf =
   | "else" -> ELSE
   | "elseif" -> ELSEIF
   | "goto" -> GOTO
+  | "function" -> FUNCTION
   | "print" -> PRINT
   | "--" -> comment buf
   | "--[[" -> multiline_comment buf

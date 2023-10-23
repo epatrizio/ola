@@ -2,7 +2,7 @@
 
 %{ %}
 
-%token PLUS MINUS MUL DIV FLDIV MOD EXP DDOT LPAREN RPAREN
+%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT LPAREN RPAREN FUNCTION
 %token COLON DCOLON SEMICOLON COMMA
 %token AEQ LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR LAND LOR LSL LSR TILDE
@@ -69,6 +69,32 @@ cexpr :
 sempty :
      | SEMICOLON { Ast.Sempty }
 
+variadic :
+     | TDOT { Ast.Evariadic }
+
+lvariadic :
+     | v=variadic { (($startpos,$endpos), v) }
+
+parlistvariadic :
+     | COMMA v=lvariadic { v }
+
+parlist :
+     | nl=separated_list(COMMA, NAME) vo=option(parlistvariadic) { (nl, vo) }
+
+funcbody : 
+     | LPAREN pl=parlist RPAREN b=block END { (pl, b) }
+
+prefixexp :
+     | v=var { Ast.PREvar v }
+     | LPAREN e=lexpr RPAREN { Ast.PREexp e }
+     // | fc=functioncall { fc }
+
+args :
+     | LPAREN el=separated_list(COMMA, lexpr) RPAREN { Ast.Aexplist el }
+
+functioncall :
+     | pe=prefixexp a=args { Ast.FCpreargs (pe, a) }
+
 stmt :
      | s=sempty { s }
      | vl=separated_nonempty_list(COMMA, var) AEQ el=exprlist { Ast.Sassign (vl, el) }
@@ -83,6 +109,9 @@ stmt :
      | IF e=lexpr THEN b=block l=list(elseif) o=option(elseop) END { Ast.Sif (e, b, l, o) }
      | FOR n=NAME AEQ e1=lexpr COMMA e2=lexpr oe=option(cexpr) DO b=block END { Ast.Sfor (n, e1, e2, oe, b) }
      | FOR nl=separated_nonempty_list(COMMA, NAME) IN el=separated_nonempty_list(COMMA, lexpr) DO b=block END { Ast.Siterator (nl, el, b) }
+     | FUNCTION n=NAME b=funcbody { Sfunction (n, b) }
+     | LOCAL FUNCTION n=NAME b=funcbody { SfunctionLocal (n, b) }
+     | fc=functioncall { SfunctionCall fc }
      | PRINT LPAREN e=lexpr RPAREN { Ast.Sprint e }          // tmp
      ;
 
@@ -122,7 +151,10 @@ expr :
      | v=VALUE { Ast.Evalue v }
      | op=unop e=lexpr %prec uminus { Ast.Eunop (op, e) }
      | e1=lexpr op=binop e2=lexpr { Ast.Ebinop (op, e1, e2) }
+     | v=variadic { v }
+     | FUNCTION fb=funcbody { Ast.Efunctiondef fb }
      | LPAREN e=expr RPAREN { e }
+     // | pe=prefixexp { Ast.Eprefix pe }    // TODO: BUG
      ;
 
 %%

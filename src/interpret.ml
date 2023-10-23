@@ -256,6 +256,9 @@ let rec interpret_expr expr env =
   | _loc, Ebinop (Beq, e1, e2) -> interpret_ibinop_expr Beq e1 e2 env
   | _loc, Ebinop (Bneq, e1, e2) -> interpret_ibinop_expr Bneq e1 e2 env
   | _loc, Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2 env
+  | _loc, Evariadic -> (Vnil (), env) (* todo: to be implemented *)
+  | _loc, Efunctiondef _ -> (Vnil (), env) (* todo: to be implemented *)
+  | _loc, Eprefix _ -> (Vnil (), env) (* todo: to be implemented *)
 
 let rec interpret_stmt stmt env =
   let rec lists_assign vl el env =
@@ -386,6 +389,9 @@ let rec interpret_stmt stmt env =
       (Swhile (cond_expr l1 limit step env, b @ [ incr_cnt_stmt l1 step ]))
       env
   | Siterator (_nl, _el, _b) -> env (* todo: to be implemented *)
+  | Sfunction (_n, _fb) -> env (* todo: to be implemented *)
+  | SfunctionLocal (_n, _fb) -> env (* todo: to be implemented *)
+  | SfunctionCall _fc -> env (* todo: to be implemented *)
   | Sprint e ->
     let v, _env = interpret_expr e env in
     print_value Format.std_formatter v;

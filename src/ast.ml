@@ -30,7 +30,7 @@ type name = string
 
 type attrib = name
 
-type var = Name of name
+type funcname = name (* * name list option * name option *)
 
 type unop =
   | Unot
@@ -68,8 +68,30 @@ and expr' =
   | Evar of var
   | Eunop of unop * expr
   | Ebinop of binop * expr * expr
+  | Evariadic
+  | Efunctiondef of funcbody
+  | Eprefix of prefixexp
 
-type stmt =
+and prefixexp =
+  | PREvar of var
+  | PREfunctioncall of functioncall
+  | PREexp of expr
+
+(* var ::=  Name | prefixexp ‘[’ exp ‘]’ | prefixexp ‘.’ Name  *)
+and var = Name of name
+
+and functioncall = FCpreargs of prefixexp * args
+(* | FCprename of prefixexp * name * args *)
+
+and funcbody = parlist * block
+
+(* parlist ::= namelist [',' '...'] | '...' > expr = '...' *)
+and parlist = name list * expr option
+
+(* args ::= ‘(’ [explist] ‘)’ | tableconstructor | LiteralString  *)
+and args = Aexplist of expr list
+
+and stmt =
   | Sempty
   | Sassign of var list * expr list
   | SassignLocal of (name * attrib option) list * expr list option
@@ -83,6 +105,9 @@ type stmt =
   | Sif of expr * block * (expr * block) list * block option
   | Sfor of name * expr * expr * expr option * block
   | Siterator of name list * expr list * block
+  | Sfunction of funcname * funcbody
+  | SfunctionLocal of name * funcbody
+  | SfunctionCall of functioncall
   | Sprint of expr
 
 and block = stmt list
@@ -90,6 +115,12 @@ and block = stmt list
 type chunk = block
 
 (* pretty printer *)
+
+let pp_sep fmt () = Format.fprintf fmt ", "
+
+let to_el = List.map (fun (_, e) -> e)
+
+let print_funcname fmt funcname = Format.fprintf fmt "%s" funcname
 
 let print_attrib fmt attrib = Format.fprintf fmt "<%s>" attrib
 
@@ -138,7 +169,42 @@ let print_value fmt value =
   | Vnumber num -> print_number fmt num
   | Vstring s -> Format.pp_print_string fmt s
 
-let rec print_expr fmt expr =
+let rec print_parlist fmt pl =
+  let nl, eo = pl in
+  Format.fprintf fmt "%a%a"
+    (Format.pp_print_list ~pp_sep Format.pp_print_string)
+    nl print_eo eo
+
+and print_eo fmt eo =
+  match eo with
+  | Some (_, e) -> Format.fprintf fmt ", %a" print_expr e
+  | None -> ()
+
+and print_funcbody fmt fb =
+  let pl, b = fb in
+  Format.fprintf fmt "(%a)@.%a@.end@." print_parlist pl print_block b
+
+and print_args fmt args =
+  match args with
+  | Aexplist el ->
+    Format.fprintf fmt "(%a)"
+      (Format.pp_print_list ~pp_sep print_expr)
+      (to_el el)
+
+and print_prefixexp fmt prexp =
+  match prexp with
+  | PREvar v -> print_var fmt v
+  | PREfunctioncall fc -> print_functioncall fmt fc
+  | PREexp e ->
+    let _, e = e in
+    print_expr fmt e
+
+and print_functioncall fmt fc =
+  match fc with
+  | FCpreargs (prexp, args) ->
+    Format.fprintf fmt "%a%a" print_prefixexp prexp print_args args
+
+and print_expr fmt expr =
   match expr with
   | Evalue v -> print_value fmt v
   | Evar i -> print_var fmt i
@@ -149,10 +215,11 @@ let rec print_expr fmt expr =
     print_expr fmt e1;
     print_binop fmt bop;
     print_expr fmt e2
+  | Evariadic -> Format.pp_print_string fmt "..."
+  | Efunctiondef fb -> print_funcbody fmt fb
+  | Eprefix prexp -> print_prefixexp fmt prexp
 
-let rec print_stmt fmt stmt =
-  let to_el = List.map (fun (_, e) -> e) in
-  let pp_sep fmt () = Format.fprintf fmt ", " in
+and print_stmt fmt stmt =
   let pp_name_attrib fmt (name, attrib_opt) =
     Format.fprintf fmt "%s" name;
     match attrib_opt with
@@ -206,15 +273,8 @@ let rec print_stmt fmt stmt =
       | None -> Format.fprintf fmt "end@."
     end
   | Sfor (n, (_, e1), (_, e2), oe, b) ->
-    let print_oe fmt oe =
-      begin
-        match oe with
-        | Some (_, e) -> Format.fprintf fmt ", %a" print_expr e
-        | None -> ()
-      end
-    in
     Format.fprintf fmt "for %a = %a, %a%a do@.@[<v>%a@]end@."
-      Format.pp_print_string n print_expr e1 print_expr e2 print_oe oe
+      Format.pp_print_string n print_expr e1 print_expr e2 print_eo oe
       print_block b
   | Siterator (nl, lel, b) ->
     Format.fprintf fmt "for %a = %a do@.@[<v>%a@]end@."
@@ -222,6 +282,12 @@ let rec print_stmt fmt stmt =
       nl
       (Format.pp_print_list ~pp_sep print_expr)
       (to_el lel) print_block b
+  | Sfunction (fname, fbody) ->
+    Format.fprintf fmt "function %a%a" print_funcname fname print_funcbody fbody
+  | SfunctionLocal (name, fbody) ->
+    Format.fprintf fmt "local function %a%a" print_var (Name name)
+      print_funcbody fbody
+  | SfunctionCall fc -> print_functioncall fmt fc
   | Sprint (_, e) -> Format.fprintf fmt "print(%a)@." print_expr e
 
 and print_block fmt block =

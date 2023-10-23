@@ -168,6 +168,9 @@ let rec typecheck_expr expr env =
   | _loc, Ebinop (Bneq, _, _) ->
     Tboolean (* TODO *)
   | _loc, Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
+  | _loc, Evariadic -> Tnil (* TODO *)
+  | _loc, Efunctiondef _ -> Tnil (* TODO *)
+  | _loc, Eprefix _ -> Tnil (* TODO *)
 
 let rec typecheck_stmt stmt env =
   try
@@ -213,6 +216,9 @@ let rec typecheck_stmt stmt env =
         | None -> typecheck_block b env
       end
     | Siterator (_nl, _el, _b) -> Ok () (* todo: to be implemented *)
+    | Sfunction (_n, _fb) -> Ok () (* todo: to be implemented *)
+    | SfunctionLocal (_n, _fb) -> Ok () (* todo: to be implemented *)
+    | SfunctionCall _fc -> Ok () (* todo: to be implemented *)
     | Sprint e ->
       let _ = typecheck_expr e env in
       Ok ()
