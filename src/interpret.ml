@@ -200,7 +200,6 @@ let rec interpret_expr expr env =
   | _loc, Evalue (Vnumber (Ninteger i)) -> (Vnumber (Ninteger i), env)
   | _loc, Evalue (Vnumber (Nfloat f)) -> (Vnumber (Nfloat f), env)
   | _loc, Evalue (Vstring s) -> (Vstring s, env)
-  | _loc, Evar (Name n) -> (Env.get_value n env, env)
   | loc, Eunop (Unot, e) ->
     let v, env = interpret_expr e env in
     let _ = typecheck_expr (loc, Eunop (Unot, e)) env in
@@ -258,7 +257,10 @@ let rec interpret_expr expr env =
   | _loc, Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2 env
   | _loc, Evariadic -> (Vnil (), env) (* todo: to be implemented *)
   | _loc, Efunctiondef _ -> (Vnil (), env) (* todo: to be implemented *)
-  | _loc, Eprefix _ -> (Vnil (), env) (* todo: to be implemented *)
+  | _loc, Eprefix (PEvar (Name n)) -> (Env.get_value n env, env)
+  | _loc, Eprefix (PEexp e) -> interpret_expr e env
+  | _loc, Eprefix (PEfunctioncall _fc) -> (Vnil (), env)
+(* todo: to be implemented *)
 
 let rec interpret_stmt stmt env =
   let rec lists_assign vl el env =
@@ -368,12 +370,15 @@ let rec interpret_stmt stmt env =
         | Vnumber (Nfloat f) -> if f >= 0. then Ble else Bge
         | _ -> assert false (* call error *)
       in
-      (loc, Ebinop (op, (loc, Evar (Name n)), (loc, Evalue limit)))
+      (loc, Ebinop (op, (loc, Eprefix (PEvar (Name n))), (loc, Evalue limit)))
     in
     let incr_cnt_stmt loc step =
       Sassign
         ( [ Name n ]
-        , [ (loc, Ebinop (Badd, (loc, Evar (Name n)), (loc, Evalue step))) ] )
+        , [ ( loc
+            , Ebinop (Badd, (loc, Eprefix (PEvar (Name n))), (loc, Evalue step))
+            )
+          ] )
     in
     let l1, _e1 = e1 in
     let ival, env = init_val e1 env in

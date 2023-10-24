@@ -130,9 +130,6 @@ let rec typecheck_expr expr env =
   in
   match expr with
   | _loc, Evalue v -> typecheck_value v
-  | _loc, Evar (Name n) ->
-    let v = Env.get_value n env in
-    typecheck_value v
   | _loc, Eunop (Unot, _) -> Tboolean
   | _loc, Eunop (Uminus, e) -> typecheck_arith_unop e env
   | _loc, Eunop (Usharp, e) ->
@@ -170,7 +167,11 @@ let rec typecheck_expr expr env =
   | _loc, Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
   | _loc, Evariadic -> Tnil (* TODO *)
   | _loc, Efunctiondef _ -> Tnil (* TODO *)
-  | _loc, Eprefix _ -> Tnil (* TODO *)
+  | _loc, Eprefix (PEvar (Name n)) ->
+    let v = Env.get_value n env in
+    typecheck_value v
+  | _loc, Eprefix (PEexp e) -> typecheck_expr e env
+  | _loc, Eprefix (PEfunctioncall _fc) -> Tnil (* TODO *)
 
 let rec typecheck_stmt stmt env =
   try

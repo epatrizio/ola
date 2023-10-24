@@ -75,19 +75,20 @@ variadic :
 lvariadic :
      | v=variadic { (($startpos,$endpos), v) }
 
-parlistvariadic :
+listvariadic :
      | COMMA v=lvariadic { v }
 
 parlist :
-     | nl=separated_list(COMMA, NAME) vo=option(parlistvariadic) { (nl, vo) }
+     | nl=separated_nonempty_list(COMMA, NAME) vo=option(listvariadic) { Ast.PLlist (nl, vo) }
+     | v=lvariadic { Ast.PLvariadic v }
 
 funcbody : 
      | LPAREN pl=parlist RPAREN b=block END { (pl, b) }
 
 prefixexp :
-     | v=var { Ast.PREvar v }
-     | LPAREN e=lexpr RPAREN { Ast.PREexp e }
-     // | fc=functioncall { fc }
+     | v=var { Ast.PEvar v }
+     | fc=functioncall { PEfunctioncall fc }
+     | LPAREN e=lexpr RPAREN { Ast.PEexp e }
 
 args :
      | LPAREN el=separated_list(COMMA, lexpr) RPAREN { Ast.Aexplist el }
@@ -147,14 +148,13 @@ binop :
      ;
 
 expr :
-     | v=var { Ast.Evar v }
+     | pe=prefixexp { Ast.Eprefix pe }
      | v=VALUE { Ast.Evalue v }
      | op=unop e=lexpr %prec uminus { Ast.Eunop (op, e) }
      | e1=lexpr op=binop e2=lexpr { Ast.Ebinop (op, e1, e2) }
      | v=variadic { v }
      | FUNCTION fb=funcbody { Ast.Efunctiondef fb }
      | LPAREN e=expr RPAREN { e }
-     // | pe=prefixexp { Ast.Eprefix pe }    // TODO: BUG
      ;
 
 %%

@@ -5,9 +5,6 @@ open Ast
 let rec analyse_expr expr env =
   match expr with
   | loc, Evalue v -> ((loc, Evalue v), env)
-  | loc, Evar (Name n) ->
-    let fresh_n, env = Env.get_name n env in
-    ((loc, Evar (Name fresh_n)), env)
   | loc, Eunop (op, e) ->
     let e, env = analyse_expr e env in
     ((loc, Eunop (op, e)), env)
@@ -16,10 +13,17 @@ let rec analyse_expr expr env =
     let e2, env = analyse_expr e2 env in
     ((loc, Ebinop (op, e1, e2)), env)
   | loc, Evariadic -> ((loc, Evariadic), env)
-  | loc, Efunctiondef ((nl, eo), b) ->
+  | loc, Efunctiondef fb ->
     (* memo: name list scope *)
-    ((loc, Efunctiondef ((nl, eo), b)), env)
-  | loc, Eprefix p -> ((loc, Eprefix p), env)
+    ((loc, Efunctiondef fb), env)
+  | loc, Eprefix (PEvar (Name n)) ->
+    let fresh_n, env = Env.get_name n env in
+    ((loc, Eprefix (PEvar (Name fresh_n))), env)
+  | loc, Eprefix (PEexp e) ->
+    let e, env = analyse_expr e env in
+    ((loc, Eprefix (PEexp e)), env)
+  | loc, Eprefix (PEfunctioncall fc) -> ((loc, Eprefix (PEfunctioncall fc)), env)
+(* to be implemented *)
 
 and analyse_stmt stmt env =
   let analyse_var is_local var env =
@@ -118,9 +122,7 @@ and analyse_stmt stmt env =
     in
     (Sif (e, b, ebl, ob), env)
   | Sfor (n, e1, e2, oe, b) ->
-    let get_n e = match e with Evar (Name n) -> n | _ -> assert false in
-    let loc1, _e1 = e1 in
-    let (_loc1, v), env = analyse_expr (loc1, Evar (Name n)) env in
+    let fresh_n, env = Env.get_name n env in
     let e1, env = analyse_expr e1 env in
     let e2, env = analyse_expr e2 env in
     let oe, env =
@@ -131,7 +133,7 @@ and analyse_stmt stmt env =
         (Some e, env)
     in
     let b, env = analyse_block b env in
-    (Sfor (get_n v, e1, e2, oe, b), env)
+    (Sfor (fresh_n, e1, e2, oe, b), env)
   | Siterator (nl, el, b) ->
     (* todo: to be implemented *)
     (Siterator (nl, el, b), env)

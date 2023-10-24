@@ -65,7 +65,6 @@ type expr = location * expr'
 
 and expr' =
   | Evalue of value
-  | Evar of var
   | Eunop of unop * expr
   | Ebinop of binop * expr * expr
   | Evariadic
@@ -73,9 +72,9 @@ and expr' =
   | Eprefix of prefixexp
 
 and prefixexp =
-  | PREvar of var
-  | PREfunctioncall of functioncall
-  | PREexp of expr
+  | PEvar of var
+  | PEfunctioncall of functioncall
+  | PEexp of expr
 
 (* var ::=  Name | prefixexp ‘[’ exp ‘]’ | prefixexp ‘.’ Name  *)
 and var = Name of name
@@ -85,8 +84,9 @@ and functioncall = FCpreargs of prefixexp * args
 
 and funcbody = parlist * block
 
-(* parlist ::= namelist [',' '...'] | '...' > expr = '...' *)
-and parlist = name list * expr option
+and parlist =
+  | PLlist of name list * expr option
+  | PLvariadic of expr
 
 (* args ::= ‘(’ [explist] ‘)’ | tableconstructor | LiteralString  *)
 and args = Aexplist of expr list
@@ -170,10 +170,14 @@ let print_value fmt value =
   | Vstring s -> Format.pp_print_string fmt s
 
 let rec print_parlist fmt pl =
-  let nl, eo = pl in
-  Format.fprintf fmt "%a%a"
-    (Format.pp_print_list ~pp_sep Format.pp_print_string)
-    nl print_eo eo
+  match pl with
+  | PLlist (nl, eo) ->
+    Format.fprintf fmt "%a%a"
+      (Format.pp_print_list ~pp_sep Format.pp_print_string)
+      nl print_eo eo
+  | PLvariadic e ->
+    let _, e = e in
+    print_expr fmt e
 
 and print_eo fmt eo =
   match eo with
@@ -193,9 +197,9 @@ and print_args fmt args =
 
 and print_prefixexp fmt prexp =
   match prexp with
-  | PREvar v -> print_var fmt v
-  | PREfunctioncall fc -> print_functioncall fmt fc
-  | PREexp e ->
+  | PEvar v -> print_var fmt v
+  | PEfunctioncall fc -> print_functioncall fmt fc
+  | PEexp e ->
     let _, e = e in
     print_expr fmt e
 
@@ -207,7 +211,6 @@ and print_functioncall fmt fc =
 and print_expr fmt expr =
   match expr with
   | Evalue v -> print_value fmt v
-  | Evar i -> print_var fmt i
   | Eunop (uop, (_, e)) ->
     print_unop fmt uop;
     print_expr fmt e
