@@ -122,18 +122,24 @@ and analyse_stmt stmt env =
     in
     (Sif (e, b, ebl, ob), env)
   | Sfor (n, e1, e2, oe, b) ->
-    let fresh_n, env = Env.get_name n env in
-    let e1, env = analyse_expr e1 env in
-    let e2, env = analyse_expr e2 env in
-    let oe, env =
+    (* n is in the local scope *)
+    let fresh_n, env_loc = Env.add_local n env in
+    let e1, env_loc = analyse_expr e1 env_loc in
+    let e2, env_loc = analyse_expr e2 env_loc in
+    let oe, env_loc =
       match oe with
-      | None -> (None, env)
+      | None -> (None, env_loc)
       | Some e ->
-        let e, env = analyse_expr e env in
-        (Some e, env)
+        let e, env_loc = analyse_expr e env_loc in
+        (Some e, env_loc)
     in
-    let b, env = analyse_block b env in
-    (Sfor (fresh_n, e1, e2, oe, b), env)
+    let b, env_loc = analyse_block b env_loc in
+    ( Sfor (fresh_n, e1, e2, oe, b)
+    , { names = env_loc.names
+      ; values = env_loc.values
+      ; globals = env_loc.globals
+      ; locals = env.locals
+      } )
   | Siterator (nl, el, b) ->
     (* todo: to be implemented *)
     (Siterator (nl, el, b), env)

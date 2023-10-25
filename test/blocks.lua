@@ -19,16 +19,18 @@ repeat
 until 1 < 2
 
 -- init, max/min value, incr (1:default)
-for i = 4+1.0,10
+for i = 4+1.0,10    -- i in local scope
   do
     print(i)
     -- if i > 7 then break end
   end
+print(i)  -- i new in global scope
 
 for i = 41+1.0,10,"-1"..".5"
   do
     print(i)
   end
+print(i)
 
 local cnt = 0
 while cnt < 2

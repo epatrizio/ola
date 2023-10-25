@@ -12,6 +12,7 @@ block basic operations:
   8.
   9.
   10.
+  nil
   42.
   40.5
   39.
@@ -34,6 +35,7 @@ block basic operations:
   13.5
   12.
   10.5
+  nil
   20.5
   18.4
   16.3
