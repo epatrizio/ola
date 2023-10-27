@@ -27,7 +27,7 @@ let list_iter fct list env =
 let rec typecheck_expr expr env =
   let typecheck_value value =
     match value with
-    | Vnil _ -> Tnil
+    | Vnil () -> Tnil
     | Vboolean _ -> Tboolean
     | Vnumber (Ninteger _) -> Tnumber Tinteger
     | Vnumber (Nfloat _) -> Tnumber Tfloat
@@ -165,15 +165,40 @@ let rec typecheck_expr expr env =
   | _loc, Ebinop (Bneq, _, _) ->
     Tboolean (* TODO *)
   | _loc, Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
-  | _loc, Evariadic -> Tnil (* TODO *)
-  | _loc, Efunctiondef _ -> Tnil (* TODO *)
+  | _loc, Evariadic -> Tnil (* TODO: OK ? *)
+  | _loc, Efunctiondef _ -> Tfunction (* TODO: OK ? *)
   | _loc, Eprefix (PEvar (Name n)) ->
     let v = Env.get_value n env in
     typecheck_value v
   | _loc, Eprefix (PEexp e) -> typecheck_expr e env
-  | _loc, Eprefix (PEfunctioncall _fc) -> Tnil (* TODO *)
+  | _loc, Eprefix (PEfunctioncall fc) -> typecheck_functioncall fc env
 
-let rec typecheck_stmt stmt env =
+and typecheck_lexpr lexpr env =
+  try
+    List.iter
+      (fun e ->
+        let _ = typecheck_expr e env in
+        () )
+      lexpr;
+    Ok ()
+  with Typing_error (loc, message) -> Error (loc, message)
+
+and typecheck_functioncall fc env =
+  let (FCpreargs (e, Aexplist el)) = fc in
+  let loc, _e = e in
+  let typ = typecheck_expr e env in
+  begin
+    match typ with
+    | Tfunction -> begin
+      match typecheck_lexpr el env with
+      | Ok () ->
+        Tnil (* TODO: Here, call is valid > do typecheck functioncall *)
+      | Error (loc, message) -> error loc message
+    end
+    | _ -> error loc "attempt to call a not function value"
+  end
+
+and typecheck_stmt stmt env =
   try
     match stmt with
     | Sempty -> Ok ()
@@ -217,9 +242,13 @@ let rec typecheck_stmt stmt env =
         | None -> typecheck_block b env
       end
     | Siterator (_nl, _el, _b) -> Ok () (* todo: to be implemented *)
-    | Sfunction (_n, _fb) -> Ok () (* todo: to be implemented *)
-    | SfunctionLocal (_n, _fb) -> Ok () (* todo: to be implemented *)
-    | SfunctionCall _fc -> Ok () (* todo: to be implemented *)
+    | Sfunction (_n, (_pl, b)) ->
+      typecheck_block b env (* todo: to be continued *)
+    | SfunctionLocal (_n, (_pl, b)) ->
+      typecheck_block b env (* todo: to be continued *)
+    | SfunctionCall fc ->
+      let _ = typecheck_functioncall fc env in
+      Ok ()
     | Sprint e ->
       let _ = typecheck_expr e env in
       Ok ()
