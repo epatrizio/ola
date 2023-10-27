@@ -79,7 +79,7 @@ and prefixexp =
 (* var ::=  Name | prefixexp ‘[’ exp ‘]’ | prefixexp ‘.’ Name  *)
 and var = Name of name
 
-and functioncall = FCpreargs of prefixexp * args
+and functioncall = FCpreargs of expr * args
 (* | FCprename of prefixexp * name * args *)
 
 and funcbody = parlist * block
@@ -164,10 +164,10 @@ let print_number fmt number =
 
 let print_value fmt value =
   match value with
-  | Vnil _ -> Format.pp_print_string fmt "nil"
+  | Vnil () -> Format.pp_print_string fmt "nil"
   | Vboolean b -> Format.pp_print_bool fmt b
   | Vnumber num -> print_number fmt num
-  | Vstring s -> Format.pp_print_string fmt s
+  | Vstring s -> Format.fprintf fmt "\"%a\"" Format.pp_print_string s
 
 let rec print_parlist fmt pl =
   match pl with
@@ -205,8 +205,9 @@ and print_prefixexp fmt prexp =
 
 and print_functioncall fmt fc =
   match fc with
-  | FCpreargs (prexp, args) ->
-    Format.fprintf fmt "%a%a" print_prefixexp prexp print_args args
+  | FCpreargs (e, args) ->
+    let _, e = e in
+    Format.fprintf fmt "%a%a" print_expr e print_args args
 
 and print_expr fmt expr =
   match expr with
@@ -219,7 +220,7 @@ and print_expr fmt expr =
     print_binop fmt bop;
     print_expr fmt e2
   | Evariadic -> Format.pp_print_string fmt "..."
-  | Efunctiondef fb -> print_funcbody fmt fb
+  | Efunctiondef fb -> Format.fprintf fmt "function %a" print_funcbody fb
   | Eprefix prexp -> print_prefixexp fmt prexp
 
 and print_stmt fmt stmt =

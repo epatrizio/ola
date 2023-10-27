@@ -75,11 +75,11 @@ variadic :
 lvariadic :
      | v=variadic { (($startpos,$endpos), v) }
 
-listvariadic :
+lvariadicopt :
      | COMMA v=lvariadic { v }
 
 parlist :
-     | nl=separated_nonempty_list(COMMA, NAME) vo=option(listvariadic) { Ast.PLlist (nl, vo) }
+     | nl=separated_list(COMMA, NAME) vo=option(lvariadicopt) { Ast.PLlist (nl, vo) }
      | v=lvariadic { Ast.PLvariadic v }
 
 funcbody : 
@@ -94,7 +94,7 @@ args :
      | LPAREN el=separated_list(COMMA, lexpr) RPAREN { Ast.Aexplist el }
 
 functioncall :
-     | pe=prefixexp a=args { Ast.FCpreargs (pe, a) }
+     | e=lexpr a=args { Ast.FCpreargs (e, a) }
 
 stmt :
      | s=sempty { s }

@@ -397,11 +397,15 @@ let rec interpret_stmt stmt env =
   | Sfunction (_n, _fb) -> env (* todo: to be implemented *)
   | SfunctionLocal (_n, _fb) -> env (* todo: to be implemented *)
   | SfunctionCall _fc -> env (* todo: to be implemented *)
-  | Sprint e ->
+  | Sprint e -> (
     let v, _env = interpret_expr e env in
-    print_value Format.std_formatter v;
-    Format.fprintf Format.std_formatter "@.";
-    env
+    match v with
+    | Vstring s ->
+      print_endline s;
+      env
+    | v ->
+      Format.fprintf Format.std_formatter "%a@." print_value v;
+      env )
 
 and interpret_block b env =
   List.fold_left (fun e stmt -> interpret_stmt stmt e) env b
