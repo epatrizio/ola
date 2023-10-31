@@ -9,6 +9,8 @@ type block_pointer =
 
 exception Goto_catch of block_pointer * Env.t
 
+exception Break_catch of Env.t
+
 exception Interpretation_error of location option * string
 
 let error loc message = raise (Interpretation_error (loc, message))
@@ -336,7 +338,7 @@ and interpret_stmt stmt env =
   | Sempty -> env
   | Sassign (vl, el) -> lists_assign vl el env
   | SassignLocal (nal, elo) -> lists_lassign nal elo env
-  | Sbreak -> env (* todo: to be implemented *)
+  | Sbreak -> raise (Break_catch env)
   | Sreturn (_elo, _so) -> env (* todo: to be implemented *)
   | Slabel _ -> env
   | Sgoto n -> raise (Goto_catch (Label n, env))
@@ -348,18 +350,21 @@ and interpret_stmt stmt env =
     begin
       match cond with
       | Vboolean false | Vnil () -> env
-      | _ ->
-        let env = interpret_block b env in
-        interpret_stmt (Swhile (e, b)) env
+      | _ -> (
+        try
+          let env = interpret_block b env in
+          interpret_stmt (Swhile (e, b)) env
+        with Break_catch env -> env )
     end
-  | Srepeat (b, e) ->
-    let env = interpret_block b env in
-    let cond, env = interpret_expr e env in
-    begin
+  | Srepeat (b, e) -> begin
+    try
+      let env = interpret_block b env in
+      let cond, env = interpret_expr e env in
       match cond with
       | Vboolean false | Vnil () -> interpret_stmt (Srepeat (b, e)) env
       | _ -> env
-    end
+    with Break_catch env -> env
+  end
   | Sif (e, b, ebl, ob) ->
     let rec interpret_elseif ebl env =
       match ebl with

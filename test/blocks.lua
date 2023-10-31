@@ -16,13 +16,15 @@ while 1 > 2
 
 repeat
   print(4)
+  break
+  print(4.5)
 until 1 < 2
 
 -- init, max/min value, incr (1:default)
 for i = 4+1.0,10    -- i in local scope
   do
     print(i)
-    -- if i > 7 then break end
+    if i > 6 then break end
   end
 print(i)  -- i new in global scope
 
@@ -38,6 +40,7 @@ while cnt < 2
     for i = "20.5","10"..".5","-2"..".1"
       do
         print(i)
+        if i < 15 then break end
       end
     cnt = cnt + 1
   end
