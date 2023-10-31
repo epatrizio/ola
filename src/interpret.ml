@@ -267,16 +267,38 @@ let rec interpret_expr expr env =
     let env = interpret_functioncall fc env in
     (Vnil (), env)
 
-(* in progress: init args / return stmt / env *)
+(* in progress: return stmt *)
 and interpret_functioncall fc env =
-  let (FCpreargs (e, Aexplist _el)) = fc in
+  let rec lists_args pl el env =
+    begin
+      match (pl, el) with
+      | pl, [] -> begin
+        match pl with
+        | PLvariadic _ -> assert false (* to be implemented *)
+        | PLlist (_nl, Some _) -> assert false (* to be implemented *)
+        | PLlist (nl, None) ->
+          List.fold_left (fun e n -> Env.set_value n (Ast.Vnil ()) e) env nl
+      end
+      | pl, e :: el -> begin
+        match pl with
+        | PLvariadic _ -> assert false (* to be implemented *)
+        | PLlist (_nl, Some _) -> assert false (* to be implemented *)
+        | PLlist ([], None) -> env
+        | PLlist (n :: nl, None) ->
+          let va, env = interpret_expr e env in
+          let env = Env.set_value n va env in
+          lists_args (PLlist (nl, None)) el env
+      end
+    end
+  in
+  let (FCpreargs (e, Aexplist el)) = fc in
   let loc, _e = e in
   let e, env = interpret_expr e env in
-  begin
-    match e with
-    | Vfunction (_i, (_pl, b)) -> interpret_block b env
-    | _ -> error (Some loc) "function call error!"
-  end
+  match e with
+  | Vfunction (_i, (pl, b)) ->
+    let env = lists_args pl el env in
+    interpret_block b env
+  | _ -> error (Some loc) "function call error!"
 
 and interpret_stmt stmt env =
   let rec lists_assign vl el env =
