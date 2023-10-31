@@ -110,8 +110,11 @@ stmt :
      | IF e=lexpr THEN b=block l=list(elseif) o=option(elseop) END { Ast.Sif (e, b, l, o) }
      | FOR n=NAME AEQ e1=lexpr COMMA e2=lexpr oe=option(cexpr) DO b=block END { Ast.Sfor (n, e1, e2, oe, b) }
      | FOR nl=separated_nonempty_list(COMMA, NAME) IN el=separated_nonempty_list(COMMA, lexpr) DO b=block END { Ast.Siterator (nl, el, b) }
-     | FUNCTION n=NAME b=funcbody { Sfunction (n, b) }
-     | LOCAL FUNCTION n=NAME b=funcbody { SfunctionLocal (n, b) }
+     // | FUNCTION n=NAME fb=funcbody { Ast.Sfunction (n, fb) }
+     // | LOCAL FUNCTION n=NAME fb=funcbody { SfunctionLocal (n, fb) }
+     // transform: f = function () body end
+     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ Ast.Name n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }     
+     | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], Some [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      | fc=functioncall { SfunctionCall fc }
      | PRINT LPAREN e=lexpr RPAREN { Ast.Sprint e }          // tmp
      ;

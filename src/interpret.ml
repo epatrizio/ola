@@ -1,5 +1,7 @@
 open Ast
 
+let () = Random.self_init ()
+
 type block_pointer =
   | Begin
   | Last
@@ -195,11 +197,12 @@ let rec interpret_expr expr env =
     end
   in
   match expr with
-  | _loc, Evalue (Vnil _) -> (Vnil (), env)
+  | _loc, Evalue (Vnil ()) -> (Vnil (), env)
   | _loc, Evalue (Vboolean b) -> (Vboolean b, env)
   | _loc, Evalue (Vnumber (Ninteger i)) -> (Vnumber (Ninteger i), env)
   | _loc, Evalue (Vnumber (Nfloat f)) -> (Vnumber (Nfloat f), env)
   | _loc, Evalue (Vstring s) -> (Vstring s, env)
+  | _loc, Evalue (Vfunction (id, fb)) -> (Vfunction (id, fb), env)
   | loc, Eunop (Unot, e) ->
     let v, env = interpret_expr e env in
     let _ = typecheck_expr (loc, Eunop (Unot, e)) env in
@@ -255,14 +258,27 @@ let rec interpret_expr expr env =
   | _loc, Ebinop (Beq, e1, e2) -> interpret_ibinop_expr Beq e1 e2 env
   | _loc, Ebinop (Bneq, e1, e2) -> interpret_ibinop_expr Bneq e1 e2 env
   | _loc, Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2 env
-  | _loc, Evariadic -> (Vnil (), env) (* todo: to be implemented *)
-  | _loc, Efunctiondef _ -> (Vnil (), env) (* todo: to be implemented *)
+  | _loc, Evariadic -> (Vnil (), env)
+  | _loc, Efunctiondef fb ->
+    (Vfunction (Random.bits32 (), fb), env) (* todo: ok ? *)
   | _loc, Eprefix (PEvar (Name n)) -> (Env.get_value n env, env)
   | _loc, Eprefix (PEexp e) -> interpret_expr e env
-  | _loc, Eprefix (PEfunctioncall _fc) -> (Vnil (), env)
-(* todo: to be implemented *)
+  | _loc, Eprefix (PEfunctioncall fc) ->
+    let env = interpret_functioncall fc env in
+    (Vnil (), env)
 
-let rec interpret_stmt stmt env =
+(* in progress: init args / return stmt / env *)
+and interpret_functioncall fc env =
+  let (FCpreargs (e, Aexplist _el)) = fc in
+  let loc, _e = e in
+  let e, env = interpret_expr e env in
+  begin
+    match e with
+    | Vfunction (_i, (_pl, b)) -> interpret_block b env
+    | _ -> error (Some loc) "function call error!"
+  end
+
+and interpret_stmt stmt env =
   let rec lists_assign vl el env =
     begin
       match (vl, el) with
@@ -394,9 +410,9 @@ let rec interpret_stmt stmt env =
       (Swhile (cond_expr l1 limit step env, b @ [ incr_cnt_stmt l1 step ]))
       env
   | Siterator (_nl, _el, _b) -> env (* todo: to be implemented *)
-  | Sfunction (_n, _fb) -> env (* todo: to be implemented *)
-  | SfunctionLocal (_n, _fb) -> env (* todo: to be implemented *)
-  | SfunctionCall _fc -> env (* todo: to be implemented *)
+  (* | Sfunction (_n, _fb) -> env *)
+  (* | SfunctionLocal (_n, _fb) -> env *)
+  | SfunctionCall fc -> interpret_functioncall fc env
   | Sprint e -> (
     let v, _env = interpret_expr e env in
     match v with

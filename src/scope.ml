@@ -198,14 +198,14 @@ and analyse_stmt stmt env =
   | Siterator (nl, el, b) ->
     (* todo: to be implemented *)
     (Siterator (nl, el, b), env)
-  | Sfunction (n, fb) ->
-    let fresh_n, env = Env.get_funcname n env in
-    let fb, env = analyse_funcbody fb env in
-    (Sfunction (fresh_n, fb), env)
-  | SfunctionLocal (n, fb) ->
-    let fresh_n, env = Env.add_local_funcname n env in
-    let fb, env = analyse_funcbody fb env in
-    (SfunctionLocal (fresh_n, fb), env)
+  (* | Sfunction (n, fb) ->
+     let fresh_n, env = Env.get_funcname n env in
+     let fb, env = analyse_funcbody fb env in
+     (Sfunction (fresh_n, fb), env) *)
+  (* | SfunctionLocal (n, fb) ->
+     let fresh_n, env = Env.add_local_funcname n env in
+     let fb, env = analyse_funcbody fb env in
+     (SfunctionLocal (fresh_n, fb), env) *)
   | SfunctionCall fc ->
     let fc, env = analyse_functioncall fc env in
     (SfunctionCall fc, env)

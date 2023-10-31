@@ -32,6 +32,7 @@ let rec typecheck_expr expr env =
     | Vnumber (Ninteger _) -> Tnumber Tinteger
     | Vnumber (Nfloat _) -> Tnumber Tfloat
     | Vstring _ -> Tstring
+    | Vfunction _ -> Tfunction
   in
   let typecheck_arith_unop expr env =
     let loc, _expr = expr in
@@ -241,11 +242,15 @@ and typecheck_stmt stmt env =
           typecheck_block b env
         | None -> typecheck_block b env
       end
-    | Siterator (_nl, _el, _b) -> Ok () (* todo: to be implemented *)
-    | Sfunction (_n, (_pl, b)) ->
-      typecheck_block b env (* todo: to be continued *)
-    | SfunctionLocal (_n, (_pl, b)) ->
-      typecheck_block b env (* todo: to be continued *)
+    | Siterator (_nl, _el, _b) ->
+      Ok ()
+      (* todo: to be implemented *)
+      (* | Sfunction (_n, (_pl, b)) ->
+         typecheck_block b env *)
+      (* todo: to be continued *)
+      (* | SfunctionLocal (_n, (_pl, b)) ->
+         typecheck_block b env *)
+      (* todo: to be continued *)
     | SfunctionCall fc ->
       let _ = typecheck_functioncall fc env in
       Ok ()

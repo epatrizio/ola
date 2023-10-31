@@ -16,16 +16,6 @@ type typ =
   | Tthread
   | Ttable
 
-type number =
-  | Ninteger of int
-  | Nfloat of float
-
-type value =
-  | Vnil of unit
-  | Vboolean of bool
-  | Vnumber of number
-  | Vstring of string
-
 type name = string
 
 type attrib = name
@@ -61,7 +51,18 @@ type binop =
   | Bge
   | Bddot
 
-type expr = location * expr'
+type number =
+  | Ninteger of int
+  | Nfloat of float
+
+type value =
+  | Vnil of unit
+  | Vboolean of bool
+  | Vnumber of number
+  | Vstring of string
+  | Vfunction of int32 * funcbody (* int32 = function unique id *)
+
+and expr = location * expr'
 
 and expr' =
   | Evalue of value
@@ -105,8 +106,10 @@ and stmt =
   | Sif of expr * block * (expr * block) list * block option
   | Sfor of name * expr * expr * expr option * block
   | Siterator of name list * expr list * block
-  | Sfunction of funcname * funcbody
-  | SfunctionLocal of name * funcbody
+  (* | Sfunction of funcname * funcbody *)
+  (* transform Sassign *)
+  (* | SfunctionLocal of name * funcbody *)
+  (* transform SassignLocal *)
   | SfunctionCall of functioncall
   | Sprint of expr
 
@@ -168,6 +171,8 @@ let print_value fmt value =
   | Vboolean b -> Format.pp_print_bool fmt b
   | Vnumber num -> print_number fmt num
   | Vstring s -> Format.fprintf fmt "\"%a\"" Format.pp_print_string s
+  | Vfunction (i, _b) ->
+    Format.fprintf fmt "function: %a" Format.pp_print_int (Int32.to_int i)
 
 let rec print_parlist fmt pl =
   match pl with
@@ -286,11 +291,11 @@ and print_stmt fmt stmt =
       nl
       (Format.pp_print_list ~pp_sep print_expr)
       (to_el lel) print_block b
-  | Sfunction (fname, fbody) ->
-    Format.fprintf fmt "function %a%a" print_funcname fname print_funcbody fbody
-  | SfunctionLocal (name, fbody) ->
-    Format.fprintf fmt "local function %a%a" print_var (Name name)
-      print_funcbody fbody
+  (* | Sfunction (fname, fbody) ->
+     Format.fprintf fmt "function %a%a" print_funcname fname print_funcbody fbody *)
+  (* | SfunctionLocal (name, fbody) ->
+     Format.fprintf fmt "local function %a%a" print_var (Name name)
+       print_funcbody fbody *)
   | SfunctionCall fc -> print_functioncall fmt fc
   | Sprint (_, e) -> Format.fprintf fmt "print(%a)@." print_expr e
 
