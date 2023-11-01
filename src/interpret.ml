@@ -11,6 +11,8 @@ exception Goto_catch of block_pointer * Env.t
 
 exception Break_catch of Env.t
 
+exception Return_catch of expr list option * stmt option * Env.t
+
 exception Interpretation_error of location option * string
 
 let error loc message = raise (Interpretation_error (loc, message))
@@ -205,6 +207,7 @@ let rec interpret_expr expr env =
   | _loc, Evalue (Vnumber (Nfloat f)) -> (Vnumber (Nfloat f), env)
   | _loc, Evalue (Vstring s) -> (Vstring s, env)
   | _loc, Evalue (Vfunction (id, fb)) -> (Vfunction (id, fb), env)
+  | _loc, Evalue (VfunctionReturn vl) -> (VfunctionReturn vl, env)
   | loc, Eunop (Unot, e) ->
     let v, env = interpret_expr e env in
     let _ = typecheck_expr (loc, Eunop (Unot, e)) env in
@@ -265,11 +268,8 @@ let rec interpret_expr expr env =
     (Vfunction (Random.bits32 (), fb), env) (* todo: ok ? *)
   | _loc, Eprefix (PEvar (Name n)) -> (Env.get_value n env, env)
   | _loc, Eprefix (PEexp e) -> interpret_expr e env
-  | _loc, Eprefix (PEfunctioncall fc) ->
-    let env = interpret_functioncall fc env in
-    (Vnil (), env)
+  | _loc, Eprefix (PEfunctioncall fc) -> interpret_functioncall fc env
 
-(* in progress: return stmt *)
 and interpret_functioncall fc env =
   let rec lists_args pl el env =
     begin
@@ -297,9 +297,24 @@ and interpret_functioncall fc env =
   let loc, _e = e in
   let e, env = interpret_expr e env in
   match e with
-  | Vfunction (_i, (pl, b)) ->
-    let env = lists_args pl el env in
-    interpret_block b env
+  | Vfunction (_i, (pl, b)) -> begin
+    try
+      let env = lists_args pl el env in
+      let env = interpret_block b env in
+      (VfunctionReturn [], env)
+    with Return_catch (elo, _so, env) -> (
+      match elo with
+      | None -> (VfunctionReturn [], env)
+      | Some el ->
+        let vl, env =
+          List.fold_left
+            (fun (vl, e) exp ->
+              let v, e = interpret_expr exp e in
+              (vl @ [ v ], e) )
+            ([], env) el
+        in
+        (VfunctionReturn vl, env) )
+  end
   | _ -> error (Some loc) "function call error!"
 
 and interpret_stmt stmt env =
@@ -313,11 +328,22 @@ and interpret_stmt stmt env =
             let (Name n) = v in
             Env.set_value n (Ast.Vnil ()) e )
           env vl
-      | v :: vl, e :: el ->
+      | v :: vl, e :: el -> (
         let (Name n) = v in
+        let l, _e = e in
         let va, env = interpret_expr e env in
-        let env = Env.set_value n va env in
-        lists_assign vl el env
+        match va with
+        | VfunctionReturn vall -> begin
+          match vall with
+          | [] -> env
+          | va :: vall ->
+            let env = Env.set_value n va env in
+            let vall_exp = List.map (fun v -> (l, Evalue v)) vall in
+            lists_assign vl (vall_exp @ el) env
+        end
+        | va ->
+          let env = Env.set_value n va env in
+          lists_assign vl el env )
     end
   in
   let rec lists_lassign nal elo env =
@@ -328,10 +354,21 @@ and interpret_stmt stmt env =
         List.fold_left
           (fun e (n, _on) -> Env.set_value n (Ast.Vnil ()) e)
           env nal
-      | (n, _on) :: vl, Some (e :: el) ->
+      | (n, _on) :: vl, Some (e :: el) -> (
+        let l, _e = e in
         let va, env = interpret_expr e env in
-        let env = Env.set_value n va env in
-        lists_lassign vl (Some el) env
+        match va with
+        | VfunctionReturn vall -> begin
+          match vall with
+          | [] -> env
+          | va :: vall ->
+            let env = Env.set_value n va env in
+            let vall_exp = List.map (fun v -> (l, Evalue v)) vall in
+            lists_lassign vl (Some (vall_exp @ el)) env
+        end
+        | va ->
+          let env = Env.set_value n va env in
+          lists_lassign vl (Some el) env )
     end
   in
   match stmt with
@@ -339,7 +376,7 @@ and interpret_stmt stmt env =
   | Sassign (vl, el) -> lists_assign vl el env
   | SassignLocal (nal, elo) -> lists_lassign nal elo env
   | Sbreak -> raise (Break_catch env)
-  | Sreturn (_elo, _so) -> env (* todo: to be implemented *)
+  | Sreturn (elo, so) -> raise (Return_catch (elo, so, env))
   | Slabel _ -> env
   | Sgoto n -> raise (Goto_catch (Label n, env))
   | Sblock b -> interpret_block b env
@@ -439,7 +476,9 @@ and interpret_stmt stmt env =
   | Siterator (_nl, _el, _b) -> env (* todo: to be implemented *)
   (* | Sfunction (_n, _fb) -> env *)
   (* | SfunctionLocal (_n, _fb) -> env *)
-  | SfunctionCall fc -> interpret_functioncall fc env
+  | SfunctionCall fc ->
+    let _v, env = interpret_functioncall fc env in
+    env
   | Sprint e -> (
     let v, _env = interpret_expr e env in
     match v with

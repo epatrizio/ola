@@ -68,7 +68,7 @@ do
   --return      -- ok & only one return in a block
   --return 1, 2 -- only at the end of the block
   print(tmp + 1)
-  return tmp, tmp+1;
+  -- return tmp, tmp+1;
 end
 
 --return

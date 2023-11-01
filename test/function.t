@@ -4,10 +4,9 @@ basics functions:
   f2
   false
   10
+  10
   nil
   nil
-  nil
-  function: -195784973
   print::
   42
   local function

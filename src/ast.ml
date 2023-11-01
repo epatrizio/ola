@@ -12,6 +12,7 @@ type typ =
   | Tnumber of number_type
   | Tstring
   | Tfunction
+  | TfunctionReturn of typ list
   | Tuserdata
   | Tthread
   | Ttable
@@ -61,6 +62,7 @@ type value =
   | Vnumber of number
   | Vstring of string
   | Vfunction of int32 * funcbody (* int32 = function unique id *)
+  | VfunctionReturn of value list
 
 and expr = location * expr'
 
@@ -165,7 +167,7 @@ let print_number fmt number =
   | Ninteger i -> Format.pp_print_int fmt i
   | Nfloat f -> Format.pp_print_float fmt f
 
-let print_value fmt value =
+let rec print_value fmt value =
   match value with
   | Vnil () -> Format.pp_print_string fmt "nil"
   | Vboolean b -> Format.pp_print_bool fmt b
@@ -173,6 +175,7 @@ let print_value fmt value =
   | Vstring s -> Format.fprintf fmt "\"%a\"" Format.pp_print_string s
   | Vfunction (i, _b) ->
     Format.fprintf fmt "function: %a" Format.pp_print_int (Int32.to_int i)
+  | VfunctionReturn vl -> (Format.pp_print_list ~pp_sep print_value) fmt vl
 
 let rec print_parlist fmt pl =
   match pl with

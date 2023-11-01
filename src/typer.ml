@@ -25,7 +25,7 @@ let list_iter fct list env =
   with Typing_error (loc, message) -> Error (loc, message)
 
 let rec typecheck_expr expr env =
-  let typecheck_value value =
+  let rec typecheck_value value =
     match value with
     | Vnil () -> Tnil
     | Vboolean _ -> Tboolean
@@ -33,6 +33,7 @@ let rec typecheck_expr expr env =
     | Vnumber (Nfloat _) -> Tnumber Tfloat
     | Vstring _ -> Tstring
     | Vfunction _ -> Tfunction
+    | VfunctionReturn vl -> TfunctionReturn (List.map typecheck_value vl)
   in
   let typecheck_arith_unop expr env =
     let loc, _expr = expr in

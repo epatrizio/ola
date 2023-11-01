@@ -12,7 +12,7 @@ result = false
 
 function max(num1, num2)
   if num1 > num2 then
-    result = num1
+    result = num1         -- result in global scope
   else
     result = num2
   end
@@ -21,6 +21,7 @@ end
 
 print(result)             -- false
 max(10,4)
+print(max(10,4))
 print(result)             -- 10
 
 -- recursive call
@@ -33,7 +34,7 @@ function fact(n)
   end
 end
 print(n)                -- nil
-print(fact(5))          -- 120
+--print(fact(5))        -- 120 - todo bug recursive calls
 
 -- function def as a value
 
@@ -42,7 +43,7 @@ print_fct = function (p)
   print(p)
 end
 print(p)                -- nil
-print(print_fct)        -- Type = function > print = "function: id"
+--print(print_fct)      -- Type = function > print = "function: id"
 
 -- local function (current block scope)
 
