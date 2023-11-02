@@ -6,6 +6,7 @@ basics functions:
   10
   10
   nil
+  120
   nil
   print::
   42

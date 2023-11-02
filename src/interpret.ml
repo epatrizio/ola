@@ -47,9 +47,14 @@ let rec interpret_expr expr env =
   let interpret_bbinop_expr binop expr1 expr2 env =
     (* todo: ok for num values *)
     let loc1, _expr1 = expr1 in
+    let loc2, _expr2 = expr2 in
     let v1, env = interpret_expr expr1 env in
     let v2, env = interpret_expr expr2 env in
-    let _ = typecheck_expr (loc1, Ebinop (binop, expr1, expr2)) env in
+    let () =
+      typecheck_expr
+        (loc1, Ebinop (binop, (loc1, Evalue v1), (loc2, Evalue v2)))
+        env
+    in
     begin
       match (v1, v2) with
       | Vboolean b1, Vboolean b2 -> begin
@@ -66,7 +71,11 @@ let rec interpret_expr expr env =
     let loc2, _expr2 = expr2 in
     let v1, env = interpret_expr expr1 env in
     let v2, env = interpret_expr expr2 env in
-    let _ = typecheck_expr (loc1, Ebinop (binop, expr1, expr2)) env in
+    let () =
+      typecheck_expr
+        (loc1, Ebinop (binop, (loc1, Evalue v1), (loc2, Evalue v2)))
+        env
+    in
     begin
       match (v1, v2) with
       | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
@@ -179,9 +188,14 @@ let rec interpret_expr expr env =
   in
   let interpret_sbinop_expr expr1 expr2 env =
     let loc1, _expr1 = expr1 in
+    let loc2, _expr2 = expr2 in
     let v1, env = interpret_expr expr1 env in
     let v2, env = interpret_expr expr2 env in
-    let _ = typecheck_expr (loc1, Ebinop (Bddot, expr1, expr2)) env in
+    let () =
+      typecheck_expr
+        (loc1, Ebinop (Bddot, (loc1, Evalue v1), (loc2, Evalue v2)))
+        env
+    in
     begin
       match (v1, v2) with
       | Vstring s1, Vstring s2 -> (Vstring (s1 ^ s2), env)
@@ -209,16 +223,18 @@ let rec interpret_expr expr env =
   | _loc, Evalue (Vfunction (id, fb)) -> (Vfunction (id, fb), env)
   | _loc, Evalue (VfunctionReturn vl) -> (VfunctionReturn vl, env)
   | loc, Eunop (Unot, e) ->
+    let l, _e = e in
     let v, env = interpret_expr e env in
-    let _ = typecheck_expr (loc, Eunop (Unot, e)) env in
+    let () = typecheck_expr (loc, Eunop (Unot, (l, Evalue v))) env in
     begin
       match v with
       | Vboolean b -> (Vboolean (not b), env)
       | _ -> assert false (* typing error *)
     end
   | loc, Eunop (Uminus, e) ->
+    let l, _e = e in
     let v, env = interpret_expr e env in
-    let _ = typecheck_expr (loc, Eunop (Uminus, e)) env in
+    let () = typecheck_expr (loc, Eunop (Uminus, (l, Evalue v))) env in
     begin
       match v with
       | Vnumber (Ninteger i) -> (Vnumber (Ninteger (-i)), env)
@@ -226,16 +242,18 @@ let rec interpret_expr expr env =
       | _ -> assert false (* typing error *)
     end
   | loc, Eunop (Usharp, e) ->
+    let l, _e = e in
     let v, env = interpret_expr e env in
-    let _ = typecheck_expr (loc, Eunop (Usharp, e)) env in
+    let () = typecheck_expr (loc, Eunop (Usharp, (l, Evalue v))) env in
     begin
       match v with
       | Vstring s -> (Vnumber (Ninteger (String.length s)), env)
       | _ -> assert false (* typing error *)
     end
   | loc, Eunop (Ulnot, e) ->
+    let l, _e = e in
     let v, env = interpret_expr e env in
-    let _ = typecheck_expr (loc, Eunop (Ulnot, e)) env in
+    let () = typecheck_expr (loc, Eunop (Ulnot, (l, Evalue v))) env in
     begin
       match v with
       | Vnumber (Ninteger i) -> (Vnumber (Ninteger (lnot i)), env)
@@ -268,7 +286,9 @@ let rec interpret_expr expr env =
     (Vfunction (Random.bits32 (), fb), env) (* todo: ok ? *)
   | _loc, Eprefix (PEvar (Name n)) -> (Env.get_value n env, env)
   | _loc, Eprefix (PEexp e) -> interpret_expr e env
-  | _loc, Eprefix (PEfunctioncall fc) -> interpret_functioncall fc env
+  | _loc, Eprefix (PEfunctioncall fc) ->
+    let v, _env = interpret_functioncall fc env in
+    (v, env)
 
 and interpret_functioncall fc env =
   let rec lists_args pl el env =
@@ -305,6 +325,7 @@ and interpret_functioncall fc env =
     with Return_catch (elo, _so, env) -> (
       match elo with
       | None -> (VfunctionReturn [], env)
+      | Some [ e ] -> interpret_expr e env
       | Some el ->
         let vl, env =
           List.fold_left

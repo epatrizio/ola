@@ -34,7 +34,7 @@ function fact(n)
   end
 end
 print(n)                -- nil
---print(fact(5))        -- 120 - todo bug recursive calls
+print(fact(5))          -- 120
 
 -- function def as a value
 
