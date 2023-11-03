@@ -8,10 +8,10 @@ module Names = Map.Make (String)
 module Values = Map.Make (String)
 
 type t =
-  { names : Ast.name Names.t
+  { names : string Names.t
   ; values : Ast.value Values.t
-  ; globals : Ast.name Names.t
-  ; locals : Ast.name Names.t
+  ; globals : string Names.t
+  ; locals : string Names.t
   }
 
 let empty () =

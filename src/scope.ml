@@ -16,9 +16,9 @@ let rec analyse_expr expr env =
   | loc, Efunctiondef (pl, b) ->
     let (pl, b), env = analyse_funcbody (pl, b) env in
     ((loc, Efunctiondef (pl, b)), env)
-  | loc, Eprefix (PEvar (Name n)) ->
+  | loc, Eprefix (PEvar n) ->
     let fresh_n, env = Env.get_name n env in
-    ((loc, Eprefix (PEvar (Name fresh_n))), env)
+    ((loc, Eprefix (PEvar fresh_n)), env)
   | loc, Eprefix (PEexp e) ->
     let e, env = analyse_expr e env in
     ((loc, Eprefix (PEexp e)), env)
@@ -76,11 +76,7 @@ and analyse_funcbody fb env =
     ; Env.locals = env.Env.locals
     } )
 
-and analyse_args args env =
-  match args with
-  | Aexplist el ->
-    let el, env = analyse_el el env in
-    (Aexplist el, env)
+and analyse_args args env = analyse_el args env
 
 and analyse_functioncall fc env =
   match fc with
@@ -92,11 +88,11 @@ and analyse_functioncall fc env =
 and analyse_stmt stmt env =
   let analyse_var is_local var env =
     match var with
-    | Name n ->
+    | n ->
       let fresh_n, env =
         (if is_local then Env.add_local_name else Env.get_name) n env
       in
-      (Name fresh_n, env)
+      (fresh_n, env)
   in
   let rec analyse_vl vl env =
     match vl with
@@ -111,7 +107,7 @@ and analyse_stmt stmt env =
     match nal with
     | [] -> ([], env)
     | (n, on) :: tl ->
-      let Name n, env = analyse_var true (Name n) env in
+      let n, env = analyse_var true n env in
       let tl, env = analyse_nal tl env in
       ((n, on) :: tl, env)
   in

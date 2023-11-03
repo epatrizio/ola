@@ -284,7 +284,7 @@ let rec interpret_expr expr env =
   | _loc, Evariadic -> (Vnil (), env)
   | _loc, Efunctiondef fb ->
     (Vfunction (Random.bits32 (), fb), env) (* todo: ok ? *)
-  | _loc, Eprefix (PEvar (Name n)) -> (Env.get_value n env, env)
+  | _loc, Eprefix (PEvar n) -> (Env.get_value n env, env)
   | _loc, Eprefix (PEexp e) -> interpret_expr e env
   | _loc, Eprefix (PEfunctioncall fc) ->
     let v, _env = interpret_functioncall fc env in
@@ -313,7 +313,7 @@ and interpret_functioncall fc env =
       end
     end
   in
-  let (FCpreargs (e, Aexplist el)) = fc in
+  let (FCpreargs (e, el)) = fc in
   let loc, _e = e in
   let e, env = interpret_expr e env in
   match e with
@@ -346,11 +346,11 @@ and interpret_stmt stmt env =
       | vl, [] ->
         List.fold_left
           (fun e v ->
-            let (Name n) = v in
+            let n = v in
             Env.set_value n (Ast.Vnil ()) e )
           env vl
       | v :: vl, e :: el -> (
-        let (Name n) = v in
+        let n = v in
         let l, _e = e in
         let va, env = interpret_expr e env in
         match va with
@@ -471,15 +471,13 @@ and interpret_stmt stmt env =
         | Vnumber (Nfloat f) -> if f >= 0. then Ble else Bge
         | _ -> assert false (* call error *)
       in
-      (loc, Ebinop (op, (loc, Eprefix (PEvar (Name n))), (loc, Evalue limit)))
+      (loc, Ebinop (op, (loc, Eprefix (PEvar n)), (loc, Evalue limit)))
     in
     let incr_cnt_stmt loc step =
       Sassign
-        ( [ Name n ]
-        , [ ( loc
-            , Ebinop (Badd, (loc, Eprefix (PEvar (Name n))), (loc, Evalue step))
-            )
-          ] )
+        ( [ n ]
+        , [ (loc, Ebinop (Badd, (loc, Eprefix (PEvar n)), (loc, Evalue step))) ]
+        )
     in
     let l1, _e1 = e1 in
     let ival, env = init_val e1 env in

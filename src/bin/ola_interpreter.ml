@@ -25,14 +25,14 @@ let process source_code_file debug =
     let chunk = parser lexer in
     if debug then begin
       print_endline "debug mode: initial source view ...";
-      Ast.print_chunk Format.std_formatter chunk
+      Ast.print_block Format.std_formatter chunk
     end;
     print_endline "interprete ...";
     let env = Env.empty () in
     let chunk, env = Scope.analysis chunk env in
     if debug then begin
       print_endline "debug mode: source after scope analysis view ...";
-      Ast.print_chunk Format.std_formatter chunk
+      Ast.print_block Format.std_formatter chunk
     end;
     let _ = Interpret.run chunk env in
     ();

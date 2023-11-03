@@ -8,7 +8,7 @@ let prompt () =
     print_endline "Good bye, see you soon!";
     exit 0
 
-let rec loop (chunk : Ast.chunk) (env : Env.t) =
+let rec loop (chunk : Ast.block) (env : Env.t) =
   let user_in = prompt () in
   let lexbuf = Sedlexing.Latin1.from_string user_in in
   try

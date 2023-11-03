@@ -169,7 +169,7 @@ let rec typecheck_expr expr env =
   | _loc, Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
   | _loc, Evariadic -> Tnil (* TODO: OK ? *)
   | _loc, Efunctiondef _ -> Tfunction (* TODO: OK ? *)
-  | _loc, Eprefix (PEvar (Name n)) ->
+  | _loc, Eprefix (PEvar n) ->
     let v = Env.get_value n env in
     typecheck_value v
   | _loc, Eprefix (PEexp e) -> typecheck_expr e env
@@ -186,7 +186,7 @@ and typecheck_lexpr lexpr env =
   with Typing_error (loc, message) -> Error (loc, message)
 
 and typecheck_functioncall fc env =
-  let (FCpreargs (e, Aexplist el)) = fc in
+  let (FCpreargs (e, el)) = fc in
   let loc, _e = e in
   let typ = typecheck_expr e env in
   begin
