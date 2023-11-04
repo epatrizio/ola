@@ -18,11 +18,9 @@ exception Interpretation_error of location option * string
 let error loc message = raise (Interpretation_error (loc, message))
 
 let typecheck_expr expr env =
-  try
-    let _ = Typer.typecheck_expr expr env in
-    ()
-  with Typer.Typing_error (loc, message) ->
-    error (Some loc) ("Typing error: " ^ message)
+  match Typer.typecheck_expr expr env with
+  | Ok _t -> ()
+  | Error (loc, msg) -> error (Some loc) (Format.sprintf "Typing error: %s" msg)
 
 let rec block_from_pointer pt stmt_list =
   match (pt, stmt_list) with

@@ -82,7 +82,7 @@ parlist :
      | nl=separated_list(COMMA, NAME) vo=option(lvariadicopt) { Ast.PLlist (nl, vo) }
      | v=lvariadic { Ast.PLvariadic v }
 
-funcbody : 
+funcbody :
      | LPAREN pl=parlist RPAREN b=block END { (pl, b) }
 
 prefixexp :
@@ -113,7 +113,7 @@ stmt :
      // | FUNCTION n=NAME fb=funcbody { Ast.Sfunction (n, fb) }
      // | LOCAL FUNCTION n=NAME fb=funcbody { SfunctionLocal (n, fb) }
      // transform: f = function () body end
-     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }     
+     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], Some [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      | fc=functioncall { SfunctionCall fc }
      | PRINT LPAREN e=lexpr RPAREN { Ast.Sprint e }          // tmp
