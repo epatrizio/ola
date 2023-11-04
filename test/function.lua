@@ -8,6 +8,33 @@ end
 
 f()   -- f2
 
+-- args init
+
+function f(a, b)
+  print(a)
+  print(b)
+end
+function r()
+  return 1, 2, 3
+end
+
+f(3)        -- a=3, b=nil
+f(3, 4)     -- a=3, b=4
+f(3, 4, 5)  -- a=3, b=4
+f(r(), 10)  -- a=1, b=10
+f(r())      -- a=1, b=2
+
+function f(a, b, c)
+  print(a)
+  print(b)
+  print(c)
+end
+function r()
+  return 1, 2
+end
+f(r(), 10)  -- a=1, b=10, c=nil
+f(10, r())  -- a=10, b=1, c=2
+
 result = false
 
 function max(num1, num2)
@@ -35,6 +62,17 @@ function fact(n)
 end
 print(n)                -- nil
 print(fact(5))          -- 120
+
+function fib(n)
+  if n <= 0 then
+    return 0
+  elseif n == 1 then
+    return 1
+  else
+    return fib(n-1) + fib(n-2)
+  end
+end
+print(fib(15))          -- 610
 
 -- function def as a value
 
