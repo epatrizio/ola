@@ -45,9 +45,7 @@ and typecheck_bitwise_unop ((loc, _e) as expr) env =
     error loc "attempt to perform bitwise operation on a string value"
   | _ -> assert false (* call error *)
 
-and typecheck_arith_binop binop expr1 expr2 env =
-  let loc1, _expr1 = expr1 in
-  let loc2, _expr2 = expr2 in
+and typecheck_arith_binop binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   let* typ1 = typecheck_expr expr1 env in
   let* typ2 = typecheck_expr expr2 env in
   match (typ1, typ2) with
@@ -63,9 +61,7 @@ and typecheck_arith_binop binop expr1 expr2 env =
   | _, Tstring -> error loc2 "attempt to perform arithmetic on a string value"
   | _ -> assert false (* call error *)
 
-and typecheck_bitwise_binop expr1 expr2 env =
-  let loc1, _expr1 = expr1 in
-  let loc2, _expr2 = expr2 in
+and typecheck_bitwise_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   let* typ1 = typecheck_expr expr1 env in
   let* typ2 = typecheck_expr expr2 env in
   match (typ1, typ2) with
@@ -82,9 +78,7 @@ and typecheck_bitwise_binop expr1 expr2 env =
     error loc2 "attempt to perform bitwise operation on a string value"
   | _ -> assert false (* call error *)
 
-and typecheck_str_binop expr1 expr2 env =
-  let loc1, _expr1 = expr1 in
-  let loc2, _expr2 = expr2 in
+and typecheck_str_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   let* typ1 = typecheck_expr expr1 env in
   let* typ2 = typecheck_expr expr2 env in
   match (typ1, typ2) with
