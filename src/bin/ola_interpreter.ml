@@ -28,8 +28,7 @@ let process source_code_file debug =
       Ast.print_block Format.std_formatter chunk
     end;
     print_endline "interprete ...";
-    let env = Env.empty () in
-    let chunk, env = Scope.analysis chunk env in
+    let chunk, env = Scope.analysis chunk Env.empty in
     if debug then begin
       print_endline "debug mode: source after scope analysis view ...";
       Ast.print_block Format.std_formatter chunk
@@ -43,12 +42,12 @@ let process source_code_file debug =
     exit 1
   | Parser.Error ->
     let loc = Sedlexing.lexing_positions lexbuf in
-    eprintf "Syntax error: %a@." Utils.location_info loc;
+    eprintf "Syntax error: %a@." Ast.pp_loc loc;
     exit 1
   | Interpret.Interpretation_error (loc, message) -> (
     match loc with
     | Some loc ->
-      eprintf "Interpretation error: %a: %s@." Utils.location_info loc message
+      eprintf "Interpretation error: %a: %s@." Ast.pp_loc loc message
     | None ->
       eprintf "Interpretation error: %s@." message;
       exit 1 )

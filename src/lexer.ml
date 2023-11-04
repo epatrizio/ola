@@ -148,7 +148,7 @@ let rec token buf =
   | eof -> EOF
   | _ ->
     error
-      (Format.asprintf "%a: unexpected lexeme %s" Utils.location_info
+      (Format.asprintf "%a: unexpected lexeme %s" Ast.pp_loc
          (Sedlexing.lexing_positions buf)
          (Sedlexing.Utf8.lexeme buf) )
 

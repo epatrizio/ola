@@ -263,3 +263,10 @@ and print_stmt fmt stmt =
 and print_block fmt block =
   let pp_sep _fmt () = () in
   pp_print_list ~pp_sep print_stmt fmt block
+
+let pp_loc fmt (loc : location) =
+  let start, _end = loc in
+  let file = start.pos_fname in
+  let line = start.pos_lnum in
+  let char = start.pos_cnum - start.pos_bol in
+  Format.fprintf fmt {|File "%s", line %d, char %d|} file line char

@@ -1,72 +1,53 @@
 (* Environment *)
 
-let mk_fresh_name = Utils.str_counter_from "v" 1
+module SMap = Map.Make (String)
 
-let mk_fresh_funcname = Utils.str_counter_from "func" 1
-
-module Names = Map.Make (String)
-module Values = Map.Make (String)
+type locals = string SMap.t
 
 type t =
-  { names : string Names.t
-  ; values : Ast.value Values.t
-  ; globals : string Names.t
-  ; locals : string Names.t
+  { values : Ast.value SMap.t
+  ; globals : string SMap.t
+  ; locals : locals
   }
 
-let empty () =
-  { names = Names.empty
-  ; values = Values.empty
-  ; globals = Values.empty
-  ; locals = Values.empty
-  }
+let empty = { values = SMap.empty; globals = SMap.empty; locals = SMap.empty }
 
-let add_global mk n env =
-  let fresh_name = mk () in
-  let env_n = Names.add fresh_name n env.names in
-  let env_v = Values.add fresh_name (Ast.Vnil ()) env.values in
-  let env_g = Names.add n fresh_name env.globals in
-  ( fresh_name
-  , { names = env_n; values = env_v; globals = env_g; locals = env.locals } )
+let fresh =
+  let count = ref ~-1 in
+  fun () ->
+    incr count;
+    Format.sprintf "v%d" !count
 
-let add_local mk n env =
-  let fresh_name = mk () in
-  let env_n = Names.add fresh_name n env.names in
-  let env_v = Values.add fresh_name (Ast.Vnil ()) env.values in
-  let env_l = Names.add n fresh_name env.locals in
-  ( fresh_name
-  , { names = env_n; values = env_v; globals = env.globals; locals = env_l } )
+let add_global n env =
+  let fresh_name = fresh () in
+  let values = SMap.add fresh_name (Ast.Vnil ()) env.values in
+  let globals = SMap.add n fresh_name env.globals in
+  (fresh_name, { env with values; globals })
 
-let add_global_name = add_global mk_fresh_name
+let add_local n env =
+  let fresh_name = fresh () in
+  let values = SMap.add fresh_name (Ast.Vnil ()) env.values in
+  let locals = SMap.add n fresh_name env.locals in
+  (fresh_name, { env with values; locals })
 
-let add_global_funcname = add_global mk_fresh_funcname
-
-let add_local_name = add_local mk_fresh_name
-
-let add_local_funcname = add_local mk_fresh_funcname
-
-let get_vname mk n env =
-  match Values.find_opt n env.locals with
+let get_name n env =
+  match SMap.find_opt n env.locals with
   | Some n -> (n, env)
   | None -> (
-    match Values.find_opt n env.globals with
+    match SMap.find_opt n env.globals with
     | Some n -> (n, env)
-    | None -> add_global mk n env )
-
-let get_name = get_vname mk_fresh_name
-
-let get_funcname = get_vname mk_fresh_funcname
+    | None -> add_global n env )
 
 let get_value n env =
-  match Values.find_opt n env.values with Some v -> v | None -> assert false
+  match SMap.find_opt n env.values with None -> assert false | Some v -> v
 
 let set_value n v env =
-  match Values.find_opt n env.values with
-  | Some _ ->
-    let env_v = Values.add n v env.values in
-    { names = env.names
-    ; values = env_v
-    ; globals = env.globals
-    ; locals = env.locals
-    }
+  match SMap.find_opt n env.values with
   | None -> assert false
+  | Some _ ->
+    let values = SMap.add n v env.values in
+    { env with values }
+
+let get_locals env = env.locals
+
+let with_locals env locals = { env with locals }
