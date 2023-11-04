@@ -166,9 +166,7 @@ and interpret_ibinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env =
   end
   | _ -> assert false (* typing error *)
 
-and interpret_sbinop_expr expr1 expr2 env =
-  let loc1, _expr1 = expr1 in
-  let loc2, _expr2 = expr2 in
+and interpret_sbinop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
   let v1, env = interpret_expr expr1 env in
   let v2, env = interpret_expr expr2 env in
   typecheck_expr
