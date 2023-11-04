@@ -10,8 +10,8 @@
 %token PRINT
 %token EOF
 
-%token <Ast.name> NAME
-%token <Ast.attrib> ATTRIB
+%token <string> NAME
+%token <string> ATTRIB
 %token <Ast.value> VALUE
 
 %left MINUS PLUS
@@ -23,7 +23,7 @@
 
 %start chunk
 
-%type <Ast.chunk> chunk
+%type <Ast.block> chunk
 // %type <Ast.unop> unop
 // %type <Ast.binop> binop
 // %type <Ast.stmt> stmt
@@ -40,7 +40,7 @@ block :
      ;
 
 var :
-     | n=NAME { Ast.Name n }
+     | n=NAME { n }
 
 attrib :
      | LT a=ATTRIB GT { a }
@@ -82,7 +82,7 @@ parlist :
      | nl=separated_list(COMMA, NAME) vo=option(lvariadicopt) { Ast.PLlist (nl, vo) }
      | v=lvariadic { Ast.PLvariadic v }
 
-funcbody : 
+funcbody :
      | LPAREN pl=parlist RPAREN b=block END { (pl, b) }
 
 prefixexp :
@@ -91,7 +91,7 @@ prefixexp :
      | LPAREN e=lexpr RPAREN { Ast.PEexp e }
 
 args :
-     | LPAREN el=separated_list(COMMA, lexpr) RPAREN { Ast.Aexplist el }
+     | LPAREN el=separated_list(COMMA, lexpr) RPAREN {  el }
 
 functioncall :
      | e=lexpr a=args { Ast.FCpreargs (e, a) }
@@ -113,7 +113,7 @@ stmt :
      // | FUNCTION n=NAME fb=funcbody { Ast.Sfunction (n, fb) }
      // | LOCAL FUNCTION n=NAME fb=funcbody { SfunctionLocal (n, fb) }
      // transform: f = function () body end
-     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ Ast.Name n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }     
+     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], Some [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      | fc=functioncall { SfunctionCall fc }
      | PRINT LPAREN e=lexpr RPAREN { Ast.Sprint e }          // tmp

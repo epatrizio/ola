@@ -82,12 +82,12 @@ let rec token buf =
   | Plus (Chars " \t") -> token buf
   | newline -> token buf
   | nil -> VALUE (Vnil ())
-  | boolean -> VALUE (Vboolean (bool_of_string (Sedlexing.Latin1.lexeme buf)))
-  | attrib -> ATTRIB (Sedlexing.Latin1.lexeme buf)
+  | boolean -> VALUE (Vboolean (bool_of_string (Sedlexing.Utf8.lexeme buf)))
+  | attrib -> ATTRIB (Sedlexing.Utf8.lexeme buf)
   | integer ->
-    VALUE (Vnumber (Ninteger (int_of_string (Sedlexing.Latin1.lexeme buf))))
+    VALUE (Vnumber (Ninteger (int_of_string (Sedlexing.Utf8.lexeme buf))))
   | float ->
-    VALUE (Vnumber (Nfloat (float_of_string (Sedlexing.Latin1.lexeme buf))))
+    VALUE (Vnumber (Nfloat (float_of_string (Sedlexing.Utf8.lexeme buf))))
   | str_double_quotes | str_single_quotes ->
     let s = Sedlexing.Utf8.lexeme buf in
     let s = String.sub s 1 (String.length s - 2) in
@@ -144,19 +144,21 @@ let rec token buf =
   | "print" -> PRINT
   | "--" -> comment buf
   | "--[[" -> multiline_comment buf
-  | name -> NAME (Sedlexing.Latin1.lexeme buf)
+  | name -> NAME (Sedlexing.Utf8.lexeme buf)
   | eof -> EOF
   | _ ->
-    error
-      (Format.asprintf "%a: unexpected lexeme %s" Utils.location_info
-         (Sedlexing.lexing_positions buf)
-         (Sedlexing.Utf8.lexeme buf) )
+    let lxm = Sedlexing.Utf8.lexeme buf in
+    let pos = Sedlexing.lexing_positions buf in
+    Format.kasprintf error "%a: unexpected lexeme %S" Ast.pp_loc pos lxm
 
 and comment buf =
   match%sedlex buf with
   | newline -> token buf
   | any -> comment buf
-  | _ -> assert false
+  | _ ->
+    let lxm = Sedlexing.Utf8.lexeme buf in
+    let pos = Sedlexing.lexing_positions buf in
+    Format.kasprintf error "%a: unexpected lexeme %S" Ast.pp_loc pos lxm
 
 and multiline_comment buf =
   match%sedlex buf with
@@ -164,4 +166,7 @@ and multiline_comment buf =
   | newline -> multiline_comment buf
   | eof -> error "eof: unterminated comment"
   | any -> multiline_comment buf
-  | _ -> assert false
+  | _ ->
+    let lxm = Sedlexing.Utf8.lexeme buf in
+    let pos = Sedlexing.lexing_positions buf in
+    Format.kasprintf error "%a: unexpected lexeme %S" Ast.pp_loc pos lxm

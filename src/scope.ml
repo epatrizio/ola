@@ -16,9 +16,9 @@ let rec analyse_expr expr env =
   | loc, Efunctiondef (pl, b) ->
     let (pl, b), env = analyse_funcbody (pl, b) env in
     ((loc, Efunctiondef (pl, b)), env)
-  | loc, Eprefix (PEvar (Name n)) ->
+  | loc, Eprefix (PEvar n) ->
     let fresh_n, env = Env.get_name n env in
-    ((loc, Eprefix (PEvar (Name fresh_n))), env)
+    ((loc, Eprefix (PEvar fresh_n)), env)
   | loc, Eprefix (PEexp e) ->
     let e, env = analyse_expr e env in
     ((loc, Eprefix (PEexp e)), env)
@@ -40,12 +40,12 @@ and analyse_el el env =
 
 and analyse_namelist nl env =
   (* List.fold_left
-     (fun (nl, ev) n -> let n, ev = Env.add_local_name n ev in (n :: nl, ev))
+     (fun (nl, ev) n -> let n, ev = Env.add_local n ev in (n :: nl, ev))
      ([], env) nl *)
   match nl with
   | [] -> ([], env)
   | n :: tl ->
-    let n, env = Env.add_local_name n env in
+    let n, env = Env.add_local n env in
     let tl, env = analyse_namelist tl env in
     (n :: tl, env)
 
@@ -69,18 +69,11 @@ and analyse_funcbody fb env =
   let pl, b = fb in
   let pl, env_loc = analyse_parlist pl env in
   let b, env_loc = analyse_block b env_loc in
-  ( (pl, b)
-  , { Env.names = env_loc.Env.names
-    ; Env.values = env_loc.Env.values
-    ; Env.globals = env_loc.Env.globals
-    ; Env.locals = env.Env.locals
-    } )
+  let locals = Env.get_locals env in
+  let env = Env.with_locals env_loc locals in
+  ((pl, b), env)
 
-and analyse_args args env =
-  match args with
-  | Aexplist el ->
-    let el, env = analyse_el el env in
-    (Aexplist el, env)
+and analyse_args args env = analyse_el args env
 
 and analyse_functioncall fc env =
   match fc with
@@ -92,11 +85,11 @@ and analyse_functioncall fc env =
 and analyse_stmt stmt env =
   let analyse_var is_local var env =
     match var with
-    | Name n ->
+    | n ->
       let fresh_n, env =
-        (if is_local then Env.add_local_name else Env.get_name) n env
+        (if is_local then Env.add_local else Env.get_name) n env
       in
-      (Name fresh_n, env)
+      (fresh_n, env)
   in
   let rec analyse_vl vl env =
     match vl with
@@ -111,7 +104,7 @@ and analyse_stmt stmt env =
     match nal with
     | [] -> ([], env)
     | (n, on) :: tl ->
-      let Name n, env = analyse_var true (Name n) env in
+      let n, env = analyse_var true n env in
       let tl, env = analyse_nal tl env in
       ((n, on) :: tl, env)
   in
@@ -178,7 +171,7 @@ and analyse_stmt stmt env =
     in
     (Sif (e, b, ebl, ob), env)
   | Sfor (n, e1, e2, oe, b) ->
-    let fresh_n, env_loc = Env.add_local_name n env in
+    let fresh_n, env_loc = Env.add_local n env in
     let e1, env_loc = analyse_expr e1 env_loc in
     let e2, env_loc = analyse_expr e2 env_loc in
     let oe, env_loc =
@@ -189,12 +182,11 @@ and analyse_stmt stmt env =
         (Some e, env_loc)
     in
     let b, env_loc = analyse_block b env_loc in
-    ( Sfor (fresh_n, e1, e2, oe, b)
-    , { names = env_loc.names
-      ; values = env_loc.values
-      ; globals = env_loc.globals
-      ; locals = env.locals
-      } )
+
+    let locals = Env.get_locals env in
+    let env = Env.with_locals env_loc locals in
+
+    (Sfor (fresh_n, e1, e2, oe, b), env)
   | Siterator (nl, el, b) ->
     (* todo: to be implemented *)
     (Siterator (nl, el, b), env)
@@ -219,11 +211,10 @@ and analyse_block b env =
   | stmt :: tl ->
     let stmt, env_s = analyse_stmt stmt env in
     let tl, env_b = analyse_block tl env_s in
-    ( stmt :: tl
-    , { names = env_b.names
-      ; values = env_b.values
-      ; globals = env_b.globals
-      ; locals = env.locals
-      } )
+
+    let locals = Env.get_locals env in
+    let env = Env.with_locals env_b locals in
+
+    (stmt :: tl, env)
 
 let analysis chunk env = analyse_block chunk env
