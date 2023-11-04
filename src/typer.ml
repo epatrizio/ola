@@ -200,10 +200,10 @@ and typecheck_stmt stmt env =
        typecheck_block b env *)
     (* todo: to be continued *)
   | SfunctionCall fc ->
-    let _ = typecheck_functioncall fc env in
+    let* (_ : Ast.typ) = typecheck_functioncall fc env in
     Ok ()
   | Sprint e ->
-    let _ = typecheck_expr e env in
+    let* (_ : Ast.typ) = typecheck_expr e env in
     Ok ()
 
 and typecheck_block b env =

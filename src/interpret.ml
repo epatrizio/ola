@@ -233,7 +233,9 @@ and interpret_expr (loc, expr) env =
       | Vnumber (Nfloat f) -> (Vnumber (Ninteger (lnot (get_int f loc))), env)
       | _ -> assert false (* typing error *)
     end
-  | Ebinop (op, e1, e2) -> interpret_bbinop_expr op e1 e2 env
+  | Ebinop (((Band | Bor) as op), e1, e2) -> interpret_bbinop_expr op e1 e2 env
+  | Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2 env
+  | Ebinop (op, e1, e2) -> interpret_ibinop_expr op e1 e2 env
   | Evariadic -> (Vnil (), env)
   | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env) (* todo: ok ? *)
   | Eprefix (PEvar n) -> (Env.get_value n env, env)
@@ -294,13 +296,8 @@ and interpret_stmt stmt env =
       match (vl, el) with
       | [], [] | [], _ -> env
       | vl, [] ->
-        List.fold_left
-          (fun e v ->
-            let n = v in
-            Env.set_value n (Ast.Vnil ()) e )
-          env vl
+        List.fold_left (fun e v -> Env.set_value v (Ast.Vnil ()) e) env vl
       | v :: vl, e :: el -> (
-        let n = v in
         let l, _e = e in
         let va, env = interpret_expr e env in
         match va with
@@ -308,12 +305,12 @@ and interpret_stmt stmt env =
           match vall with
           | [] -> env
           | va :: vall ->
-            let env = Env.set_value n va env in
+            let env = Env.set_value v va env in
             let vall_exp = List.map (fun v -> (l, Evalue v)) vall in
             lists_assign vl (vall_exp @ el) env
         end
         | va ->
-          let env = Env.set_value n va env in
+          let env = Env.set_value v va env in
           lists_assign vl el env )
     end
   in
