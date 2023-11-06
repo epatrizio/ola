@@ -1,2 +1,10 @@
 (cram
- (deps assign.lua basics.lua blocks.lua error.lua goto.lua len.lua typer.lua))
+ (deps
+  assign.lua
+  basics.lua
+  blocks.lua
+  error.lua
+  function.lua
+  goto.lua
+  len.lua
+  typer.lua))

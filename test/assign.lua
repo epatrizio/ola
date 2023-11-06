@@ -97,3 +97,24 @@ do                    -- new block
   print(x)            --> 11
 end
 print(x)              --> 10  (the global one)
+
+-- function
+
+function f()
+  return 1, 2
+end
+
+a, b, c = 1, 2
+print(a)  -- 1
+print(b)  -- 2
+print(c)  -- nil
+
+a, b, c = 0, f()
+print(a)  -- 0
+print(b)  -- 1
+print(c)  -- 2
+
+local a, b, c = f(), 0
+print(a)  -- 1
+print(b)  -- 0
+print(c)  -- nil

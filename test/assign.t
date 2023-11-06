@@ -45,3 +45,12 @@ assignment operations:
   12
   11
   10
+  1
+  2
+  nil
+  0
+  1
+  2
+  1
+  0
+  nil

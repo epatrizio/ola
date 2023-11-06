@@ -5,9 +5,6 @@ open Ast
 let rec analyse_expr expr env =
   match expr with
   | loc, Evalue v -> ((loc, Evalue v), env)
-  | loc, Evar (Name n) ->
-    let fresh_n, env = Env.get_name n env in
-    ((loc, Evar (Name fresh_n)), env)
   | loc, Eunop (op, e) ->
     let e, env = analyse_expr e env in
     ((loc, Eunop (op, e)), env)
@@ -15,15 +12,84 @@ let rec analyse_expr expr env =
     let e1, env = analyse_expr e1 env in
     let e2, env = analyse_expr e2 env in
     ((loc, Ebinop (op, e1, e2)), env)
+  | loc, Evariadic -> ((loc, Evariadic), env)
+  | loc, Efunctiondef (pl, b) ->
+    let (pl, b), env = analyse_funcbody (pl, b) env in
+    ((loc, Efunctiondef (pl, b)), env)
+  | loc, Eprefix (PEvar n) ->
+    let fresh_n, env = Env.get_name n env in
+    ((loc, Eprefix (PEvar fresh_n)), env)
+  | loc, Eprefix (PEexp e) ->
+    let e, env = analyse_expr e env in
+    ((loc, Eprefix (PEexp e)), env)
+  | loc, Eprefix (PEfunctioncall fc) ->
+    let fc, env = analyse_functioncall fc env in
+    ((loc, Eprefix (PEfunctioncall fc)), env)
 
-let rec analyse_stmt stmt env =
+and analyse_el el env =
+  (* List.fold_left
+     (fun (expl, ev) exp -> let exp, ev = analyse_expr exp ev in (exp :: expl, ev))
+     ([], env) el *)
+  (* todo: bug in fold version *)
+  match el with
+  | [] -> ([], env)
+  | e :: tl ->
+    let e, env = analyse_expr e env in
+    let tl, env = analyse_el tl env in
+    (e :: tl, env)
+
+and analyse_namelist nl env =
+  (* List.fold_left
+     (fun (nl, ev) n -> let n, ev = Env.add_local n ev in (n :: nl, ev))
+     ([], env) nl *)
+  match nl with
+  | [] -> ([], env)
+  | n :: tl ->
+    let n, env = Env.add_local n env in
+    let tl, env = analyse_namelist tl env in
+    (n :: tl, env)
+
+and analyse_parlist pl env =
+  match pl with
+  | PLlist (nl, eo) ->
+    let nl, env = analyse_namelist nl env in
+    let eo, env =
+      match eo with
+      | None -> (None, env)
+      | Some e ->
+        let e, env = analyse_expr e env in
+        (Some e, env)
+    in
+    (PLlist (nl, eo), env)
+  | PLvariadic e ->
+    let e, env = analyse_expr e env in
+    (PLvariadic e, env)
+
+and analyse_funcbody fb env =
+  let pl, b = fb in
+  let pl, env_loc = analyse_parlist pl env in
+  let b, env_loc = analyse_block b env_loc in
+  let locals = Env.get_locals env in
+  let env = Env.with_locals env_loc locals in
+  ((pl, b), env)
+
+and analyse_args args env = analyse_el args env
+
+and analyse_functioncall fc env =
+  match fc with
+  | FCpreargs (exp, args) ->
+    let exp, env = analyse_expr exp env in
+    let args, env = analyse_args args env in
+    (FCpreargs (exp, args), env)
+
+and analyse_stmt stmt env =
   let analyse_var is_local var env =
     match var with
-    | Name n ->
+    | n ->
       let fresh_n, env =
         (if is_local then Env.add_local else Env.get_name) n env
       in
-      (Name fresh_n, env)
+      (fresh_n, env)
   in
   let rec analyse_vl vl env =
     match vl with
@@ -38,17 +104,9 @@ let rec analyse_stmt stmt env =
     match nal with
     | [] -> ([], env)
     | (n, on) :: tl ->
-      let Name n, env = analyse_var true (Name n) env in
+      let n, env = analyse_var true n env in
       let tl, env = analyse_nal tl env in
       ((n, on) :: tl, env)
-  in
-  let rec analyse_el el env =
-    match el with
-    | [] -> ([], env)
-    | e :: tl ->
-      let e, env = analyse_expr e env in
-      let tl, env = analyse_el tl env in
-      (e :: tl, env)
   in
   let analyse_elo elo env =
     match elo with
@@ -113,23 +171,36 @@ let rec analyse_stmt stmt env =
     in
     (Sif (e, b, ebl, ob), env)
   | Sfor (n, e1, e2, oe, b) ->
-    let get_n e = match e with Evar (Name n) -> n | _ -> assert false in
-    let loc1, _e1 = e1 in
-    let (_loc1, v), env = analyse_expr (loc1, Evar (Name n)) env in
-    let e1, env = analyse_expr e1 env in
-    let e2, env = analyse_expr e2 env in
-    let oe, env =
+    let fresh_n, env_loc = Env.add_local n env in
+    let e1, env_loc = analyse_expr e1 env_loc in
+    let e2, env_loc = analyse_expr e2 env_loc in
+    let oe, env_loc =
       match oe with
-      | None -> (None, env)
+      | None -> (None, env_loc)
       | Some e ->
-        let e, env = analyse_expr e env in
-        (Some e, env)
+        let e, env_loc = analyse_expr e env_loc in
+        (Some e, env_loc)
     in
-    let b, env = analyse_block b env in
-    (Sfor (get_n v, e1, e2, oe, b), env)
+    let b, env_loc = analyse_block b env_loc in
+
+    let locals = Env.get_locals env in
+    let env = Env.with_locals env_loc locals in
+
+    (Sfor (fresh_n, e1, e2, oe, b), env)
   | Siterator (nl, el, b) ->
     (* todo: to be implemented *)
     (Siterator (nl, el, b), env)
+  (* | Sfunction (n, fb) ->
+     let fresh_n, env = Env.get_funcname n env in
+     let fb, env = analyse_funcbody fb env in
+     (Sfunction (fresh_n, fb), env) *)
+  (* | SfunctionLocal (n, fb) ->
+     let fresh_n, env = Env.add_local_funcname n env in
+     let fb, env = analyse_funcbody fb env in
+     (SfunctionLocal (fresh_n, fb), env) *)
+  | SfunctionCall fc ->
+    let fc, env = analyse_functioncall fc env in
+    (SfunctionCall fc, env)
   | Sprint e ->
     let e, env = analyse_expr e env in
     (Sprint e, env)
@@ -140,11 +211,10 @@ and analyse_block b env =
   | stmt :: tl ->
     let stmt, env_s = analyse_stmt stmt env in
     let tl, env_b = analyse_block tl env_s in
-    ( stmt :: tl
-    , { names = env_b.names
-      ; values = env_b.values
-      ; globals = env_b.globals
-      ; locals = env.locals
-      } )
+
+    let locals = Env.get_locals env in
+    let env = Env.with_locals env_b locals in
+
+    (stmt :: tl, env)
 
 let analysis chunk env = analyse_block chunk env

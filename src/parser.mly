@@ -2,7 +2,7 @@
 
 %{ %}
 
-%token PLUS MINUS MUL DIV FLDIV MOD EXP DDOT LPAREN RPAREN
+%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT LPAREN RPAREN FUNCTION
 %token COLON DCOLON SEMICOLON COMMA
 %token AEQ LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR LAND LOR LSL LSR TILDE
@@ -10,8 +10,8 @@
 %token PRINT
 %token EOF
 
-%token <Ast.name> NAME
-%token <Ast.attrib> ATTRIB
+%token <string> NAME
+%token <string> ATTRIB
 %token <Ast.value> VALUE
 
 %left MINUS PLUS
@@ -23,7 +23,7 @@
 
 %start chunk
 
-%type <Ast.chunk> chunk
+%type <Ast.block> chunk
 // %type <Ast.unop> unop
 // %type <Ast.binop> binop
 // %type <Ast.stmt> stmt
@@ -40,7 +40,7 @@ block :
      ;
 
 var :
-     | n=NAME { Ast.Name n }
+     | n=NAME { n }
 
 attrib :
      | LT a=ATTRIB GT { a }
@@ -69,6 +69,33 @@ cexpr :
 sempty :
      | SEMICOLON { Ast.Sempty }
 
+variadic :
+     | TDOT { Ast.Evariadic }
+
+lvariadic :
+     | v=variadic { (($startpos,$endpos), v) }
+
+lvariadicopt :
+     | COMMA v=lvariadic { v }
+
+parlist :
+     | nl=separated_list(COMMA, NAME) vo=option(lvariadicopt) { Ast.PLlist (nl, vo) }
+     | v=lvariadic { Ast.PLvariadic v }
+
+funcbody :
+     | LPAREN pl=parlist RPAREN b=block END { (pl, b) }
+
+prefixexp :
+     | v=var { Ast.PEvar v }
+     | fc=functioncall { PEfunctioncall fc }
+     | LPAREN e=lexpr RPAREN { Ast.PEexp e }
+
+args :
+     | LPAREN el=separated_list(COMMA, lexpr) RPAREN {  el }
+
+functioncall :
+     | e=lexpr a=args { Ast.FCpreargs (e, a) }
+
 stmt :
      | s=sempty { s }
      | vl=separated_nonempty_list(COMMA, var) AEQ el=exprlist { Ast.Sassign (vl, el) }
@@ -83,6 +110,13 @@ stmt :
      | IF e=lexpr THEN b=block l=list(elseif) o=option(elseop) END { Ast.Sif (e, b, l, o) }
      | FOR n=NAME AEQ e1=lexpr COMMA e2=lexpr oe=option(cexpr) DO b=block END { Ast.Sfor (n, e1, e2, oe, b) }
      | FOR nl=separated_nonempty_list(COMMA, NAME) IN el=separated_nonempty_list(COMMA, lexpr) DO b=block END { Ast.Siterator (nl, el, b) }
+     // | FUNCTION n=NAME fb=funcbody { Ast.Sfunction (n, fb) }
+     // transform: f = function () body end
+     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
+     // | LOCAL FUNCTION n=NAME fb=funcbody { SfunctionLocal (n, fb) }
+     // transform: local f; f = function () body end -- TODO (actually, same as global function)
+     | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], Some [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
+     | fc=functioncall { SfunctionCall fc }
      | PRINT LPAREN e=lexpr RPAREN { Ast.Sprint e }          // tmp
      ;
 
@@ -118,10 +152,12 @@ binop :
      ;
 
 expr :
-     | v=var { Ast.Evar v }
+     | pe=prefixexp { Ast.Eprefix pe }
      | v=VALUE { Ast.Evalue v }
      | op=unop e=lexpr %prec uminus { Ast.Eunop (op, e) }
      | e1=lexpr op=binop e2=lexpr { Ast.Ebinop (op, e1, e2) }
+     | v=variadic { v }
+     | FUNCTION fb=funcbody { Ast.Efunctiondef fb }
      | LPAREN e=expr RPAREN { e }
      ;
 
