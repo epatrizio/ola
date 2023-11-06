@@ -122,6 +122,10 @@ let rec token buf =
   | "..." -> TDOT
   | '(' -> LPAREN
   | ')' -> RPAREN
+  | '{' -> LBRACES
+  | '}' -> RBRACES
+  | '[' -> LBRACKET
+  | ']' -> RBRACKET
   | "not" -> NOT
   | "and" -> AND
   | "or" -> OR

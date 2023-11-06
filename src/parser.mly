@@ -2,7 +2,8 @@
 
 %{ %}
 
-%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT LPAREN RPAREN FUNCTION
+%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT FUNCTION
+%token LPAREN RPAREN LBRACKET RBRACKET LBRACES RBRACES
 %token COLON DCOLON SEMICOLON COMMA
 %token AEQ LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR LAND LOR LSL LSR TILDE
@@ -96,6 +97,18 @@ args :
 functioncall :
      | e=lexpr a=args { Ast.FCpreargs (e, a) }
 
+field :
+     | e=lexpr { Ast.Fexp e }
+     | n=NAME AEQ e=lexpr { Ast.Fname (n, e) }
+     | LBRACKET e1=lexpr RBRACKET AEQ e2=lexpr { Ast.Fcol (e1, e2) }
+
+fieldsep :
+     | COMMA {}
+     | SEMICOLON {}
+
+fieldlist :
+     | fl=separated_nonempty_list(fieldsep, field) { fl }
+
 stmt :
      | s=sempty { s }
      | vl=separated_nonempty_list(COMMA, var) AEQ el=exprlist { Ast.Sassign (vl, el) }
@@ -158,6 +171,7 @@ expr :
      | e1=lexpr op=binop e2=lexpr { Ast.Ebinop (op, e1, e2) }
      | v=variadic { v }
      | FUNCTION fb=funcbody { Ast.Efunctiondef fb }
+     | LBRACES flo=option(fieldlist) RBRACES { Ast.Etableconstructor flo }
      | LPAREN e=expr RPAREN { e }
      ;
 

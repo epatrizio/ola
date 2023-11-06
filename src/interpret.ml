@@ -195,7 +195,7 @@ and interpret_expr (loc, expr) env =
   | Evalue
       ( ( Vnil ()
         | Vboolean _ | Vnumber _ | Vstring _ | Vfunction _ | VfunctionReturn _
-          ) as v ) ->
+        | Vtable _ ) as v ) ->
     (v, env)
   | Eunop (Unot, ((l, _) as e)) ->
     let v, env = interpret_expr e env in
@@ -241,6 +241,8 @@ and interpret_expr (loc, expr) env =
   | Eprefix (PEfunctioncall fc) ->
     let v, _env = interpret_functioncall fc env in
     (v, env)
+  | Etableconstructor flo -> (Vtable (Random.bits32 (), flo), env)
+(* todo: ok ? *)
 
 and lists_assign vl el env =
   begin

@@ -20,6 +20,7 @@ let rec typecheck_value value =
   | Vstring _ -> Tstring
   | Vfunction _ -> Tfunction
   | VfunctionReturn vl -> TfunctionReturn (List.map typecheck_value vl)
+  | Vtable _ -> Ttable
 
 let rec typecheck_arith_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
@@ -121,6 +122,7 @@ and typecheck_expr expr env =
     Ok (typecheck_value v)
   | Eprefix (PEexp e) -> typecheck_expr e env
   | Eprefix (PEfunctioncall fc) -> typecheck_functioncall fc env
+  | Etableconstructor _ -> Ok Ttable (* TODO: OK ? *)
 
 and typecheck_lexpr lexpr env =
   List.fold_left

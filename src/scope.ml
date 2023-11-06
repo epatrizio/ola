@@ -25,6 +25,8 @@ let rec analyse_expr expr env =
   | loc, Eprefix (PEfunctioncall fc) ->
     let fc, env = analyse_functioncall fc env in
     ((loc, Eprefix (PEfunctioncall fc)), env)
+  | loc, Etableconstructor flo -> ((loc, Etableconstructor flo), env)
+(* TODO *)
 
 and analyse_el el env =
   (* List.fold_left

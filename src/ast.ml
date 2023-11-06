@@ -13,9 +13,9 @@ type typ =
   | Tstring
   | Tfunction
   | TfunctionReturn of typ list
+  | Ttable
   | Tuserdata
   | Tthread
-  | Ttable
 
 type unop =
   | Unot
@@ -57,6 +57,7 @@ type value =
   | Vstring of string
   | Vfunction of int32 * (parlist * block) (* int32 = function unique id *)
   | VfunctionReturn of value list
+  | Vtable of int32 * field list option (* int32 = table unique id *)
 
 and expr = location * expr'
 
@@ -67,6 +68,7 @@ and expr' =
   | Evariadic
   | Efunctiondef of (parlist * block)
   | Eprefix of prefixexp
+  | Etableconstructor of field list option
 
 and prefixexp =
   | PEvar of string
@@ -82,6 +84,11 @@ and parlist =
   | PLvariadic of expr
 
 (* args ::= ‘(’ [explist] ‘)’ | tableconstructor | LiteralString  *)
+and field =
+  | Fexp of expr
+  | Fname of string * expr
+  | Fcol of expr * expr
+
 and stmt =
   | Sempty
   | Sassign of string list * expr list
@@ -162,12 +169,19 @@ let rec print_value fmt value =
   | Vfunction (i, _b) ->
     fprintf fmt "function: %a" pp_print_int (Int32.to_int i)
   | VfunctionReturn vl -> (pp_print_list ~pp_sep print_value) fmt vl
+  | Vtable (i, _flo) -> fprintf fmt "table: %a" pp_print_int (Int32.to_int i)
 
 let rec print_parlist fmt pl =
   match pl with
   | PLlist (nl, eo) ->
     fprintf fmt "%a%a" (pp_print_list ~pp_sep pp_print_string) nl print_eo eo
   | PLvariadic e -> print_expr fmt e
+
+and print_field fmt f =
+  match f with
+  | Fexp e -> print_expr fmt e
+  | Fname (n, e) -> fprintf fmt "%s = %a" n print_expr e
+  | Fcol (e1, e2) -> fprintf fmt "[%a] = %a" print_expr e1 print_expr e2
 
 and print_eo fmt eo = Option.iter (fprintf fmt ", %a" print_expr) eo
 
@@ -200,6 +214,10 @@ and print_expr fmt (_loc, expr) =
   | Evariadic -> pp_print_string fmt "..."
   | Efunctiondef fb -> fprintf fmt "function %a" print_funcbody fb
   | Eprefix prexp -> print_prefixexp fmt prexp
+  | Etableconstructor flo -> (
+    match flo with
+    | None -> pp_print_string fmt "{}"
+    | Some fl -> fprintf fmt "{%a}" (pp_print_list ~pp_sep print_field) fl )
 
 and print_stmt fmt stmt =
   let pp_name_attrib fmt (name, attrib_opt) =
