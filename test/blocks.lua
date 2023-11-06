@@ -65,11 +65,13 @@ else print(243) end
 do
   local tmp = 1
   print(tmp)
-  --return      -- ok & only one return in a block
+  --return      -- ok & only one return in a block (TODO bug: equivalent to a return at the end of the block)
   --return 1, 2 -- only at the end of the block
   print(tmp + 1)
-  -- return tmp, tmp+1;
+  --return tmp, tmp+1;
 end
+
+if true then return end   -- useful for stoping a script during the flow
 
 --return
 

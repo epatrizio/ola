@@ -460,10 +460,13 @@ and interpret_stmt stmt env =
       env )
 
 and interpret_block b env =
-  List.fold_left (fun e stmt -> interpret_stmt stmt e) env b
+  try List.fold_left (fun e stmt -> interpret_stmt stmt e) env b
+  with Return_catch (elo, so, env) -> raise (Return_catch (elo, so, env))
 
 let rec run ?(pt = Begin) chunk env =
   try
     let bl = block_from_pointer pt chunk in
     interpret_block bl env
-  with Goto_catch (label, env) -> run ~pt:label chunk env
+  with
+  | Goto_catch (label, env) -> run ~pt:label chunk env
+  | Return_catch (_elo, _so, env) -> env
