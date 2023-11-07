@@ -34,14 +34,15 @@
 
 %%
 
-chunk : l=block EOF { l };
+chunk : l=block EOF { l }
 
 block :
      | l=list(stmt) { l }
-     ;
 
 var :
-     | n=NAME { n }
+     | n=NAME { Ast.VarName n }
+     | pe=prefixexp LBRACKET e=lexpr RBRACKET { Ast.VarTableField (pe, e) }
+     | pe=prefixexp DOT n=NAME { Ast.VarTableFieldName (pe, n) }
 
 attrib :
      | LT a=ATTRIB GT { a }
@@ -125,7 +126,7 @@ stmt :
      | FOR nl=separated_nonempty_list(COMMA, NAME) IN el=separated_nonempty_list(COMMA, lexpr) DO b=block END { Ast.Siterator (nl, el, b) }
      // | FUNCTION n=NAME fb=funcbody { Ast.Sfunction (n, fb) }
      // transform: f = function () body end
-     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
+     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ Ast.VarName n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      // | LOCAL FUNCTION n=NAME fb=funcbody { SfunctionLocal (n, fb) }
      // transform: local f; f = function () body end -- TODO (actually, same as global function)
      | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], Some [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }

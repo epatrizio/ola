@@ -71,11 +71,15 @@ and expr' =
   | Etableconstructor of field list option
 
 and prefixexp =
-  | PEvar of string
+  | PEvar of var
   | PEfunctioncall of functioncall
   | PEexp of expr
 
-(* var ::=  Name | prefixexp ‘[’ exp ‘]’ | prefixexp ‘.’ Name  *)
+and var =
+  | VarName of string
+  | VarTableField of prefixexp * expr
+  | VarTableFieldName of prefixexp * string
+
 and functioncall = FCpreargs of expr * expr list
 (* | FCprename of prefixexp * name * args *)
 
@@ -91,7 +95,7 @@ and field =
 
 and stmt =
   | Sempty
-  | Sassign of string list * expr list
+  | Sassign of var list * expr list
   | SassignLocal of (string * string option) list * expr list option
   | Sbreak
   | Sreturn of expr list option * stmt option
@@ -177,6 +181,13 @@ let rec print_parlist fmt pl =
     fprintf fmt "%a%a" (pp_print_list ~pp_sep pp_print_string) nl print_eo eo
   | PLvariadic e -> print_expr fmt e
 
+and print_var fmt v =
+  match v with
+  | VarName n -> pp_print_string fmt n
+  | VarTableField (pexp, exp) ->
+    fprintf fmt "%a[%a]" print_prefixexp pexp print_expr exp
+  | VarTableFieldName (pexp, n) -> fprintf fmt "%a.%s" print_prefixexp pexp n
+
 and print_field fmt f =
   match f with
   | Fexp e -> print_expr fmt e
@@ -193,7 +204,7 @@ and print_args fmt args =
 
 and print_prefixexp fmt prexp =
   match prexp with
-  | PEvar v -> pp_print_string fmt v
+  | PEvar v -> print_var fmt v
   | PEfunctioncall fc -> print_functioncall fmt fc
   | PEexp e -> print_expr fmt e
 
@@ -232,10 +243,10 @@ and print_stmt fmt stmt =
   let pp_stmt_opt fmt stmt_opt = Option.iter (print_stmt fmt) stmt_opt in
   match stmt with
   | Sempty -> fprintf fmt ""
-  | Sassign (il, lel) ->
+  | Sassign (vl, lel) ->
     fprintf fmt "%a = %a@."
-      (pp_print_list ~pp_sep pp_print_string)
-      il
+      (pp_print_list ~pp_sep print_var)
+      vl
       (pp_print_list ~pp_sep print_expr)
       lel
   | SassignLocal (nal, elo) ->

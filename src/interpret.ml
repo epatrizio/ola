@@ -236,7 +236,8 @@ and interpret_expr (loc, expr) env =
   | Ebinop (op, e1, e2) -> interpret_ibinop_expr op e1 e2 env
   | Evariadic -> (Vnil (), env)
   | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env) (* todo: ok ? *)
-  | Eprefix (PEvar n) -> (Env.get_value n env, env)
+  | Eprefix (PEvar (VarName n)) -> (Env.get_value n env, env)
+  | Eprefix (PEvar _) -> (Vnil (), env) (* todo *)
   | Eprefix (PEexp e) -> interpret_expr e env
   | Eprefix (PEfunctioncall fc) ->
     let v, _env = interpret_functioncall fc env in
@@ -347,7 +348,15 @@ and interpret_functioncall (FCpreargs (((loc, _) as e), el)) env =
 and interpret_stmt stmt env =
   match stmt with
   | Sempty -> env
-  | Sassign (vl, el) -> lists_assign vl el env
+  | Sassign (vl, el) ->
+    (* todo: tmp - only varname support *)
+    let rec to_nl vl =
+      match vl with
+      | [] -> []
+      | v :: vl -> (
+        match v with VarName n -> n :: to_nl vl | _ -> assert false )
+    in
+    lists_assign (to_nl vl) el env
   | SassignLocal (nal, elo) -> lists_lassign nal elo env
   | Sbreak -> raise (Break_catch env)
   | Sreturn (elo, so) -> raise (Return_catch (elo, so, env))
@@ -424,13 +433,16 @@ and interpret_stmt stmt env =
         | Vnumber (Nfloat f) -> if f >= 0. then Ble else Bge
         | _ -> assert false (* call error *)
       in
-      (loc, Ebinop (op, (loc, Eprefix (PEvar n)), (loc, Evalue limit)))
+      (loc, Ebinop (op, (loc, Eprefix (PEvar (VarName n))), (loc, Evalue limit)))
     in
     let incr_cnt_stmt loc step =
       Sassign
-        ( [ n ]
-        , [ (loc, Ebinop (Badd, (loc, Eprefix (PEvar n)), (loc, Evalue step))) ]
-        )
+        ( [ VarName n ]
+        , [ ( loc
+            , Ebinop
+                (Badd, (loc, Eprefix (PEvar (VarName n))), (loc, Evalue step))
+            )
+          ] )
     in
     let l1, _e1 = e1 in
     let ival, env = init_val e1 env in

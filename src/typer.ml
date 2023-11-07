@@ -117,9 +117,10 @@ and typecheck_expr expr env =
   | Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
   | Evariadic -> Ok Tnil (* TODO: OK ? *)
   | Efunctiondef _ -> Ok Tfunction (* TODO: OK ? *)
-  | Eprefix (PEvar n) ->
+  | Eprefix (PEvar (VarName n)) ->
     let v = Env.get_value n env in
     Ok (typecheck_value v)
+  | Eprefix (PEvar _) -> Ok Tnil (* TODO: OK ? *)
   | Eprefix (PEexp e) -> typecheck_expr e env
   | Eprefix (PEfunctioncall fc) -> typecheck_functioncall fc env
   | Etableconstructor _ -> Ok Ttable (* TODO: OK ? *)
