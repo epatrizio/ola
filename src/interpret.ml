@@ -280,13 +280,13 @@ and lists_assign vl el env =
         lists_assign vl el env )
   end
 
-and lists_lassign nal elo env =
+and lists_lassign nal el env =
   begin
-    match (nal, elo) with
-    | [], Some [] | [], None | [], _ | _, None -> env
-    | nal, Some [] ->
+    match (nal, el) with
+    | [], [] | [], _ -> env
+    | nal, [] ->
       List.fold_left (fun e (n, _on) -> Env.set_value n (Ast.Vnil ()) e) env nal
-    | (n, _on) :: vl, Some [ ((l, _e) as e) ] -> (
+    | (n, _on) :: vl, [ ((l, _e) as e) ] -> (
       let va, env = interpret_expr e env in
       match va with
       | VfunctionReturn vall -> begin
@@ -295,12 +295,12 @@ and lists_lassign nal elo env =
         | va :: vall ->
           let env = Env.set_value n va env in
           let vall_exp = List.map (fun v -> (l, Evalue v)) vall in
-          lists_lassign vl (Some vall_exp) env
+          lists_lassign vl vall_exp env
       end
       | va ->
         let env = Env.set_value n va env in
-        lists_lassign vl (Some []) env )
-    | (n, _on) :: vl, Some (e :: el) -> (
+        lists_lassign vl [] env )
+    | (n, _on) :: vl, e :: el -> (
       let va, env = interpret_expr e env in
       match va with
       | VfunctionReturn vall -> begin
@@ -308,11 +308,11 @@ and lists_lassign nal elo env =
         | [] -> Env.set_value n (Ast.Vnil ()) env
         | va :: _vall ->
           let env = Env.set_value n va env in
-          lists_lassign vl (Some el) env
+          lists_lassign vl el env
       end
       | va ->
         let env = Env.set_value n va env in
-        lists_lassign vl (Some el) env )
+        lists_lassign vl el env )
   end
 
 and lists_args pl el env =
@@ -327,28 +327,29 @@ and interpret_functioncall fc env =
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
     (* let e, env = interpret_expr e env in *)
     let e = Env.get_value v env in
-    begin match e with
-    | Vfunction (_i, (pl, b)) -> begin
-      try
-        let env = lists_args pl el env in
-        let env = interpret_block b env in
-        (VfunctionReturn [], env)
-      with Return_catch (el, _so, env) -> (
-        match el with
-        | [] -> (VfunctionReturn [], env)
-        | [ e ] -> interpret_expr e env
-        | el ->
-          let vl, env =
-            List.fold_left
-              (fun (vl, e) exp ->
-                let v, e = interpret_expr exp e in
-                (vl @ [ v ], e) )
-              ([], env) el
-          in
-          (VfunctionReturn vl, env) )
+    begin
+      match e with
+      | Vfunction (_i, (pl, b)) -> begin
+        try
+          let env = lists_args pl el env in
+          let env = interpret_block b env in
+          (VfunctionReturn [], env)
+        with Return_catch (el, _so, env) -> (
+          match el with
+          | [] -> (VfunctionReturn [], env)
+          | [ e ] -> interpret_expr e env
+          | el ->
+            let vl, env =
+              List.fold_left
+                (fun (vl, e) exp ->
+                  let v, e = interpret_expr exp e in
+                  (vl @ [ v ], e) )
+                ([], env) el
+            in
+            (VfunctionReturn vl, env) )
+      end
+      | _ -> error (*Some loc*) None "function call error!"
     end
-    | _ -> error (*Some loc*) None "function call error!"
-  end
   | _ -> assert false
 
 and interpret_stmt stmt env =
@@ -363,7 +364,7 @@ and interpret_stmt stmt env =
         match v with VarName n -> n :: to_nl vl | _ -> assert false )
     in
     lists_assign (to_nl vl) el env
-  | SassignLocal (nal, elo) -> lists_lassign nal elo env
+  | SassignLocal (nal, el) -> lists_lassign nal el env
   | Sbreak -> raise (Break_catch env)
   | Sreturn (el, so) -> raise (Return_catch (el, so, env))
   | Slabel _ -> env

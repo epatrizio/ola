@@ -80,13 +80,16 @@ and analyse_funcbody fb env =
 
 and analyse_args args env =
   match args with
-  | Aexpl el -> let el, env = analyse_el el env in (Aexpl el, env)
+  | Aexpl el ->
+    let el, env = analyse_el el env in
+    (Aexpl el, env)
   | Atable flo -> (Atable flo, env) (* todo *)
-  | Astr s -> (Astr s, env) (* todo *)
+  | Astr s -> (Astr s, env)
+(* todo *)
 
 (* todo - only string VarName
     | VarTableField of prefixexp * expr
-    | VarTableFieldName of prefixexp * string   
+    | VarTableFieldName of prefixexp * string
 *)
 and analyse_var is_local var env =
   match var with
@@ -98,10 +101,16 @@ and analyse_var is_local var env =
 
 and analyse_prefixexp pexp env =
   match pexp with
-  | PEvar VarName n -> let n, env = analyse_var false n env in (PEvar (VarName n), env)
+  | PEvar (VarName n) ->
+    let n, env = analyse_var false n env in
+    (PEvar (VarName n), env)
   | PEvar v -> (PEvar v, env)
-  | PEfunctioncall fc -> let fc, env = analyse_functioncall fc env in (PEfunctioncall fc, env)
-  | PEexp e -> let e, env = analyse_expr e env in (PEexp e, env)
+  | PEfunctioncall fc ->
+    let fc, env = analyse_functioncall fc env in
+    (PEfunctioncall fc, env)
+  | PEexp e ->
+    let e, env = analyse_expr e env in
+    (PEexp e, env)
 
 and analyse_functioncall fc env =
   match fc with
@@ -109,7 +118,7 @@ and analyse_functioncall fc env =
     let pexp, env = analyse_prefixexp pexp env in
     let args, env = analyse_args args env in
     (FCpreargs (pexp, args), env)
-  | FCprename (pexp, n, args) -> 
+  | FCprename (pexp, n, args) ->
     let pexp, env = analyse_prefixexp pexp env in
     let args, env = analyse_args args env in
     (FCprename (pexp, n, args), env)
@@ -117,13 +126,13 @@ and analyse_functioncall fc env =
 and analyse_stmt stmt env =
   (* todo - only string VarName *)
   (* let analyse_var is_local var env =
-    match var with
-    | n ->
-      let fresh_n, env =
-        (if is_local then Env.add_local else Env.get_name) n env
-      in
-      (fresh_n, env)
-  in *)
+       match var with
+       | n ->
+         let fresh_n, env =
+           (if is_local then Env.add_local else Env.get_name) n env
+         in
+         (fresh_n, env)
+     in *)
   let rec analyse_vl vl env =
     match vl with
     | [] -> ([], env)
@@ -145,13 +154,6 @@ and analyse_stmt stmt env =
       let tl, env = analyse_nal tl env in
       ((n, on) :: tl, env)
   in
-  let analyse_elo elo env =
-    match elo with
-    | None -> (None, env)
-    | Some el ->
-      let el, env = analyse_el el env in
-      (Some el, env)
-  in
   let rec analyse_ebl ebl env =
     match ebl with
     | [] -> ([], env)
@@ -167,10 +169,10 @@ and analyse_stmt stmt env =
     let el, env = analyse_el el env in
     let vl, env = analyse_vl vl env in
     (Sassign (vl, el), env)
-  | SassignLocal (nal, elo) ->
-    let elo, env = analyse_elo elo env in
+  | SassignLocal (nal, el) ->
+    let el, env = analyse_el el env in
     let nal, env = analyse_nal nal env in
-    (SassignLocal (nal, elo), env)
+    (SassignLocal (nal, el), env)
   | Sbreak -> (Sbreak, env)
   | Sreturn (el, so) ->
     let el, env = analyse_el el env in

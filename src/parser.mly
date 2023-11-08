@@ -53,11 +53,9 @@ attname :
 lexpr :
      | e=expr { (($startpos,$endpos), e) }
 
-exprlist :
-     | el=separated_nonempty_list(COMMA, lexpr) { el }
-
 exprlistopt :
-     | AEQ el=exprlist { el }
+     | AEQ el=separated_nonempty_list(COMMA, lexpr) { el }
+     | { [] }
 
 elseif :
      | ELSEIF e=lexpr THEN b=block { (e, b) }
@@ -125,8 +123,8 @@ fieldlist :
 
 stmt :
      | s=sempty { s }
-     | vl=separated_nonempty_list(COMMA, var) AEQ el=exprlist { Ast.Sassign (vl, el) }
-     | LOCAL nal=separated_nonempty_list(COMMA, attname) elo=option(exprlistopt) { Ast.SassignLocal (nal, elo) }
+     | vl=separated_nonempty_list(COMMA, var) AEQ el=separated_nonempty_list(COMMA, lexpr) { Ast.Sassign (vl, el) }
+     | LOCAL nal=separated_nonempty_list(COMMA, attname) el=exprlistopt { Ast.SassignLocal (nal, el) }
      | BREAK { Ast.Sbreak }
      | RETURN el=separated_list(COMMA, lexpr) so=option(sempty) { Ast.Sreturn (el, so) }
      | DCOLON n=NAME DCOLON { Ast.Slabel n }
@@ -142,7 +140,7 @@ stmt :
      | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ Ast.VarName n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      // | LOCAL FUNCTION n=NAME fb=funcbody { SfunctionLocal (n, fb) }
      // transform: local f; f = function () body end -- TODO (actually, same as global function)
-     | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], Some [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
+     | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      | fc=functioncall { SfunctionCall fc }
      | PRINT LPAREN e=lexpr RPAREN { Ast.Sprint e }          // tmp
      ;

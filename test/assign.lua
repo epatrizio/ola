@@ -70,7 +70,8 @@ while cnt < 5
 
 -- repeat
 
-local cnt = 0
+local cnt
+cnt = 0
 repeat
   print(cnt)
   cnt = cnt + 1

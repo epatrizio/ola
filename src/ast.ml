@@ -101,7 +101,7 @@ and field =
 and stmt =
   | Sempty
   | Sassign of var list * expr list
-  | SassignLocal of (string * string option) list * expr list option
+  | SassignLocal of (string * string option) list * expr list
   | Sbreak
   | Sreturn of expr list * stmt option
   | Slabel of string
@@ -221,8 +221,10 @@ and print_args fmt args =
 
 and print_functioncall fmt fc =
   match fc with
-  | FCpreargs (pexp, args) -> fprintf fmt "%a%a" print_prefixexp pexp print_args args
-  | FCprename (pexp, n, args) -> fprintf fmt "%a:%s(%a)" print_prefixexp pexp n print_args args
+  | FCpreargs (pexp, args) ->
+    fprintf fmt "%a%a" print_prefixexp pexp print_args args
+  | FCprename (pexp, n, args) ->
+    fprintf fmt "%a:%s(%a)" print_prefixexp pexp n print_args args
 
 and print_expr fmt (_loc, expr) =
   match expr with
@@ -244,11 +246,6 @@ and print_stmt fmt stmt =
     pp_print_string fmt name;
     Option.iter (fprintf fmt " %a " print_attrib) attrib_opt
   in
-  let pp_exprlist_opt fmt exprlist_opt =
-    Option.iter
-      (fprintf fmt " = %a" (pp_print_list ~pp_sep print_expr))
-      exprlist_opt
-  in
   let pp_stmt_opt fmt stmt_opt = Option.iter (print_stmt fmt) stmt_opt in
   match stmt with
   | Sempty -> fprintf fmt ""
@@ -258,13 +255,18 @@ and print_stmt fmt stmt =
       vl
       (pp_print_list ~pp_sep print_expr)
       lel
-  | SassignLocal (nal, elo) ->
-    fprintf fmt "local %a%a@."
+  | SassignLocal (nal, el) ->
+    fprintf fmt "local %a%a%a@."
       (pp_print_list ~pp_sep pp_name_attrib)
-      nal pp_exprlist_opt elo
+      nal pp_print_string
+      (if List.length el > 0 then " = " else "")
+      (pp_print_list ~pp_sep print_expr)
+      el
   | Sbreak -> fprintf fmt "break@."
   | Sreturn (el, so) ->
-    fprintf fmt "return %a%a@." (pp_print_list ~pp_sep print_expr) el pp_stmt_opt so
+    fprintf fmt "return %a%a@."
+      (pp_print_list ~pp_sep print_expr)
+      el pp_stmt_opt so
   | Slabel n -> fprintf fmt "::%s::@." n
   | Sgoto n -> fprintf fmt "goto %s@." n
   | Sblock b -> fprintf fmt "do@.@[<v>%a@]end@." print_block b
