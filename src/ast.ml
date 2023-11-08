@@ -80,14 +80,19 @@ and var =
   | VarTableField of prefixexp * expr
   | VarTableFieldName of prefixexp * string
 
-and functioncall = FCpreargs of expr * expr list
-(* | FCprename of prefixexp * name * args *)
+and args =
+  | Aexpl of expr list
+  | Atable of field list option
+  | Astr of string
+
+and functioncall =
+  | FCpreargs of prefixexp * args
+  | FCprename of prefixexp * string * args
 
 and parlist =
   | PLlist of string list * expr option
   | PLvariadic of expr
 
-(* args ::= ‘(’ [explist] ‘)’ | tableconstructor | LiteralString  *)
 and field =
   | Fexp of expr
   | Fname of string * expr
@@ -194,23 +199,32 @@ and print_field fmt f =
   | Fname (n, e) -> fprintf fmt "%s = %a" n print_expr e
   | Fcol (e1, e2) -> fprintf fmt "[%a] = %a" print_expr e1 print_expr e2
 
+and print_fieldlistopt fmt flo =
+  match flo with
+  | None -> pp_print_string fmt "{}"
+  | Some fl -> fprintf fmt "{%a}" (pp_print_list ~pp_sep print_field) fl
+
 and print_eo fmt eo = Option.iter (fprintf fmt ", %a" print_expr) eo
 
 and print_funcbody fmt (pl, b) =
   fprintf fmt "(%a)@.%a@.end@." print_parlist pl print_block b
 
-and print_args fmt args =
-  fprintf fmt "(%a)" (pp_print_list ~pp_sep print_expr) args
-
 and print_prefixexp fmt prexp =
   match prexp with
   | PEvar v -> print_var fmt v
   | PEfunctioncall fc -> print_functioncall fmt fc
-  | PEexp e -> print_expr fmt e
+  | PEexp e -> fprintf fmt "(%a)" print_expr e
+
+and print_args fmt args =
+  match args with
+  | Aexpl el -> fprintf fmt "(%a)" (pp_print_list ~pp_sep print_expr) el
+  | Atable flo -> print_fieldlistopt fmt flo
+  | Astr s -> pp_print_string fmt s
 
 and print_functioncall fmt fc =
   match fc with
-  | FCpreargs (e, args) -> fprintf fmt "%a%a" print_expr e print_args args
+  | FCpreargs (pexp, args) -> fprintf fmt "%a%a" print_prefixexp pexp print_args args
+  | FCprename (pexp, n, args) -> fprintf fmt "%a:%s(%a)" print_prefixexp pexp n print_args args
 
 and print_expr fmt (_loc, expr) =
   match expr with
@@ -225,10 +239,7 @@ and print_expr fmt (_loc, expr) =
   | Evariadic -> pp_print_string fmt "..."
   | Efunctiondef fb -> fprintf fmt "function %a" print_funcbody fb
   | Eprefix prexp -> print_prefixexp fmt prexp
-  | Etableconstructor flo -> (
-    match flo with
-    | None -> pp_print_string fmt "{}"
-    | Some fl -> fprintf fmt "{%a}" (pp_print_list ~pp_sep print_field) fl )
+  | Etableconstructor flo -> print_fieldlistopt fmt flo
 
 and print_stmt fmt stmt =
   let pp_name_attrib fmt (name, attrib_opt) =

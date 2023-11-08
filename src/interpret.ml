@@ -321,29 +321,35 @@ and lists_args pl el env =
   | PLlist (_nl, Some _) -> assert false (* to be implemented *)
   | PLlist (nl, None) -> lists_assign nl el env
 
-and interpret_functioncall (FCpreargs (((loc, _) as e), el)) env =
-  let e, env = interpret_expr e env in
-  match e with
-  | Vfunction (_i, (pl, b)) -> begin
-    try
-      let env = lists_args pl el env in
-      let env = interpret_block b env in
-      (VfunctionReturn [], env)
-    with Return_catch (elo, _so, env) -> (
-      match elo with
-      | None -> (VfunctionReturn [], env)
-      | Some [ e ] -> interpret_expr e env
-      | Some el ->
-        let vl, env =
-          List.fold_left
-            (fun (vl, e) exp ->
-              let v, e = interpret_expr exp e in
-              (vl @ [ v ], e) )
-            ([], env) el
-        in
-        (VfunctionReturn vl, env) )
+and interpret_functioncall fc env =
+  match fc with
+  (* | FCpreargs (PEexp ((loc, _) as e), Aexpl el) -> *)
+  | FCpreargs (PEvar (VarName v), Aexpl el) ->
+    (* let e, env = interpret_expr e env in *)
+    let e = Env.get_value v env in
+    begin match e with
+    | Vfunction (_i, (pl, b)) -> begin
+      try
+        let env = lists_args pl el env in
+        let env = interpret_block b env in
+        (VfunctionReturn [], env)
+      with Return_catch (elo, _so, env) -> (
+        match elo with
+        | None -> (VfunctionReturn [], env)
+        | Some [ e ] -> interpret_expr e env
+        | Some el ->
+          let vl, env =
+            List.fold_left
+              (fun (vl, e) exp ->
+                let v, e = interpret_expr exp e in
+                (vl @ [ v ], e) )
+              ([], env) el
+          in
+          (VfunctionReturn vl, env) )
+    end
+    | _ -> error (*Some loc*) None "function call error!"
   end
-  | _ -> error (Some loc) "function call error!"
+  | _ -> assert false
 
 and interpret_stmt stmt env =
   match stmt with

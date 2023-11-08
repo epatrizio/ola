@@ -133,13 +133,15 @@ and typecheck_lexpr lexpr env =
       Ok () )
     (Ok ()) lexpr
 
-and typecheck_functioncall (FCpreargs (((loc, _e) as e), el)) env =
+and typecheck_functioncall _fc _env =
+  Ok Tnil (* todo *)
+(* and typecheck_functioncall (FCpreargs (((loc, _e) as e), el)) env =
   let* typ = typecheck_expr e env in
   match typ with
   | Tfunction ->
     let* () = typecheck_lexpr el env in
     Ok Tnil
-  | _ -> error loc "attempt to call a not function value"
+  | _ -> error loc "attempt to call a not function value" *)
 
 and typecheck_stmt stmt env =
   match stmt with

@@ -78,25 +78,52 @@ and analyse_funcbody fb env =
   let env = Env.with_locals env_loc locals in
   ((pl, b), env)
 
-and analyse_args args env = analyse_el args env
+and analyse_args args env =
+  match args with
+  | Aexpl el -> let el, env = analyse_el el env in (Aexpl el, env)
+  | Atable flo -> (Atable flo, env) (* todo *)
+  | Astr s -> (Astr s, env) (* todo *)
+
+(* todo - only string VarName
+    | VarTableField of prefixexp * expr
+    | VarTableFieldName of prefixexp * string   
+*)
+and analyse_var is_local var env =
+  match var with
+  | n ->
+    let fresh_n, env =
+      (if is_local then Env.add_local else Env.get_name) n env
+    in
+    (fresh_n, env)
+
+and analyse_prefixexp pexp env =
+  match pexp with
+  | PEvar VarName n -> let n, env = analyse_var false n env in (PEvar (VarName n), env)
+  | PEvar v -> (PEvar v, env)
+  | PEfunctioncall fc -> let fc, env = analyse_functioncall fc env in (PEfunctioncall fc, env)
+  | PEexp e -> let e, env = analyse_expr e env in (PEexp e, env)
 
 and analyse_functioncall fc env =
   match fc with
-  | FCpreargs (exp, args) ->
-    let exp, env = analyse_expr exp env in
+  | FCpreargs (pexp, args) ->
+    let pexp, env = analyse_prefixexp pexp env in
     let args, env = analyse_args args env in
-    (FCpreargs (exp, args), env)
+    (FCpreargs (pexp, args), env)
+  | FCprename (pexp, n, args) -> 
+    let pexp, env = analyse_prefixexp pexp env in
+    let args, env = analyse_args args env in
+    (FCprename (pexp, n, args), env)
 
 and analyse_stmt stmt env =
   (* todo - only string VarName *)
-  let analyse_var is_local var env =
+  (* let analyse_var is_local var env =
     match var with
     | n ->
       let fresh_n, env =
         (if is_local then Env.add_local else Env.get_name) n env
       in
       (fresh_n, env)
-  in
+  in *)
   let rec analyse_vl vl env =
     match vl with
     | [] -> ([], env)

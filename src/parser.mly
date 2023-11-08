@@ -4,7 +4,7 @@
 
 %token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT FUNCTION
 %token LPAREN RPAREN LBRACKET RBRACKET LBRACES RBRACES
-%token COLON DCOLON SEMICOLON COMMA
+%token COLON DCOLON SEMICOLON COMMA SQUOTE DQUOTE
 %token AEQ LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR LAND LOR LSL LSR TILDE
 %token DO END BREAK RETURN WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL
@@ -89,14 +89,27 @@ funcbody :
 
 prefixexp :
      | v=var { Ast.PEvar v }
-     | fc=functioncall { PEfunctioncall fc }
+     | fc=functioncall { Ast.PEfunctioncall fc }
      | LPAREN e=lexpr RPAREN { Ast.PEexp e }
 
+arg_str_left :
+     | SQUOTE {}
+     | DQUOTE {}
+     | LBRACKET LBRACKET {}
+
+arg_str_right :
+     | SQUOTE {}
+     | DQUOTE {}
+     | RBRACKET RBRACKET {}
+
 args :
-     | LPAREN el=separated_list(COMMA, lexpr) RPAREN {  el }
+     | LPAREN el=separated_list(COMMA, lexpr) RPAREN { Ast.Aexpl el }
+     //| flo=option(fieldlist) { Ast.Atable flo }
+     | arg_str_left n=NAME arg_str_right { Ast.Astr n }
 
 functioncall :
-     | e=lexpr a=args { Ast.FCpreargs (e, a) }
+     | pe=prefixexp a=args { Ast.FCpreargs (pe, a) }
+     | pe=prefixexp COLON n=NAME a=args { Ast.FCprename (pe, n, a) }
 
 field :
      | e=lexpr { Ast.Fexp e }
