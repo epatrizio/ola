@@ -104,7 +104,7 @@ arg_str_right :
 
 args :
      | LPAREN el=separated_list(COMMA, lexpr) RPAREN { Ast.Aexpl el }
-     //| flo=option(fieldlist) { Ast.Atable flo }
+     //| fl=fieldlist { Ast.Atable fl }           // TODO BUG: A cyclic grammar is ambiguous
      | arg_str_left n=NAME arg_str_right { Ast.Astr n }
 
 functioncall :
@@ -121,7 +121,7 @@ fieldsep :
      | SEMICOLON {}
 
 fieldlist :
-     | fl=separated_nonempty_list(fieldsep, field) { fl }
+     | fl=separated_list(fieldsep, field) { fl }
 
 stmt :
      | s=sempty { s }
@@ -185,7 +185,7 @@ expr :
      | e1=lexpr op=binop e2=lexpr { Ast.Ebinop (op, e1, e2) }
      | v=variadic { v }
      | FUNCTION fb=funcbody { Ast.Efunctiondef fb }
-     | LBRACES flo=option(fieldlist) RBRACES { Ast.Etableconstructor flo }
+     | LBRACES fl=fieldlist RBRACES { Ast.Etableconstructor fl }
      | LPAREN e=expr RPAREN { e }
      ;
 

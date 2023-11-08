@@ -57,7 +57,7 @@ type value =
   | Vstring of string
   | Vfunction of int32 * (parlist * block) (* int32 = function unique id *)
   | VfunctionReturn of value list
-  | Vtable of int32 * field list option (* int32 = table unique id *)
+  | Vtable of int32 * field list (* int32 = table unique id *)
 
 and expr = location * expr'
 
@@ -68,7 +68,7 @@ and expr' =
   | Evariadic
   | Efunctiondef of (parlist * block)
   | Eprefix of prefixexp
-  | Etableconstructor of field list option
+  | Etableconstructor of field list
 
 and prefixexp =
   | PEvar of var
@@ -82,7 +82,7 @@ and var =
 
 and args =
   | Aexpl of expr list
-  | Atable of field list option
+  | Atable of field list
   | Astr of string
 
 and functioncall =
@@ -199,10 +199,8 @@ and print_field fmt f =
   | Fname (n, e) -> fprintf fmt "%s = %a" n print_expr e
   | Fcol (e1, e2) -> fprintf fmt "[%a] = %a" print_expr e1 print_expr e2
 
-and print_fieldlistopt fmt flo =
-  match flo with
-  | None -> pp_print_string fmt "{}"
-  | Some fl -> fprintf fmt "{%a}" (pp_print_list ~pp_sep print_field) fl
+and print_fieldlist fmt fl =
+  fprintf fmt "{%a}" (pp_print_list ~pp_sep print_field) fl
 
 and print_eo fmt eo = Option.iter (fprintf fmt ", %a" print_expr) eo
 
@@ -218,7 +216,7 @@ and print_prefixexp fmt prexp =
 and print_args fmt args =
   match args with
   | Aexpl el -> fprintf fmt "(%a)" (pp_print_list ~pp_sep print_expr) el
-  | Atable flo -> print_fieldlistopt fmt flo
+  | Atable fl -> print_fieldlist fmt fl
   | Astr s -> pp_print_string fmt s
 
 and print_functioncall fmt fc =
@@ -239,7 +237,7 @@ and print_expr fmt (_loc, expr) =
   | Evariadic -> pp_print_string fmt "..."
   | Efunctiondef fb -> fprintf fmt "function %a" print_funcbody fb
   | Eprefix prexp -> print_prefixexp fmt prexp
-  | Etableconstructor flo -> print_fieldlistopt fmt flo
+  | Etableconstructor fl -> print_fieldlist fmt fl
 
 and print_stmt fmt stmt =
   let pp_name_attrib fmt (name, attrib_opt) =
