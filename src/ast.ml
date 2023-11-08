@@ -103,7 +103,7 @@ and stmt =
   | Sassign of var list * expr list
   | SassignLocal of (string * string option) list * expr list option
   | Sbreak
-  | Sreturn of expr list option * stmt option
+  | Sreturn of expr list * stmt option
   | Slabel of string
   | Sgoto of string
   | Sblock of block
@@ -263,8 +263,8 @@ and print_stmt fmt stmt =
       (pp_print_list ~pp_sep pp_name_attrib)
       nal pp_exprlist_opt elo
   | Sbreak -> fprintf fmt "break@."
-  | Sreturn (elo, so) ->
-    fprintf fmt "return %a%a@." pp_exprlist_opt elo pp_stmt_opt so
+  | Sreturn (el, so) ->
+    fprintf fmt "return %a%a@." (pp_print_list ~pp_sep print_expr) el pp_stmt_opt so
   | Slabel n -> fprintf fmt "::%s::@." n
   | Sgoto n -> fprintf fmt "goto %s@." n
   | Sblock b -> fprintf fmt "do@.@[<v>%a@]end@." print_block b

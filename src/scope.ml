@@ -172,8 +172,8 @@ and analyse_stmt stmt env =
     let nal, env = analyse_nal nal env in
     (SassignLocal (nal, elo), env)
   | Sbreak -> (Sbreak, env)
-  | Sreturn (elo, so) ->
-    let elo, env = analyse_elo elo env in
+  | Sreturn (el, so) ->
+    let el, env = analyse_el el env in
     let so, env =
       match so with
       | None -> (None, env)
@@ -181,7 +181,7 @@ and analyse_stmt stmt env =
         let s, env = analyse_stmt s env in
         (Some s, env)
     in
-    (Sreturn (elo, so), env)
+    (Sreturn (el, so), env)
   | Slabel n -> (Slabel n, env)
   | Sgoto n -> (Sgoto n, env)
   | Sblock b ->

@@ -11,7 +11,7 @@ exception Goto_catch of block_pointer * Env.t
 
 exception Break_catch of Env.t
 
-exception Return_catch of expr list option * stmt option * Env.t
+exception Return_catch of expr list * stmt option * Env.t
 
 exception Interpretation_error of location option * string
 
@@ -333,11 +333,11 @@ and interpret_functioncall fc env =
         let env = lists_args pl el env in
         let env = interpret_block b env in
         (VfunctionReturn [], env)
-      with Return_catch (elo, _so, env) -> (
-        match elo with
-        | None -> (VfunctionReturn [], env)
-        | Some [ e ] -> interpret_expr e env
-        | Some el ->
+      with Return_catch (el, _so, env) -> (
+        match el with
+        | [] -> (VfunctionReturn [], env)
+        | [ e ] -> interpret_expr e env
+        | el ->
           let vl, env =
             List.fold_left
               (fun (vl, e) exp ->
@@ -365,7 +365,7 @@ and interpret_stmt stmt env =
     lists_assign (to_nl vl) el env
   | SassignLocal (nal, elo) -> lists_lassign nal elo env
   | Sbreak -> raise (Break_catch env)
-  | Sreturn (elo, so) -> raise (Return_catch (elo, so, env))
+  | Sreturn (el, so) -> raise (Return_catch (el, so, env))
   | Slabel _ -> env
   | Sgoto n -> raise (Goto_catch (Label n, env))
   | Sblock b -> interpret_block b env
@@ -481,7 +481,7 @@ and interpret_stmt stmt env =
 
 and interpret_block b env =
   try List.fold_left (fun e stmt -> interpret_stmt stmt e) env b
-  with Return_catch (elo, so, env) -> raise (Return_catch (elo, so, env))
+  with Return_catch (el, so, env) -> raise (Return_catch (el, so, env))
 
 let rec run ?(pt = Begin) chunk env =
   try
@@ -489,4 +489,4 @@ let rec run ?(pt = Begin) chunk env =
     interpret_block bl env
   with
   | Goto_catch (label, env) -> run ~pt:label chunk env
-  | Return_catch (_elo, _so, env) -> env
+  | Return_catch (_el, _so, env) -> env

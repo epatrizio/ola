@@ -128,7 +128,7 @@ stmt :
      | vl=separated_nonempty_list(COMMA, var) AEQ el=exprlist { Ast.Sassign (vl, el) }
      | LOCAL nal=separated_nonempty_list(COMMA, attname) elo=option(exprlistopt) { Ast.SassignLocal (nal, elo) }
      | BREAK { Ast.Sbreak }
-     | RETURN elo=option(exprlist) so=option(sempty) { Ast.Sreturn (elo, so) }
+     | RETURN el=separated_list(COMMA, lexpr) so=option(sempty) { Ast.Sreturn (el, so) }
      | DCOLON n=NAME DCOLON { Ast.Slabel n }
      | GOTO n=NAME { Ast.Sgoto n }
      | DO b=block END { Ast.Sblock b }
