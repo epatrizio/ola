@@ -91,6 +91,20 @@ and typecheck_str_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   | _, Tboolean -> error loc2 "attempt to concatenate a boolean value"
   | _ -> assert false (* call error *)
 
+and typecheck_var var env =
+  match var with
+  | VarName n ->
+    let v = Env.get_value n env in
+    Ok (typecheck_value v)
+  | VarTableField (_pexp, _exp) -> Ok Tnil (* TODO *)
+  | VarTableFieldName (_pexp, _n) -> Ok Tnil (* TODO *)
+
+and typecheck_prefixexp pexp env =
+  match pexp with
+  | PEvar v -> typecheck_var v env
+  | PEfunctioncall fc -> typecheck_functioncall fc env
+  | PEexp e -> typecheck_expr e env
+
 and typecheck_expr expr env =
   match snd expr with
   | Evalue v -> Ok (typecheck_value v)
@@ -117,12 +131,7 @@ and typecheck_expr expr env =
   | Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
   | Evariadic -> Ok Tnil (* TODO: OK ? *)
   | Efunctiondef _ -> Ok Tfunction (* TODO: OK ? *)
-  | Eprefix (PEvar (VarName n)) ->
-    let v = Env.get_value n env in
-    Ok (typecheck_value v)
-  | Eprefix (PEvar _) -> Ok Tnil (* TODO: OK ? *)
-  | Eprefix (PEexp e) -> typecheck_expr e env
-  | Eprefix (PEfunctioncall fc) -> typecheck_functioncall fc env
+  | Eprefix pexp -> typecheck_prefixexp pexp env
   | Etableconstructor _ -> Ok Ttable (* TODO: OK ? *)
 
 and typecheck_lexpr lexpr env =
@@ -134,7 +143,7 @@ and typecheck_lexpr lexpr env =
     (Ok ()) lexpr
 
 and typecheck_functioncall _fc _env = Ok Tnil
-(* todo *)
+(* todo ?? *)
 (* and typecheck_functioncall (FCpreargs (((loc, _e) as e), el)) env =
    let* typ = typecheck_expr e env in
    match typ with
