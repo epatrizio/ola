@@ -16,20 +16,12 @@ let rec analyse_expr expr env =
   | loc, Efunctiondef (pl, b) ->
     let (pl, b), env = analyse_funcbody (pl, b) env in
     ((loc, Efunctiondef (pl, b)), env)
-  | loc, Eprefix (PEvar (VarName n)) ->
-    let fresh_n, env = Env.get_name n env in
-    ((loc, Eprefix (PEvar (VarName fresh_n))), env)
-  | loc, Eprefix (PEvar v) ->
-    (* TODO for table *)
-    ((loc, Eprefix (PEvar v)), env)
-  | loc, Eprefix (PEexp e) ->
-    let e, env = analyse_expr e env in
-    ((loc, Eprefix (PEexp e)), env)
-  | loc, Eprefix (PEfunctioncall fc) ->
-    let fc, env = analyse_functioncall fc env in
-    ((loc, Eprefix (PEfunctioncall fc)), env)
-  | loc, Etableconstructor flo -> ((loc, Etableconstructor flo), env)
-(* TODO *)
+  | loc, Eprefix pexp ->
+    let pexp, env = analyse_prefixexp pexp env in
+    ((loc, Eprefix pexp), env)
+  | loc, Etableconstructor fl ->
+    let fl, env = analyse_fieldlist fl env in
+    ((loc, Etableconstructor fl), env)
 
 and analyse_el el env =
   (* List.fold_left
@@ -42,6 +34,39 @@ and analyse_el el env =
     let e, env = analyse_expr e env in
     let tl, env = analyse_el tl env in
     (e :: tl, env)
+
+and analyse_var var env =
+  match var with
+  | VarName n ->
+    let fresh_n, env = Env.get_name n env in
+    (VarName fresh_n, env)
+  | VarTableField (pexp, exp) ->
+    let pexp, env = analyse_prefixexp pexp env in
+    let exp, env = analyse_expr exp env in
+    (VarTableField (pexp, exp), env)
+  | VarTableFieldName (pexp, n) ->
+    let pexp, env = analyse_prefixexp pexp env in
+    (VarTableFieldName (pexp, n), env)
+
+and analyse_fieldlist fl env =
+  match fl with
+  | [] -> ([], env)
+  | f :: fl -> (
+    match f with
+    | Fexp e ->
+      let e, env = analyse_expr e env in
+      let fl, env = analyse_fieldlist fl env in
+      (Fexp e :: fl, env)
+    | Fname (n, e) ->
+      let fresh_n, env = Env.get_name n env in
+      let e, env = analyse_expr e env in
+      let fl, env = analyse_fieldlist fl env in
+      (Fname (fresh_n, e) :: fl, env)
+    | Fcol (e1, e2) ->
+      let e1, env = analyse_expr e1 env in
+      let e2, env = analyse_expr e2 env in
+      let fl, env = analyse_fieldlist fl env in
+      (Fcol (e1, e2) :: fl, env) )
 
 and analyse_namelist nl env =
   (* List.fold_left
@@ -70,8 +95,7 @@ and analyse_parlist pl env =
     let e, env = analyse_expr e env in
     (PLvariadic e, env)
 
-and analyse_funcbody fb env =
-  let pl, b = fb in
+and analyse_funcbody ((pl, b) as _fb) env =
   let pl, env_loc = analyse_parlist pl env in
   let b, env_loc = analyse_block b env_loc in
   let locals = Env.get_locals env in
@@ -83,28 +107,18 @@ and analyse_args args env =
   | Aexpl el ->
     let el, env = analyse_el el env in
     (Aexpl el, env)
-  | Atable flo -> (Atable flo, env) (* todo *)
-  | Astr s -> (Astr s, env)
-(* todo *)
-
-(* todo - only string VarName
-    | VarTableField of prefixexp * expr
-    | VarTableFieldName of prefixexp * string
-*)
-and analyse_var is_local var env =
-  match var with
-  | n ->
-    let fresh_n, env =
-      (if is_local then Env.add_local else Env.get_name) n env
-    in
-    (fresh_n, env)
+  | Atable fl ->
+    let fl, env = analyse_fieldlist fl env in
+    (Atable fl, env)
+  | Astr s ->
+    let fresh_s, env = Env.get_name s env in
+    (Astr fresh_s, env)
 
 and analyse_prefixexp pexp env =
   match pexp with
-  | PEvar (VarName n) ->
-    let n, env = analyse_var false n env in
-    (PEvar (VarName n), env)
-  | PEvar v -> (PEvar v, env)
+  | PEvar v ->
+    let v, env = analyse_var v env in
+    (PEvar v, env)
   | PEfunctioncall fc ->
     let fc, env = analyse_functioncall fc env in
     (PEfunctioncall fc, env)
@@ -124,35 +138,22 @@ and analyse_functioncall fc env =
     (FCprename (pexp, n, args), env)
 
 and analyse_stmt stmt env =
-  (* todo - only string VarName *)
-  (* let analyse_var is_local var env =
-       match var with
-       | n ->
-         let fresh_n, env =
-           (if is_local then Env.add_local else Env.get_name) n env
-         in
-         (fresh_n, env)
-     in *)
   let rec analyse_vl vl env =
     match vl with
     | [] -> ([], env)
-    | v :: tl -> (
-      match v with
-      | VarName n ->
-        let n, env = analyse_var false n env in
-        let tl, env = analyse_vl tl env in
-        (VarName n :: tl, env)
-      | VarTableField (_pexp, _expr) -> (v :: tl, env)
-      | VarTableFieldName (_pexp, _n) -> (v :: tl, env) )
+    | v :: vl ->
+      let v, env = analyse_var v env in
+      let vl, env = analyse_vl vl env in
+      (v :: vl, env)
   in
   let rec analyse_nal nal env =
     (* todo : local name attrib (const/close) support *)
     match nal with
     | [] -> ([], env)
     | (n, on) :: tl ->
-      let n, env = analyse_var true n env in
+      let fresh_n, env = Env.add_local n env in
       let tl, env = analyse_nal tl env in
-      ((n, on) :: tl, env)
+      ((fresh_n, on) :: tl, env)
   in
   let rec analyse_ebl ebl env =
     match ebl with
