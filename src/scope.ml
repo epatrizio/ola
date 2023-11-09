@@ -24,16 +24,11 @@ let rec analyse_expr expr env =
     ((loc, Etableconstructor fl), env)
 
 and analyse_el el env =
-  (* List.fold_left
-     (fun (expl, ev) exp -> let exp, ev = analyse_expr exp ev in (exp :: expl, ev))
-     ([], env) el *)
-  (* todo: bug in fold version *)
-  match el with
-  | [] -> ([], env)
-  | e :: tl ->
-    let e, env = analyse_expr e env in
-    let tl, env = analyse_el tl env in
-    (e :: tl, env)
+  List.fold_left
+    (fun (expl, ev) exp ->
+      let exp, ev = analyse_expr exp ev in
+      (expl @ [ exp ], ev) )
+    ([], env) el
 
 and analyse_var var env =
   match var with
@@ -69,15 +64,11 @@ and analyse_fieldlist fl env =
       (Fcol (e1, e2) :: fl, env) )
 
 and analyse_namelist nl env =
-  (* List.fold_left
-     (fun (nl, ev) n -> let n, ev = Env.add_local n ev in (n :: nl, ev))
-     ([], env) nl *)
-  match nl with
-  | [] -> ([], env)
-  | n :: tl ->
-    let n, env = Env.add_local n env in
-    let tl, env = analyse_namelist tl env in
-    (n :: tl, env)
+  List.fold_left
+    (fun (nl, ev) n ->
+      let n, ev = Env.add_local n ev in
+      (nl @ [ n ], ev) )
+    ([], env) nl
 
 and analyse_parlist pl env =
   match pl with
@@ -138,31 +129,28 @@ and analyse_functioncall fc env =
     (FCprename (pexp, n, args), env)
 
 and analyse_stmt stmt env =
-  let rec analyse_vl vl env =
-    match vl with
-    | [] -> ([], env)
-    | v :: vl ->
-      let v, env = analyse_var v env in
-      let vl, env = analyse_vl vl env in
-      (v :: vl, env)
+  let analyse_vl vl env =
+    List.fold_left
+      (fun (varl, ev) v ->
+        let v, ev = analyse_var v ev in
+        (varl @ [ v ], ev) )
+      ([], env) vl
   in
-  let rec analyse_nal nal env =
+  let analyse_nal nal env =
     (* todo : local name attrib (const/close) support *)
-    match nal with
-    | [] -> ([], env)
-    | (n, on) :: tl ->
-      let fresh_n, env = Env.add_local n env in
-      let tl, env = analyse_nal tl env in
-      ((fresh_n, on) :: tl, env)
+    List.fold_left
+      (fun (nl, ev) (n, oa) ->
+        let fresh_n, ev = Env.add_local n ev in
+        (nl @ [ (fresh_n, oa) ], ev) )
+      ([], env) nal
   in
-  let rec analyse_ebl ebl env =
-    match ebl with
-    | [] -> ([], env)
-    | (e, b) :: tl ->
-      let e, env = analyse_expr e env in
-      let b, env = analyse_block b env in
-      let tl, env = analyse_ebl tl env in
-      ((e, b) :: tl, env)
+  let analyse_ebl ebl env =
+    List.fold_left
+      (fun (exbl, ev) (e, b) ->
+        let e, ev = analyse_expr e ev in
+        let b, ev = analyse_block b ev in
+        (exbl @ [ (e, b) ], ev) )
+      ([], env) ebl
   in
   match stmt with
   | Sempty -> (Sempty, env)
