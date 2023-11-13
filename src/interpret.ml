@@ -190,6 +190,39 @@ and interpret_sbinop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
     | _ -> assert false (* typing error *)
   end
 
+and interpret_prefixexp pexp env =
+  match pexp with
+  | PEvar v -> interpret_var v env
+  | PEexp exp -> interpret_expr exp env
+  | PEfunctioncall fc ->
+    let v, _env = interpret_functioncall fc env in
+    (v, env)
+
+and interpret_var v env =
+  match v with
+  | VarName n -> (Env.get_value n env, env)
+  | VarTableField (pexp, exp) ->
+    let t, env = interpret_prefixexp pexp env in
+    let idx, env = interpret_expr exp env in
+    begin
+      match t with
+      | Vtable (_i, tbl) -> begin
+        match Table.get idx tbl with
+        | None -> (Vnil (), env)
+        | Some v -> (v, env)
+      end
+      | _ -> assert false (* typing error *)
+    end
+  | VarTableFieldName (_pexp, _s) -> (Vnil (), env)
+(* todo *)
+
+and interpret_field field env =
+  match field with
+  | Fexp exp -> interpret_expr exp env
+  | Fname (_s, _exp) -> (Vnil (), env) (* todo *)
+  | Fcol (_exp1, _exp2) -> (Vnil (), env)
+(* todo *)
+
 and interpret_expr (loc, expr) env =
   match expr with
   | Evalue
@@ -235,15 +268,17 @@ and interpret_expr (loc, expr) env =
   | Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2 env
   | Ebinop (op, e1, e2) -> interpret_ibinop_expr op e1 e2 env
   | Evariadic -> (Vnil (), env)
-  | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env) (* todo: ok ? *)
-  | Eprefix (PEvar (VarName n)) -> (Env.get_value n env, env)
-  | Eprefix (PEvar _) -> (Vnil (), env) (* todo *)
-  | Eprefix (PEexp e) -> interpret_expr e env
-  | Eprefix (PEfunctioncall fc) ->
-    let v, _env = interpret_functioncall fc env in
-    (v, env)
-  | Etableconstructor flo -> (Vtable (Random.bits32 (), flo), env)
-(* todo: ok ? *)
+  | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env)
+  | Eprefix pexp -> interpret_prefixexp pexp env
+  | Etableconstructor fl ->
+    let table, _i, env =
+      List.fold_left
+        (fun (tbl, idx, ev) f ->
+          let v, ev = interpret_field f ev in
+          (Table.add (Vnumber (Ninteger idx)) v tbl, idx + 1, ev) )
+        (Table.empty, 1, env) fl
+    in
+    (Vtable (Random.bits32 (), table), env)
 
 and lists_assign vl el env =
   begin

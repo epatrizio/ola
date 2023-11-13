@@ -7,4 +7,5 @@
   function.lua
   goto.lua
   len.lua
+  table.lua
   typer.lua))

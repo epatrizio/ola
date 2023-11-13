@@ -57,7 +57,7 @@ type value =
   | Vstring of string
   | Vfunction of int32 * (parlist * block) (* int32 = function unique id *)
   | VfunctionReturn of value list
-  | Vtable of int32 * field list (* int32 = table unique id *)
+  | Vtable of int32 * (value, value) Table.t (*int32 = table unique id*)
 
 and expr = location * expr'
 
