@@ -1,19 +1,18 @@
 len operations:
   $ dune exec ola table.lua
   interprete ...
-  table: -1097429761
   1
   2
   3
   nil
   true
-  table: -201105235
-  function: -1398175562
+  false
   nil
-  2
+  2.
   3
   3
-  nil
-  nil
+  nil_table
+  val1
+  val2
   my_print:
-  nil
+  val1

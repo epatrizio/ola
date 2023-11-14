@@ -37,6 +37,15 @@ let get_int f loc =
     error (Some loc)
       ("number has no integer representation: " ^ string_of_float f)
 
+let rec name_of_prefixexp pexp env =
+  match pexp with
+  | PEvar (VarName n) -> n
+  | PEvar (VarTableField (pexp, _exp)) -> name_of_prefixexp pexp env
+  | PEvar (VarTableFieldName (pexp, _s)) -> name_of_prefixexp pexp env
+  | PEfunctioncall (FCpreargs (pexp, _a)) -> name_of_prefixexp pexp env
+  | PEfunctioncall (FCprename (pexp, _s, _a)) -> name_of_prefixexp pexp env
+  | PEexp _exp -> assert false (* todo *)
+
 let rec interpret_bbinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   env =
   (* todo: ok for num values *)
@@ -280,38 +289,53 @@ and interpret_expr (loc, expr) env =
     in
     (Vtable (Random.bits32 (), table), env)
 
+and set_var v value env =
+  match v with
+  | VarName n -> Env.set_value n value env
+  | VarTableField (pexp, exp) ->
+    let t, env = interpret_prefixexp pexp env in
+    let idx, env = interpret_expr exp env in
+    begin
+      match t with
+      | Vtable (i, tbl) ->
+        let tbl = Table.add idx value tbl in
+        let n = name_of_prefixexp pexp env in
+        Env.set_value n (Vtable (i, tbl)) env
+      | _ -> assert false (* typing error *)
+    end
+  | VarTableFieldName _ -> env (* todo *)
+
 and lists_assign vl el env =
   begin
     match (vl, el) with
     | [], [] | [], _ -> env
-    | _vl, [] ->
-      List.fold_left (fun e v -> Env.set_value v (Ast.Vnil ()) e) env vl
+    | vl, [] -> List.fold_left (fun e v -> set_var v (Vnil ()) e) env vl
     | v :: vl, [ ((l, _e) as e) ] -> (
       let va, env = interpret_expr e env in
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] -> Env.set_value v (Ast.Vnil ()) env
+        | [] -> set_var v (Vnil ()) env
         | va :: vall ->
-          let env = Env.set_value v va env in
+          let env = set_var v va env in
           let vall_exp = List.map (fun v -> (l, Evalue v)) vall in
           lists_assign vl vall_exp env
       end
       | va ->
-        let env = Env.set_value v va env in
+        let env = set_var v va env in
         lists_assign vl [] env )
     | v :: vl, e :: el -> (
       let va, env = interpret_expr e env in
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] -> Env.set_value v (Ast.Vnil ()) env
+        | [] -> set_var v (Vnil ()) env
         | va :: _vall ->
-          let env = Env.set_value v va env in
+          let env = set_var v va env in
           lists_assign vl el env
       end
       | va ->
-        let env = Env.set_value v va env in
+        let env = set_var v va env in
         lists_assign vl el env )
   end
 
@@ -354,51 +378,58 @@ and lists_args pl el env =
   match pl with
   | PLvariadic _ -> assert false (* to be implemented *)
   | PLlist (_nl, Some _) -> assert false (* to be implemented *)
-  | PLlist (nl, None) -> lists_assign nl el env
+  | PLlist (nl, None) ->
+    let vl = List.map (fun n -> VarName n) nl in
+    lists_assign vl el env
+
+and interpret_fct value el env =
+  match value with
+  | Vfunction (_i, (pl, b)) -> begin
+    try
+      let env = lists_args pl el env in
+      let env = interpret_block b env in
+      (VfunctionReturn [], env)
+    with Return_catch (el, _so, env) -> (
+      match el with
+      | [] -> (VfunctionReturn [], env)
+      | [ e ] -> interpret_expr e env
+      | el ->
+        let vl, env =
+          List.fold_left
+            (fun (vl, e) exp ->
+              let v, e = interpret_expr exp e in
+              (vl @ [ v ], e) )
+            ([], env) el
+        in
+        (VfunctionReturn vl, env) )
+  end
+  | _ -> error (*Some loc*) None "function call error!"
 
 and interpret_functioncall fc env =
   match fc with
   (* | FCpreargs (PEexp ((loc, _) as e), Aexpl el) -> *)
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
     (* let e, env = interpret_expr e env in *)
-    let e = Env.get_value v env in
+    let value = Env.get_value v env in
+    interpret_fct value el env
+  | FCpreargs (PEvar (VarTableField (pexp, exp)), Aexpl el) ->
+    let t, env = interpret_prefixexp pexp env in
+    let idx, env = interpret_expr exp env in
     begin
-      match e with
-      | Vfunction (_i, (pl, b)) -> begin
-        try
-          let env = lists_args pl el env in
-          let env = interpret_block b env in
-          (VfunctionReturn [], env)
-        with Return_catch (el, _so, env) -> (
-          match el with
-          | [] -> (VfunctionReturn [], env)
-          | [ e ] -> interpret_expr e env
-          | el ->
-            let vl, env =
-              List.fold_left
-                (fun (vl, e) exp ->
-                  let v, e = interpret_expr exp e in
-                  (vl @ [ v ], e) )
-                ([], env) el
-            in
-            (VfunctionReturn vl, env) )
+      match t with
+      | Vtable (_i, tbl) -> begin
+        match Table.get idx tbl with
+        | None -> assert false
+        | Some v -> interpret_fct v el env
       end
-      | _ -> error (*Some loc*) None "function call error!"
+      | _ -> assert false (* typing error *)
     end
   | _ -> assert false
 
 and interpret_stmt stmt env =
   match stmt with
   | Sempty -> env
-  | Sassign (vl, el) ->
-    (* todo: tmp - only varname support *)
-    let rec to_nl vl =
-      match vl with
-      | [] -> []
-      | v :: vl -> (
-        match v with VarName n -> n :: to_nl vl | _ -> assert false )
-    in
-    lists_assign (to_nl vl) el env
+  | Sassign (vl, el) -> lists_assign vl el env
   | SassignLocal (nal, el) -> lists_lassign nal el env
   | Sbreak -> raise (Break_catch env)
   | Sreturn (el, so) -> raise (Return_catch (el, so, env))

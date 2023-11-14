@@ -14,6 +14,12 @@ let rec add key value tbl =
   | (k, _v) :: tl when k = key -> (k, value) :: tl
   | (k, v) :: tl -> (k, v) :: add key value tl
 
+let rec remove key tbl =
+  match tbl with
+  | [] -> tbl
+  | (k, _v) :: tl when k = key -> tl
+  | (k, v) :: tl -> (k, v) :: remove key tl
+
 let rec get key tbl =
   match tbl with
   | [] -> None

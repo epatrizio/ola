@@ -1,5 +1,5 @@
 table1 = {}
-print(table1)
+-- print(table1)        -- table id (ok)
 
 function id(e)
   return e
@@ -11,22 +11,26 @@ print(table1[2])
 print(table1[3])
 print(table1[4])
 print(table1[5])
-print(table1[6])
-print(table1[7])
+-- print(table1[6])     -- table id (ok)
+-- print(table1[7])     -- function id (ok)
 
--- print(table1[7](true))   -- todo bug
+print(table1[7](false)) -- false
 
 print(table1[42])
 
--- table1[2] = 2.0
+table1[2] = 2.0
 print(table1[2])
 
 print(table1[6][3])
---table1[6][3] = "3.5"
+--table1[6][3] = "3.5"    -- todo bug
 print(table1[6][3])
 
---table1["key1"] = "val1"
---table1["key".."2"] = "val".."2"
+table1[6] = "nil_table"
+print(table1[6])
+--print(table1[6][3])     -- todo bug (same)
+
+table1["key1"] = "val1"
+table1["key".."2"] = "val".."2"
 print(table1["key1"])
 print(table1["key2"])
 
@@ -60,3 +64,13 @@ p(table1["key1"])
 
 -- mytable = nil - destroy
 
+-- print(table1[1])
+-- a, table1 = 12
+-- print(table1[1])
+-- print(a)
+
+-- function t()
+--   return table1
+-- end
+
+-- print(t()[1])
