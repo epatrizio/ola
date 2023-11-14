@@ -14,16 +14,10 @@ let rec add key value tbl =
   | (k, _v) :: tl when k = key -> (k, value) :: tl
   | (k, v) :: tl -> (k, v) :: add key value tl
 
-let rec remove key tbl =
-  match tbl with
-  | [] -> tbl
-  | (k, _v) :: tl when k = key -> tl
-  | (k, v) :: tl -> (k, v) :: remove key tl
+let remove key tbl =
+  List.remove_assoc key tbl
 
-let rec get key tbl =
-  match tbl with
-  | [] -> None
-  | (k, v) :: _tl when k = key -> Some v
-  | (_k, _v) :: tl -> get key tl
+let get key tbl =
+  List.assoc_opt key tbl
 
 let len tbl = List.length tbl
