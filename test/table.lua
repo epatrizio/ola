@@ -39,7 +39,25 @@ function p(a)
   print(a)
 end
 p(table1["key1"])
+p(table1["key".."1"])
 
+tmp_tbl = {}
+-- print(tmp_tbl)   -- table id (ok)
+tmp_tbl = nil
+print(tmp_tbl)      -- nil
+
+tmp_tbl = {1, 2, 3}
+-- print(tmp_tbl)   -- table id (ok)
+tmp, tmp_tbl = 0
+print(tmp)          -- 0
+print(tmp_tbl)      -- nil
+
+function t()
+  local t = {42, true, 42.5}
+  return t
+end
+-- print(t())       -- table id (ok)
+print(t()[1])       -- 42
 
 -- doc §3.4.9 https://www.lua.org/manual/5.4/manual.html#3.4.9
 
@@ -61,16 +79,3 @@ p(table1["key1"])
 --   t[4] = 45          -- 4th exp
 --   a = t
 -- end
-
--- mytable = nil - destroy
-
--- print(table1[1])
--- a, table1 = 12
--- print(table1[1])
--- print(a)
-
--- function t()
---   return table1
--- end
-
--- print(t()[1])

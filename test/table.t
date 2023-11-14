@@ -16,3 +16,9 @@ len operations:
   val2
   my_print:
   val1
+  my_print:
+  val1
+  nil
+  0
+  nil
+  42
