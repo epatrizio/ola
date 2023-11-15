@@ -78,7 +78,7 @@ and prefixexp =
 and var =
   | VarName of string
   | VarTableField of prefixexp * expr
-  | VarTableFieldName of prefixexp * string
+(* | VarTableFieldName of prefixexp * string *)
 
 and args =
   | Aexpl of expr list
@@ -191,7 +191,7 @@ and print_var fmt v =
   | VarName n -> pp_print_string fmt n
   | VarTableField (pexp, exp) ->
     fprintf fmt "%a[%a]" print_prefixexp pexp print_expr exp
-  | VarTableFieldName (pexp, n) -> fprintf fmt "%a.%s" print_prefixexp pexp n
+(* | VarTableFieldName (pexp, n) -> fprintf fmt "%a.%s" print_prefixexp pexp n *)
 
 and print_field fmt f =
   match f with

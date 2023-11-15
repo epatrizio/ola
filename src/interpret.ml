@@ -201,21 +201,15 @@ and interpret_prefixexp pexp env =
 and interpret_var v env =
   match v with
   | VarName n -> (Env.get_value n env, env)
-  | VarTableField (pexp, exp) ->
+  | VarTableField (pexp, exp) -> (
     let t, env = interpret_prefixexp pexp env in
     let idx, env = interpret_expr exp env in
-    begin
-      match t with
-      | Vtable (_i, tbl) -> begin
-        match Table.get idx tbl with
-        | None -> (Vnil (), env)
-        | Some v -> (v, env)
-      end
-      | _ -> (Vnil (), env)
-      (* typing error - ok ? *)
+    match t with
+    | Vtable (_i, tbl) -> begin
+      match Table.get idx tbl with None -> (Vnil (), env) | Some v -> (v, env)
     end
-  | VarTableFieldName (_pexp, _s) -> (Vnil (), env)
-(* todo *)
+    | _ -> (Vnil (), env) )
+(* typing error - ok ? *)
 
 and interpret_field field env =
   match field with
@@ -291,18 +285,15 @@ and set_var v value env =
   in
   match v with
   | VarName n -> Env.set_value n value env
-  | VarTableField (pexp, exp) ->
+  | VarTableField (pexp, exp) -> (
     let t, env = interpret_prefixexp pexp env in
     let idx, env = interpret_expr exp env in
-    begin
-      match t with
-      | Vtable (i, tbl) ->
-        let tbl = Table.add idx value tbl in
-        let v = var_of_prefixexp pexp env in
-        set_var v (Vtable (i, tbl)) env
-      | _ -> assert false (* typing error *)
-    end
-  | VarTableFieldName _ -> env (* todo *)
+    match t with
+    | Vtable (i, tbl) ->
+      let tbl = Table.add idx value tbl in
+      let v = var_of_prefixexp pexp env in
+      set_var v (Vtable (i, tbl)) env
+    | _ -> assert false (* typing error *) )
 
 and lists_assign vl el env =
   begin

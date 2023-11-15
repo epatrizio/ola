@@ -38,6 +38,8 @@ table1["key".."2"] = "val".."2"
 print(table1["key1"])
 print(table1["key2"])
 
+-- table1."key3" = "val3"    -- bug (syntax error)
+
 function p(a)
   print("my_print:")
   print(a)

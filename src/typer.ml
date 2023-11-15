@@ -97,7 +97,6 @@ and typecheck_var var env =
     let v = Env.get_value n env in
     Ok (typecheck_value v)
   | VarTableField (_pexp, _exp) -> Ok Tnil (* TODO *)
-  | VarTableFieldName (_pexp, _n) -> Ok Tnil (* TODO *)
 
 and typecheck_prefixexp pexp env =
   match pexp with

@@ -39,9 +39,6 @@ and analyse_var var env =
     let pexp, env = analyse_prefixexp pexp env in
     let exp, env = analyse_expr exp env in
     (VarTableField (pexp, exp), env)
-  | VarTableFieldName (pexp, n) ->
-    let pexp, env = analyse_prefixexp pexp env in
-    (VarTableFieldName (pexp, n), env)
 
 and analyse_fieldlist fl env =
   match fl with

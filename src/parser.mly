@@ -42,7 +42,9 @@ block :
 var :
      | n=NAME { Ast.VarName n }
      | pe=prefixexp LBRACKET e=lexpr RBRACKET { Ast.VarTableField (pe, e) }
-     | pe=prefixexp DOT n=NAME { Ast.VarTableFieldName (pe, n) }
+     // | pe=prefixexp DOT n=NAME { Ast.VarTableFieldName (pe, n) }
+     // var.Name is syntactic sugar for var["Name"]
+     | pe=prefixexp DOT n=NAME { Ast.VarTableField (pe, (($startpos,$endpos), Ast.Evalue (Vstring n))) }
 
 attrib :
      | LT a=ATTRIB GT { a }
