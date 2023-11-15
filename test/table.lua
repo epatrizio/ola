@@ -29,9 +29,9 @@ print(table1[6][3][3])
 table1[6][3][3] = "333.333"
 print(table1[6][3][3])
 
-table1[6] = "nil_table"
+table1[6] = "nil_val"
 print(table1[6])
---print(table1[6][3])     -- todo bug
+print(table1[6][3])
 
 table1["key1"] = "val1"
 table1["key".."2"] = "val".."2"

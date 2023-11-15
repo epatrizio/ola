@@ -13,7 +13,8 @@ len operations:
   22.22
   333
   333.333
-  nil_table
+  nil_val
+  nil
   val1
   val2
   my_print:

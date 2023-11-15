@@ -211,7 +211,8 @@ and interpret_var v env =
         | None -> (Vnil (), env)
         | Some v -> (v, env)
       end
-      | _ -> assert false (* typing error *)
+      | _ -> (Vnil (), env)
+      (* typing error - ok ? *)
     end
   | VarTableFieldName (_pexp, _s) -> (Vnil (), env)
 (* todo *)
