@@ -37,15 +37,6 @@ let get_int f loc =
     error (Some loc)
       ("number has no integer representation: " ^ string_of_float f)
 
-let rec name_of_prefixexp pexp env =
-  match pexp with
-  | PEvar (VarName n) -> n
-  | PEvar (VarTableField (pexp, _exp)) -> name_of_prefixexp pexp env
-  | PEvar (VarTableFieldName (pexp, _s)) -> name_of_prefixexp pexp env
-  | PEfunctioncall (FCpreargs (pexp, _a)) -> name_of_prefixexp pexp env
-  | PEfunctioncall (FCprename (pexp, _s, _a)) -> name_of_prefixexp pexp env
-  | PEexp _exp -> assert false (* todo *)
-
 let rec interpret_bbinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   env =
   (* todo: ok for num values *)
@@ -290,6 +281,13 @@ and interpret_expr (loc, expr) env =
     (Vtable (Random.bits32 (), table), env)
 
 and set_var v value env =
+  let rec var_of_prefixexp pexp env =
+    match pexp with
+    | PEvar v -> v
+    | PEfunctioncall (FCpreargs (pexp, _a)) -> var_of_prefixexp pexp env
+    | PEfunctioncall (FCprename (pexp, _s, _a)) -> var_of_prefixexp pexp env
+    | PEexp _exp -> assert false (* todo *)
+  in
   match v with
   | VarName n -> Env.set_value n value env
   | VarTableField (pexp, exp) ->
@@ -299,8 +297,8 @@ and set_var v value env =
       match t with
       | Vtable (i, tbl) ->
         let tbl = Table.add idx value tbl in
-        let n = name_of_prefixexp pexp env in
-        Env.set_value n (Vtable (i, tbl)) env
+        let v = var_of_prefixexp pexp env in
+        set_var v (Vtable (i, tbl)) env
       | _ -> assert false (* typing error *)
     end
   | VarTableFieldName _ -> env (* todo *)

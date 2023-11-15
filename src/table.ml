@@ -14,10 +14,8 @@ let rec add key value tbl =
   | (k, _v) :: tl when k = key -> (k, value) :: tl
   | (k, v) :: tl -> (k, v) :: add key value tl
 
-let remove key tbl =
-  List.remove_assoc key tbl
+let remove key tbl = List.remove_assoc key tbl
 
-let get key tbl =
-  List.assoc_opt key tbl
+let get key tbl = List.assoc_opt key tbl
 
 let len tbl = List.length tbl

@@ -5,7 +5,7 @@ function id(e)
   return e
 end
 
-table1 = {1, "2", 1+2, nil, true, {1;2;3}, id}
+table1 = {1, "2", 1+2, nil, true, {11;22;{111,222,333,444}}, id}
 print(table1[1])
 print(table1[2])
 print(table1[3])
@@ -21,13 +21,17 @@ print(table1[42])
 table1[2] = 2.0
 print(table1[2])
 
-print(table1[6][3])
---table1[6][3] = "3.5"    -- todo bug
-print(table1[6][3])
+print(table1[6][2])
+table1[6][2] = "22.22"
+print(table1[6][2])
+
+print(table1[6][3][3])
+table1[6][3][3] = "333.333"
+print(table1[6][3][3])
 
 table1[6] = "nil_table"
 print(table1[6])
---print(table1[6][3])     -- todo bug (same)
+--print(table1[6][3])     -- todo bug
 
 table1["key1"] = "val1"
 table1["key".."2"] = "val".."2"

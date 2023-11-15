@@ -9,8 +9,10 @@ len operations:
   false
   nil
   2.
-  3
-  3
+  22
+  22.22
+  333
+  333.333
   nil_table
   val1
   val2
