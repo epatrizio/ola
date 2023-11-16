@@ -164,6 +164,18 @@ and interpret_ibinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env =
     | Bneq -> (Vboolean (f1 != f2), env)
     | _ -> assert false (* call error *)
   end
+  | Vnil (), Vnil () -> begin
+    match binop with
+    | Beq -> (Vboolean true, env)
+    | Bneq -> (Vboolean false, env)
+    | _ -> assert false (* typing error *)
+  end
+  | Vnil (), _ | _, Vnil () -> begin
+    match binop with
+    | Beq -> (Vboolean false, env)
+    | Bneq -> (Vboolean true, env)
+    | _ -> assert false (* typing error *)
+  end
   | _ -> assert false (* typing error *)
 
 and interpret_sbinop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
@@ -295,88 +307,93 @@ and set_var v value env =
       set_var v (Vtable (i, tbl)) env
     | _ -> assert false (* typing error *) )
 
-and lists_assign vl el env =
+and to_vall el env =
+  List.fold_left
+    (fun (vl, e) exp ->
+      let l, _e = exp in
+      let v, e = interpret_expr exp e in
+      (vl @ [ (l, v) ], e) )
+    ([], env) el
+
+and lists_assign vl vall env =
   begin
-    match (vl, el) with
+    match (vl, vall) with
     | [], [] | [], _ -> env
     | vl, [] -> List.fold_left (fun e v -> set_var v (Vnil ()) e) env vl
-    | v :: vl, [ ((l, _e) as e) ] -> (
-      let va, env = interpret_expr e env in
+    | v :: vl, [ (l, va) ] -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
         | [] -> set_var v (Vnil ()) env
         | va :: vall ->
           let env = set_var v va env in
-          let vall_exp = List.map (fun v -> (l, Evalue v)) vall in
-          lists_assign vl vall_exp env
+          let vall = List.map (fun v -> (l, v)) vall in
+          lists_assign vl vall env
       end
       | va ->
         let env = set_var v va env in
         lists_assign vl [] env )
-    | v :: vl, e :: el -> (
-      let va, env = interpret_expr e env in
+    | v :: vl, (_l, va) :: tl -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
         | [] -> set_var v (Vnil ()) env
         | va :: _vall ->
           let env = set_var v va env in
-          lists_assign vl el env
+          lists_assign vl tl env
       end
       | va ->
         let env = set_var v va env in
-        lists_assign vl el env )
+        lists_assign vl tl env )
   end
 
-and lists_lassign nal el env =
+and lists_lassign nal vall env =
   begin
-    match (nal, el) with
+    match (nal, vall) with
     | [], [] | [], _ -> env
     | nal, [] ->
       List.fold_left (fun e (n, _on) -> Env.set_value n (Ast.Vnil ()) e) env nal
-    | (n, _on) :: vl, [ ((l, _e) as e) ] -> (
-      let va, env = interpret_expr e env in
+    | (n, _on) :: vl, [ (l, va) ] -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
         | [] -> Env.set_value n (Ast.Vnil ()) env
         | va :: vall ->
           let env = Env.set_value n va env in
-          let vall_exp = List.map (fun v -> (l, Evalue v)) vall in
-          lists_lassign vl vall_exp env
+          let vall = List.map (fun v -> (l, v)) vall in
+          lists_lassign vl vall env
       end
       | va ->
         let env = Env.set_value n va env in
         lists_lassign vl [] env )
-    | (n, _on) :: vl, e :: el -> (
-      let va, env = interpret_expr e env in
+    | (n, _on) :: vl, (_l, va) :: tl -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
         | [] -> Env.set_value n (Ast.Vnil ()) env
         | va :: _vall ->
           let env = Env.set_value n va env in
-          lists_lassign vl el env
+          lists_lassign vl tl env
       end
       | va ->
         let env = Env.set_value n va env in
-        lists_lassign vl el env )
+        lists_lassign vl tl env )
   end
 
-and lists_args pl el env =
+and lists_args pl vall env =
   match pl with
   | PLvariadic _ -> assert false (* to be implemented *)
   | PLlist (_nl, Some _) -> assert false (* to be implemented *)
   | PLlist (nl, None) ->
     let vl = List.map (fun n -> VarName n) nl in
-    lists_assign vl el env
+    lists_assign vl vall env
 
 and interpret_fct value el env =
   match value with
   | Vfunction (_i, (pl, b)) -> begin
     try
-      let env = lists_args pl el env in
+      let vall, env = to_vall el env in
+      let env = lists_args pl vall env in
       let env = interpret_block b env in
       (VfunctionReturn [], env)
     with Return_catch (el, _so, env) -> (
@@ -384,13 +401,8 @@ and interpret_fct value el env =
       | [] -> (VfunctionReturn [], env)
       | [ e ] -> interpret_expr e env
       | el ->
-        let vl, env =
-          List.fold_left
-            (fun (vl, e) exp ->
-              let v, e = interpret_expr exp e in
-              (vl @ [ v ], e) )
-            ([], env) el
-        in
+        let vll, env = to_vall el env in
+        let vl = List.map (fun (_l, v) -> v) vll in
         (VfunctionReturn vl, env) )
   end
   | _ -> error (*Some loc*) None "function call error!"
@@ -419,8 +431,12 @@ and interpret_functioncall fc env =
 and interpret_stmt stmt env =
   match stmt with
   | Sempty -> env
-  | Sassign (vl, el) -> lists_assign vl el env
-  | SassignLocal (nal, el) -> lists_lassign nal el env
+  | Sassign (vl, el) ->
+    let vall, env = to_vall el env in
+    lists_assign vl vall env
+  | SassignLocal (nal, el) ->
+    let vall, env = to_vall el env in
+    lists_lassign nal vall env
   | Sbreak -> raise (Break_catch env)
   | Sreturn (el, so) -> raise (Return_catch (el, so, env))
   | Slabel _ -> env
