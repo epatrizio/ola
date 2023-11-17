@@ -1,0 +1,13 @@
+# Examples
+
+The objective of those lua scripts is to provide some classic functions using standard language features
+to manipulate the `ola` interpreter in more advanced contexts than test suite.
+
+- [Factorial multiple implementation](https://en.wikipedia.org/wiki/Factorial) :
+`dune exec ola ./examples/factorial.lua`
+
+- [Fibonacci sequence multiple implementation](https://en.wikipedia.org/wiki/Fibonacci_sequence) :
+`dune exec ola ./examples/fibonacci.lua`
+
+- [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) :
+`dune exec ola ./examples/life.lua`
