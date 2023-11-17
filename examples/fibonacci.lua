@@ -4,6 +4,7 @@ multiple implementations
 --]]
 
 -- 1: Naive recursive version
+--    (same 'fibo' calculation performed several times)
 function fibo1(n)
   if n <= 0 then
     return 0
@@ -30,7 +31,7 @@ function fibo2(n)
   end
 end
 print(fibo2(15))
---print(fibo1(30))    -- 832040 (again ~2sec : Warning! recursive function implementation problem)
+--print(fibo1(30))    -- 832040 (again ~2sec : Warning, bug! recursive function implementation problem)
 
 -- 3: Polynomial algorithm
 function fibo3(n)
@@ -45,6 +46,7 @@ print(fibo3(30))
 print(fibo3(60))
 
 -- 4: Tail recursive
+--    (same 'fibo' calculation performed only one time!)
 function fibo4(n, a, b)
   if n <= 0 then
     return a

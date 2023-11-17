@@ -11,3 +11,5 @@ to manipulate the `ola` interpreter in more advanced contexts than test suite.
 
 - [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) :
 `dune exec ola ./examples/life.lua`
+
+*Nb. The Game of Life calculations and processes are correct, but the display is not. Todo: `io.write` implementation.*
