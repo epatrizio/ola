@@ -93,6 +93,8 @@ let rec token buf =
     let s = String.sub s 1 (String.length s - 2) in
     let s = mk_string buf s in
     VALUE (Vstring s)
+  | "'" -> SQUOTE
+  | '"' -> DQUOTE
   | ',' -> COMMA
   | ';' -> SEMICOLON
   | ':' -> COLON
@@ -122,6 +124,10 @@ let rec token buf =
   | "..." -> TDOT
   | '(' -> LPAREN
   | ')' -> RPAREN
+  | '{' -> LBRACES
+  | '}' -> RBRACES
+  | '[' -> LBRACKET
+  | ']' -> RBRACKET
   | "not" -> NOT
   | "and" -> AND
   | "or" -> OR

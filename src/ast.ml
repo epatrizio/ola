@@ -13,9 +13,9 @@ type typ =
   | Tstring
   | Tfunction
   | TfunctionReturn of typ list
+  | Ttable
   | Tuserdata
   | Tthread
-  | Ttable
 
 type unop =
   | Unot
@@ -57,6 +57,7 @@ type value =
   | Vstring of string
   | Vfunction of int32 * (parlist * block) (* int32 = function unique id *)
   | VfunctionReturn of value list
+  | Vtable of int32 * (value, value) Table.t (*int32 = table unique id*)
 
 and expr = location * expr'
 
@@ -67,27 +68,42 @@ and expr' =
   | Evariadic
   | Efunctiondef of (parlist * block)
   | Eprefix of prefixexp
+  | Etableconstructor of field list
 
 and prefixexp =
-  | PEvar of string
+  | PEvar of var
   | PEfunctioncall of functioncall
   | PEexp of expr
 
-(* var ::=  Name | prefixexp ‘[’ exp ‘]’ | prefixexp ‘.’ Name  *)
-and functioncall = FCpreargs of expr * expr list
-(* | FCprename of prefixexp * name * args *)
+and var =
+  | VarName of string
+  | VarTableField of prefixexp * expr
+(* | VarTableFieldName of prefixexp * string *)
+
+and args =
+  | Aexpl of expr list
+  | Atable of field list
+  | Astr of string
+
+and functioncall =
+  | FCpreargs of prefixexp * args
+  | FCprename of prefixexp * string * args
 
 and parlist =
   | PLlist of string list * expr option
   | PLvariadic of expr
 
-(* args ::= ‘(’ [explist] ‘)’ | tableconstructor | LiteralString  *)
+and field =
+  | Fexp of expr
+  | Fname of string * expr
+  | Fcol of expr * expr
+
 and stmt =
   | Sempty
-  | Sassign of string list * expr list
-  | SassignLocal of (string * string option) list * expr list option
+  | Sassign of var list * expr list
+  | SassignLocal of (string * string option) list * expr list
   | Sbreak
-  | Sreturn of expr list option * stmt option
+  | Sreturn of expr list * stmt option
   | Slabel of string
   | Sgoto of string
   | Sblock of block
@@ -162,6 +178,7 @@ let rec print_value fmt value =
   | Vfunction (i, _b) ->
     fprintf fmt "function: %a" pp_print_int (Int32.to_int i)
   | VfunctionReturn vl -> (pp_print_list ~pp_sep print_value) fmt vl
+  | Vtable (i, _flo) -> fprintf fmt "table: %a" pp_print_int (Int32.to_int i)
 
 let rec print_parlist fmt pl =
   match pl with
@@ -169,23 +186,45 @@ let rec print_parlist fmt pl =
     fprintf fmt "%a%a" (pp_print_list ~pp_sep pp_print_string) nl print_eo eo
   | PLvariadic e -> print_expr fmt e
 
+and print_var fmt v =
+  match v with
+  | VarName n -> pp_print_string fmt n
+  | VarTableField (pexp, exp) ->
+    fprintf fmt "%a[%a]" print_prefixexp pexp print_expr exp
+(* | VarTableFieldName (pexp, n) -> fprintf fmt "%a.%s" print_prefixexp pexp n *)
+
+and print_field fmt f =
+  match f with
+  | Fexp e -> print_expr fmt e
+  | Fname (n, e) -> fprintf fmt "%s = %a" n print_expr e
+  | Fcol (e1, e2) -> fprintf fmt "[%a] = %a" print_expr e1 print_expr e2
+
+and print_fieldlist fmt fl =
+  fprintf fmt "{%a}" (pp_print_list ~pp_sep print_field) fl
+
 and print_eo fmt eo = Option.iter (fprintf fmt ", %a" print_expr) eo
 
 and print_funcbody fmt (pl, b) =
   fprintf fmt "(%a)@.%a@.end@." print_parlist pl print_block b
 
-and print_args fmt args =
-  fprintf fmt "(%a)" (pp_print_list ~pp_sep print_expr) args
-
 and print_prefixexp fmt prexp =
   match prexp with
-  | PEvar v -> pp_print_string fmt v
+  | PEvar v -> print_var fmt v
   | PEfunctioncall fc -> print_functioncall fmt fc
-  | PEexp e -> print_expr fmt e
+  | PEexp e -> fprintf fmt "(%a)" print_expr e
+
+and print_args fmt args =
+  match args with
+  | Aexpl el -> fprintf fmt "(%a)" (pp_print_list ~pp_sep print_expr) el
+  | Atable fl -> print_fieldlist fmt fl
+  | Astr s -> pp_print_string fmt s
 
 and print_functioncall fmt fc =
   match fc with
-  | FCpreargs (e, args) -> fprintf fmt "%a%a" print_expr e print_args args
+  | FCpreargs (pexp, args) ->
+    fprintf fmt "%a%a" print_prefixexp pexp print_args args
+  | FCprename (pexp, n, args) ->
+    fprintf fmt "%a:%s(%a)" print_prefixexp pexp n print_args args
 
 and print_expr fmt (_loc, expr) =
   match expr with
@@ -200,33 +239,34 @@ and print_expr fmt (_loc, expr) =
   | Evariadic -> pp_print_string fmt "..."
   | Efunctiondef fb -> fprintf fmt "function %a" print_funcbody fb
   | Eprefix prexp -> print_prefixexp fmt prexp
+  | Etableconstructor fl -> print_fieldlist fmt fl
 
 and print_stmt fmt stmt =
   let pp_name_attrib fmt (name, attrib_opt) =
     pp_print_string fmt name;
     Option.iter (fprintf fmt " %a " print_attrib) attrib_opt
   in
-  let pp_exprlist_opt fmt exprlist_opt =
-    Option.iter
-      (fprintf fmt " = %a" (pp_print_list ~pp_sep print_expr))
-      exprlist_opt
-  in
   let pp_stmt_opt fmt stmt_opt = Option.iter (print_stmt fmt) stmt_opt in
   match stmt with
   | Sempty -> fprintf fmt ""
-  | Sassign (il, lel) ->
+  | Sassign (vl, lel) ->
     fprintf fmt "%a = %a@."
-      (pp_print_list ~pp_sep pp_print_string)
-      il
+      (pp_print_list ~pp_sep print_var)
+      vl
       (pp_print_list ~pp_sep print_expr)
       lel
-  | SassignLocal (nal, elo) ->
-    fprintf fmt "local %a%a@."
+  | SassignLocal (nal, el) ->
+    fprintf fmt "local %a%a%a@."
       (pp_print_list ~pp_sep pp_name_attrib)
-      nal pp_exprlist_opt elo
+      nal pp_print_string
+      (if List.length el > 0 then " = " else "")
+      (pp_print_list ~pp_sep print_expr)
+      el
   | Sbreak -> fprintf fmt "break@."
-  | Sreturn (elo, so) ->
-    fprintf fmt "return %a%a@." pp_exprlist_opt elo pp_stmt_opt so
+  | Sreturn (el, so) ->
+    fprintf fmt "return %a%a@."
+      (pp_print_list ~pp_sep print_expr)
+      el pp_stmt_opt so
   | Slabel n -> fprintf fmt "::%s::@." n
   | Sgoto n -> fprintf fmt "goto %s@." n
   | Sblock b -> fprintf fmt "do@.@[<v>%a@]end@." print_block b

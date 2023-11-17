@@ -11,7 +11,7 @@ exception Goto_catch of block_pointer * Env.t
 
 exception Break_catch of Env.t
 
-exception Return_catch of expr list option * stmt option * Env.t
+exception Return_catch of expr list * stmt option * Env.t
 
 exception Interpretation_error of location option * string
 
@@ -164,6 +164,18 @@ and interpret_ibinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env =
     | Bneq -> (Vboolean (f1 != f2), env)
     | _ -> assert false (* call error *)
   end
+  | Vnil (), Vnil () -> begin
+    match binop with
+    | Beq -> (Vboolean true, env)
+    | Bneq -> (Vboolean false, env)
+    | _ -> assert false (* typing error *)
+  end
+  | Vnil (), _ | _, Vnil () -> begin
+    match binop with
+    | Beq -> (Vboolean false, env)
+    | Bneq -> (Vboolean true, env)
+    | _ -> assert false (* typing error *)
+  end
   | _ -> assert false (* typing error *)
 
 and interpret_sbinop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
@@ -190,12 +202,40 @@ and interpret_sbinop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
     | _ -> assert false (* typing error *)
   end
 
+and interpret_prefixexp pexp env =
+  match pexp with
+  | PEvar v -> interpret_var v env
+  | PEexp exp -> interpret_expr exp env
+  | PEfunctioncall fc ->
+    let v, _env = interpret_functioncall fc env in
+    (v, env)
+
+and interpret_var v env =
+  match v with
+  | VarName n -> (Env.get_value n env, env)
+  | VarTableField (pexp, exp) -> (
+    let t, env = interpret_prefixexp pexp env in
+    let idx, env = interpret_expr exp env in
+    match t with
+    | Vtable (_i, tbl) -> begin
+      match Table.get idx tbl with None -> (Vnil (), env) | Some v -> (v, env)
+    end
+    | _ -> (Vnil (), env) )
+(* typing error - ok ? *)
+
+(* todo: other tableconstructor field type (Fname, Fcol) *)
+and interpret_field field env =
+  match field with
+  | Fexp exp -> interpret_expr exp env
+  | Fname (_s, _exp) -> (Vnil (), env)
+  | Fcol (_exp1, _exp2) -> (Vnil (), env)
+
 and interpret_expr (loc, expr) env =
   match expr with
   | Evalue
       ( ( Vnil ()
         | Vboolean _ | Vnumber _ | Vstring _ | Vfunction _ | VfunctionReturn _
-          ) as v ) ->
+        | Vtable _ ) as v ) ->
     (v, env)
   | Eunop (Unot, ((l, _) as e)) ->
     let v, env = interpret_expr e env in
@@ -235,120 +275,173 @@ and interpret_expr (loc, expr) env =
   | Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2 env
   | Ebinop (op, e1, e2) -> interpret_ibinop_expr op e1 e2 env
   | Evariadic -> (Vnil (), env)
-  | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env) (* todo: ok ? *)
-  | Eprefix (PEvar n) -> (Env.get_value n env, env)
-  | Eprefix (PEexp e) -> interpret_expr e env
-  | Eprefix (PEfunctioncall fc) ->
-    let v, _env = interpret_functioncall fc env in
-    (v, env)
+  | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env)
+  | Eprefix pexp -> interpret_prefixexp pexp env
+  | Etableconstructor fl ->
+    let table, _i, env =
+      List.fold_left
+        (fun (tbl, idx, ev) f ->
+          let v, ev = interpret_field f ev in
+          (Table.add (Vnumber (Ninteger idx)) v tbl, idx + 1, ev) )
+        (Table.empty, 1, env) fl
+    in
+    (Vtable (Random.bits32 (), table), env)
 
-and lists_assign vl el env =
+and set_var v value env =
+  let rec var_of_prefixexp pexp env =
+    match pexp with
+    | PEvar v -> v
+    | PEfunctioncall (FCpreargs (pexp, _a)) -> var_of_prefixexp pexp env
+    | PEfunctioncall (FCprename (pexp, _s, _a)) -> var_of_prefixexp pexp env
+    | PEexp _exp -> assert false (* todo *)
+  in
+  match v with
+  | VarName n -> Env.set_value n value env
+  | VarTableField (pexp, exp) -> (
+    let t, env = interpret_prefixexp pexp env in
+    let idx, env = interpret_expr exp env in
+    match t with
+    | Vtable (i, tbl) ->
+      let tbl = Table.add idx value tbl in
+      let v = var_of_prefixexp pexp env in
+      set_var v (Vtable (i, tbl)) env
+    | _ -> assert false (* typing error *) )
+
+and to_vall el env =
+  List.fold_left
+    (fun (vl, e) exp ->
+      let l, _e = exp in
+      let v, e = interpret_expr exp e in
+      (vl @ [ (l, v) ], e) )
+    ([], env) el
+
+and lists_assign vl vall env =
   begin
-    match (vl, el) with
+    match (vl, vall) with
     | [], [] | [], _ -> env
-    | _vl, [] ->
-      List.fold_left (fun e v -> Env.set_value v (Ast.Vnil ()) e) env vl
-    | v :: vl, [ ((l, _e) as e) ] -> (
-      let va, env = interpret_expr e env in
+    | vl, [] -> List.fold_left (fun e v -> set_var v (Vnil ()) e) env vl
+    | v :: vl, [ (l, va) ] -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] -> Env.set_value v (Ast.Vnil ()) env
+        | [] -> set_var v (Vnil ()) env
         | va :: vall ->
-          let env = Env.set_value v va env in
-          let vall_exp = List.map (fun v -> (l, Evalue v)) vall in
-          lists_assign vl vall_exp env
+          let env = set_var v va env in
+          let vall = List.map (fun v -> (l, v)) vall in
+          lists_assign vl vall env
       end
       | va ->
-        let env = Env.set_value v va env in
+        let env = set_var v va env in
         lists_assign vl [] env )
-    | v :: vl, e :: el -> (
-      let va, env = interpret_expr e env in
+    | v :: vl, (_l, va) :: tl -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] -> Env.set_value v (Ast.Vnil ()) env
+        | [] -> set_var v (Vnil ()) env
         | va :: _vall ->
-          let env = Env.set_value v va env in
-          lists_assign vl el env
+          let env = set_var v va env in
+          lists_assign vl tl env
       end
       | va ->
-        let env = Env.set_value v va env in
-        lists_assign vl el env )
+        let env = set_var v va env in
+        lists_assign vl tl env )
   end
 
-and lists_lassign nal elo env =
+(* todo: local name attrib (const/close) support *)
+and lists_lassign nal vall env =
   begin
-    match (nal, elo) with
-    | [], Some [] | [], None | [], _ | _, None -> env
-    | nal, Some [] ->
+    match (nal, vall) with
+    | [], [] | [], _ -> env
+    | nal, [] ->
       List.fold_left (fun e (n, _on) -> Env.set_value n (Ast.Vnil ()) e) env nal
-    | (n, _on) :: vl, Some [ ((l, _e) as e) ] -> (
-      let va, env = interpret_expr e env in
+    | (n, _on) :: vl, [ (l, va) ] -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
         | [] -> Env.set_value n (Ast.Vnil ()) env
         | va :: vall ->
           let env = Env.set_value n va env in
-          let vall_exp = List.map (fun v -> (l, Evalue v)) vall in
-          lists_lassign vl (Some vall_exp) env
+          let vall = List.map (fun v -> (l, v)) vall in
+          lists_lassign vl vall env
       end
       | va ->
         let env = Env.set_value n va env in
-        lists_lassign vl (Some []) env )
-    | (n, _on) :: vl, Some (e :: el) -> (
-      let va, env = interpret_expr e env in
+        lists_lassign vl [] env )
+    | (n, _on) :: vl, (_l, va) :: tl -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
         | [] -> Env.set_value n (Ast.Vnil ()) env
         | va :: _vall ->
           let env = Env.set_value n va env in
-          lists_lassign vl (Some el) env
+          lists_lassign vl tl env
       end
       | va ->
         let env = Env.set_value n va env in
-        lists_lassign vl (Some el) env )
+        lists_lassign vl tl env )
   end
 
-and lists_args pl el env =
+(* todo: variadic function (PLvariadic, PLlist some) *)
+and lists_args pl vall env =
   match pl with
-  | PLvariadic _ -> assert false (* to be implemented *)
-  | PLlist (_nl, Some _) -> assert false (* to be implemented *)
-  | PLlist (nl, None) -> lists_assign nl el env
+  | PLvariadic _ -> assert false
+  | PLlist (_nl, Some _) -> assert false
+  | PLlist (nl, None) ->
+    let vl = List.map (fun n -> VarName n) nl in
+    lists_assign vl vall env
 
-and interpret_functioncall (FCpreargs (((loc, _) as e), el)) env =
-  let e, env = interpret_expr e env in
-  match e with
+and interpret_fct value el env =
+  match value with
   | Vfunction (_i, (pl, b)) -> begin
     try
-      let env = lists_args pl el env in
+      let vall, env = to_vall el env in
+      let env = lists_args pl vall env in
       let env = interpret_block b env in
       (VfunctionReturn [], env)
-    with Return_catch (elo, _so, env) -> (
-      match elo with
-      | None -> (VfunctionReturn [], env)
-      | Some [ e ] -> interpret_expr e env
-      | Some el ->
-        let vl, env =
-          List.fold_left
-            (fun (vl, e) exp ->
-              let v, e = interpret_expr exp e in
-              (vl @ [ v ], e) )
-            ([], env) el
-        in
+    with Return_catch (el, _so, env) -> (
+      match el with
+      | [] -> (VfunctionReturn [], env)
+      | [ e ] -> interpret_expr e env
+      | el ->
+        let vll, env = to_vall el env in
+        let vl = List.map (fun (_l, v) -> v) vll in
         (VfunctionReturn vl, env) )
   end
-  | _ -> error (Some loc) "function call error!"
+  | _ -> error (*Some loc*) None "function call error!"
+
+(* todo: finish ... (FCprename) *)
+and interpret_functioncall fc env =
+  match fc with
+  (* | FCpreargs (PEexp ((loc, _) as e), Aexpl el) -> *)
+  | FCpreargs (PEvar (VarName v), Aexpl el) ->
+    (* let e, env = interpret_expr e env in *)
+    let value = Env.get_value v env in
+    interpret_fct value el env
+  | FCpreargs (PEvar (VarTableField (pexp, exp)), Aexpl el) ->
+    let t, env = interpret_prefixexp pexp env in
+    let idx, env = interpret_expr exp env in
+    begin
+      match t with
+      | Vtable (_i, tbl) -> begin
+        match Table.get idx tbl with
+        | None -> assert false
+        | Some v -> interpret_fct v el env
+      end
+      | _ -> assert false (* typing error *)
+    end
+  | _ -> assert false
 
 and interpret_stmt stmt env =
   match stmt with
   | Sempty -> env
-  | Sassign (vl, el) -> lists_assign vl el env
-  | SassignLocal (nal, elo) -> lists_lassign nal elo env
+  | Sassign (vl, el) ->
+    let vall, env = to_vall el env in
+    lists_assign vl vall env
+  | SassignLocal (nal, el) ->
+    let vall, env = to_vall el env in
+    lists_lassign nal vall env
   | Sbreak -> raise (Break_catch env)
-  | Sreturn (elo, so) -> raise (Return_catch (elo, so, env))
+  | Sreturn (el, so) -> raise (Return_catch (el, so, env))
   | Slabel _ -> env
   | Sgoto n -> raise (Goto_catch (Label n, env))
   | Sblock b -> interpret_block b env
@@ -422,13 +515,16 @@ and interpret_stmt stmt env =
         | Vnumber (Nfloat f) -> if f >= 0. then Ble else Bge
         | _ -> assert false (* call error *)
       in
-      (loc, Ebinop (op, (loc, Eprefix (PEvar n)), (loc, Evalue limit)))
+      (loc, Ebinop (op, (loc, Eprefix (PEvar (VarName n))), (loc, Evalue limit)))
     in
     let incr_cnt_stmt loc step =
       Sassign
-        ( [ n ]
-        , [ (loc, Ebinop (Badd, (loc, Eprefix (PEvar n)), (loc, Evalue step))) ]
-        )
+        ( [ VarName n ]
+        , [ ( loc
+            , Ebinop
+                (Badd, (loc, Eprefix (PEvar (VarName n))), (loc, Evalue step))
+            )
+          ] )
     in
     let l1, _e1 = e1 in
     let ival, env = init_val e1 env in
@@ -461,7 +557,7 @@ and interpret_stmt stmt env =
 
 and interpret_block b env =
   try List.fold_left (fun e stmt -> interpret_stmt stmt e) env b
-  with Return_catch (elo, so, env) -> raise (Return_catch (elo, so, env))
+  with Return_catch (el, so, env) -> raise (Return_catch (el, so, env))
 
 let rec run ?(pt = Begin) chunk env =
   try
@@ -469,4 +565,4 @@ let rec run ?(pt = Begin) chunk env =
     interpret_block bl env
   with
   | Goto_catch (label, env) -> run ~pt:label chunk env
-  | Return_catch (_elo, _so, env) -> env
+  | Return_catch (_el, _so, env) -> env

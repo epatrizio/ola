@@ -20,6 +20,7 @@ let rec typecheck_value value =
   | Vstring _ -> Tstring
   | Vfunction _ -> Tfunction
   | VfunctionReturn vl -> TfunctionReturn (List.map typecheck_value vl)
+  | Vtable _ -> Ttable
 
 let rec typecheck_arith_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
@@ -90,6 +91,19 @@ and typecheck_str_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   | _, Tboolean -> error loc2 "attempt to concatenate a boolean value"
   | _ -> assert false (* call error *)
 
+and typecheck_var var env =
+  match var with
+  | VarName n ->
+    let v = Env.get_value n env in
+    Ok (typecheck_value v)
+  | VarTableField (_pexp, _exp) -> Ok Tnil (* TODO *)
+
+and typecheck_prefixexp pexp env =
+  match pexp with
+  | PEvar v -> typecheck_var v env
+  | PEfunctioncall fc -> typecheck_functioncall fc env
+  | PEexp e -> typecheck_expr e env
+
 and typecheck_expr expr env =
   match snd expr with
   | Evalue v -> Ok (typecheck_value v)
@@ -116,11 +130,8 @@ and typecheck_expr expr env =
   | Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
   | Evariadic -> Ok Tnil (* TODO: OK ? *)
   | Efunctiondef _ -> Ok Tfunction (* TODO: OK ? *)
-  | Eprefix (PEvar n) ->
-    let v = Env.get_value n env in
-    Ok (typecheck_value v)
-  | Eprefix (PEexp e) -> typecheck_expr e env
-  | Eprefix (PEfunctioncall fc) -> typecheck_functioncall fc env
+  | Eprefix pexp -> typecheck_prefixexp pexp env
+  | Etableconstructor _ -> Ok Ttable (* TODO: OK ? *)
 
 and typecheck_lexpr lexpr env =
   List.fold_left
@@ -130,13 +141,15 @@ and typecheck_lexpr lexpr env =
       Ok () )
     (Ok ()) lexpr
 
-and typecheck_functioncall (FCpreargs (((loc, _e) as e), el)) env =
-  let* typ = typecheck_expr e env in
-  match typ with
-  | Tfunction ->
-    let* () = typecheck_lexpr el env in
-    Ok Tnil
-  | _ -> error loc "attempt to call a not function value"
+and typecheck_functioncall _fc _env = Ok Tnil
+(* todo ?? *)
+(* and typecheck_functioncall (FCpreargs (((loc, _e) as e), el)) env =
+   let* typ = typecheck_expr e env in
+   match typ with
+   | Tfunction ->
+     let* () = typecheck_lexpr el env in
+     Ok Tnil
+   | _ -> error loc "attempt to call a not function value" *)
 
 and typecheck_stmt stmt env =
   match stmt with
@@ -144,7 +157,7 @@ and typecheck_stmt stmt env =
   | Sassign (_il, _el) -> Ok () (* todo: to be implemented *)
   | SassignLocal (_nal, _elo) -> Ok () (* todo: to be implemented *)
   | Sbreak -> Ok ()
-  | Sreturn (_elo, _so) -> Ok ()
+  | Sreturn (_el, _so) -> Ok ()
   | Slabel _ -> Ok ()
   | Sgoto _ -> Ok ()
   | Sblock b -> typecheck_block b env

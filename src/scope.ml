@@ -16,38 +16,56 @@ let rec analyse_expr expr env =
   | loc, Efunctiondef (pl, b) ->
     let (pl, b), env = analyse_funcbody (pl, b) env in
     ((loc, Efunctiondef (pl, b)), env)
-  | loc, Eprefix (PEvar n) ->
-    let fresh_n, env = Env.get_name n env in
-    ((loc, Eprefix (PEvar fresh_n)), env)
-  | loc, Eprefix (PEexp e) ->
-    let e, env = analyse_expr e env in
-    ((loc, Eprefix (PEexp e)), env)
-  | loc, Eprefix (PEfunctioncall fc) ->
-    let fc, env = analyse_functioncall fc env in
-    ((loc, Eprefix (PEfunctioncall fc)), env)
+  | loc, Eprefix pexp ->
+    let pexp, env = analyse_prefixexp pexp env in
+    ((loc, Eprefix pexp), env)
+  | loc, Etableconstructor fl ->
+    let fl, env = analyse_fieldlist fl env in
+    ((loc, Etableconstructor fl), env)
 
 and analyse_el el env =
-  (* List.fold_left
-     (fun (expl, ev) exp -> let exp, ev = analyse_expr exp ev in (exp :: expl, ev))
-     ([], env) el *)
-  (* todo: bug in fold version *)
-  match el with
+  List.fold_left
+    (fun (expl, ev) exp ->
+      let exp, ev = analyse_expr exp ev in
+      (expl @ [ exp ], ev) )
+    ([], env) el
+
+and analyse_var var env =
+  match var with
+  | VarName n ->
+    let fresh_n, env = Env.get_name n env in
+    (VarName fresh_n, env)
+  | VarTableField (pexp, exp) ->
+    let pexp, env = analyse_prefixexp pexp env in
+    let exp, env = analyse_expr exp env in
+    (VarTableField (pexp, exp), env)
+
+and analyse_fieldlist fl env =
+  match fl with
   | [] -> ([], env)
-  | e :: tl ->
-    let e, env = analyse_expr e env in
-    let tl, env = analyse_el tl env in
-    (e :: tl, env)
+  | f :: fl -> (
+    match f with
+    | Fexp e ->
+      let e, env = analyse_expr e env in
+      let fl, env = analyse_fieldlist fl env in
+      (Fexp e :: fl, env)
+    | Fname (n, e) ->
+      let fresh_n, env = Env.get_name n env in
+      let e, env = analyse_expr e env in
+      let fl, env = analyse_fieldlist fl env in
+      (Fname (fresh_n, e) :: fl, env)
+    | Fcol (e1, e2) ->
+      let e1, env = analyse_expr e1 env in
+      let e2, env = analyse_expr e2 env in
+      let fl, env = analyse_fieldlist fl env in
+      (Fcol (e1, e2) :: fl, env) )
 
 and analyse_namelist nl env =
-  (* List.fold_left
-     (fun (nl, ev) n -> let n, ev = Env.add_local n ev in (n :: nl, ev))
-     ([], env) nl *)
-  match nl with
-  | [] -> ([], env)
-  | n :: tl ->
-    let n, env = Env.add_local n env in
-    let tl, env = analyse_namelist tl env in
-    (n :: tl, env)
+  List.fold_left
+    (fun (nl, ev) n ->
+      let n, ev = Env.add_local n ev in
+      (nl @ [ n ], ev) )
+    ([], env) nl
 
 and analyse_parlist pl env =
   match pl with
@@ -65,64 +83,71 @@ and analyse_parlist pl env =
     let e, env = analyse_expr e env in
     (PLvariadic e, env)
 
-and analyse_funcbody fb env =
-  let pl, b = fb in
+and analyse_funcbody ((pl, b) as _fb) env =
   let pl, env_loc = analyse_parlist pl env in
   let b, env_loc = analyse_block b env_loc in
   let locals = Env.get_locals env in
   let env = Env.with_locals env_loc locals in
   ((pl, b), env)
 
-and analyse_args args env = analyse_el args env
+and analyse_args args env =
+  match args with
+  | Aexpl el ->
+    let el, env = analyse_el el env in
+    (Aexpl el, env)
+  | Atable fl ->
+    let fl, env = analyse_fieldlist fl env in
+    (Atable fl, env)
+  | Astr s ->
+    let fresh_s, env = Env.get_name s env in
+    (Astr fresh_s, env)
+
+and analyse_prefixexp pexp env =
+  match pexp with
+  | PEvar v ->
+    let v, env = analyse_var v env in
+    (PEvar v, env)
+  | PEfunctioncall fc ->
+    let fc, env = analyse_functioncall fc env in
+    (PEfunctioncall fc, env)
+  | PEexp e ->
+    let e, env = analyse_expr e env in
+    (PEexp e, env)
 
 and analyse_functioncall fc env =
   match fc with
-  | FCpreargs (exp, args) ->
-    let exp, env = analyse_expr exp env in
+  | FCpreargs (pexp, args) ->
+    let pexp, env = analyse_prefixexp pexp env in
     let args, env = analyse_args args env in
-    (FCpreargs (exp, args), env)
+    (FCpreargs (pexp, args), env)
+  | FCprename (pexp, n, args) ->
+    let pexp, env = analyse_prefixexp pexp env in
+    let args, env = analyse_args args env in
+    (FCprename (pexp, n, args), env)
 
 and analyse_stmt stmt env =
-  let analyse_var is_local var env =
-    match var with
-    | n ->
-      let fresh_n, env =
-        (if is_local then Env.add_local else Env.get_name) n env
-      in
-      (fresh_n, env)
+  let analyse_vl vl env =
+    List.fold_left
+      (fun (varl, ev) v ->
+        let v, ev = analyse_var v ev in
+        (varl @ [ v ], ev) )
+      ([], env) vl
   in
-  let rec analyse_vl vl env =
-    match vl with
-    | [] -> ([], env)
-    | v :: tl ->
-      let v, env = analyse_var false v env in
-      let tl, env = analyse_vl tl env in
-      (v :: tl, env)
-  in
-  let rec analyse_nal nal env =
+  let analyse_nal nal env =
     (* todo : local name attrib (const/close) support *)
-    match nal with
-    | [] -> ([], env)
-    | (n, on) :: tl ->
-      let n, env = analyse_var true n env in
-      let tl, env = analyse_nal tl env in
-      ((n, on) :: tl, env)
+    List.fold_left
+      (fun (nl, ev) (n, oa) ->
+        let fresh_n, ev = Env.add_local n ev in
+        (nl @ [ (fresh_n, oa) ], ev) )
+      ([], env) nal
   in
-  let analyse_elo elo env =
-    match elo with
-    | None -> (None, env)
-    | Some el ->
-      let el, env = analyse_el el env in
-      (Some el, env)
-  in
-  let rec analyse_ebl ebl env =
-    match ebl with
-    | [] -> ([], env)
-    | (e, b) :: tl ->
-      let e, env = analyse_expr e env in
-      let b, env = analyse_block b env in
-      let tl, env = analyse_ebl tl env in
-      ((e, b) :: tl, env)
+  let analyse_ebl ebl env =
+    List.fold_left
+      (fun (exbl, ev) (e, b) ->
+        let e, ev = analyse_expr e ev in
+        let b, ev = analyse_block b ev in
+        (exbl @ [ (e, b) ], ev) )
+      ([], env) ebl
   in
   match stmt with
   | Sempty -> (Sempty, env)
@@ -130,13 +155,13 @@ and analyse_stmt stmt env =
     let el, env = analyse_el el env in
     let vl, env = analyse_vl vl env in
     (Sassign (vl, el), env)
-  | SassignLocal (nal, elo) ->
-    let elo, env = analyse_elo elo env in
+  | SassignLocal (nal, el) ->
+    let el, env = analyse_el el env in
     let nal, env = analyse_nal nal env in
-    (SassignLocal (nal, elo), env)
+    (SassignLocal (nal, el), env)
   | Sbreak -> (Sbreak, env)
-  | Sreturn (elo, so) ->
-    let elo, env = analyse_elo elo env in
+  | Sreturn (el, so) ->
+    let el, env = analyse_el el env in
     let so, env =
       match so with
       | None -> (None, env)
@@ -144,7 +169,7 @@ and analyse_stmt stmt env =
         let s, env = analyse_stmt s env in
         (Some s, env)
     in
-    (Sreturn (elo, so), env)
+    (Sreturn (el, so), env)
   | Slabel n -> (Slabel n, env)
   | Sgoto n -> (Sgoto n, env)
   | Sblock b ->

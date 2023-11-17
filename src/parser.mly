@@ -2,8 +2,9 @@
 
 %{ %}
 
-%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT LPAREN RPAREN FUNCTION
-%token COLON DCOLON SEMICOLON COMMA
+%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT FUNCTION
+%token LPAREN RPAREN LBRACKET RBRACKET LBRACES RBRACES
+%token COLON DCOLON SEMICOLON COMMA SQUOTE DQUOTE
 %token AEQ LT LE GT GE EQ NEQ
 %token NOT SHARP AND OR LAND LOR LSL LSR TILDE
 %token DO END BREAK RETURN WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL
@@ -33,14 +34,17 @@
 
 %%
 
-chunk : l=block EOF { l };
+chunk : l=block EOF { l }
 
 block :
      | l=list(stmt) { l }
-     ;
 
 var :
-     | n=NAME { n }
+     | n=NAME { Ast.VarName n }
+     | pe=prefixexp LBRACKET e=lexpr RBRACKET { Ast.VarTableField (pe, e) }
+     // | pe=prefixexp DOT n=NAME { Ast.VarTableFieldName (pe, n) }
+     // var.Name is syntactic sugar for var["Name"]
+     | pe=prefixexp DOT n=NAME { Ast.VarTableField (pe, (($startpos,$endpos), Ast.Evalue (Vstring n))) }
 
 attrib :
      | LT a=ATTRIB GT { a }
@@ -51,11 +55,9 @@ attname :
 lexpr :
      | e=expr { (($startpos,$endpos), e) }
 
-exprlist :
-     | el=separated_nonempty_list(COMMA, lexpr) { el }
-
 exprlistopt :
-     | AEQ el=exprlist { el }
+     | AEQ el=separated_nonempty_list(COMMA, lexpr) { el }
+     | { [] }
 
 elseif :
      | ELSEIF e=lexpr THEN b=block { (e, b) }
@@ -87,21 +89,46 @@ funcbody :
 
 prefixexp :
      | v=var { Ast.PEvar v }
-     | fc=functioncall { PEfunctioncall fc }
+     | fc=functioncall { Ast.PEfunctioncall fc }
      | LPAREN e=lexpr RPAREN { Ast.PEexp e }
 
+arg_str_left :
+     | SQUOTE {}
+     | DQUOTE {}
+     | LBRACKET LBRACKET {}
+
+arg_str_right :
+     | SQUOTE {}
+     | DQUOTE {}
+     | RBRACKET RBRACKET {}
+
 args :
-     | LPAREN el=separated_list(COMMA, lexpr) RPAREN {  el }
+     | LPAREN el=separated_list(COMMA, lexpr) RPAREN { Ast.Aexpl el }
+     //| fl=fieldlist { Ast.Atable fl }           // TODO BUG: A cyclic grammar is ambiguous
+     | arg_str_left n=NAME arg_str_right { Ast.Astr n }
 
 functioncall :
-     | e=lexpr a=args { Ast.FCpreargs (e, a) }
+     | pe=prefixexp a=args { Ast.FCpreargs (pe, a) }
+     | pe=prefixexp COLON n=NAME a=args { Ast.FCprename (pe, n, a) }
+
+field :
+     | e=lexpr { Ast.Fexp e }
+     | n=NAME AEQ e=lexpr { Ast.Fname (n, e) }
+     | LBRACKET e1=lexpr RBRACKET AEQ e2=lexpr { Ast.Fcol (e1, e2) }
+
+fieldsep :
+     | COMMA {}
+     | SEMICOLON {}
+
+fieldlist :
+     | fl=separated_list(fieldsep, field) { fl }
 
 stmt :
      | s=sempty { s }
-     | vl=separated_nonempty_list(COMMA, var) AEQ el=exprlist { Ast.Sassign (vl, el) }
-     | LOCAL nal=separated_nonempty_list(COMMA, attname) elo=option(exprlistopt) { Ast.SassignLocal (nal, elo) }
+     | vl=separated_nonempty_list(COMMA, var) AEQ el=separated_nonempty_list(COMMA, lexpr) { Ast.Sassign (vl, el) }
+     | LOCAL nal=separated_nonempty_list(COMMA, attname) el=exprlistopt { Ast.SassignLocal (nal, el) }
      | BREAK { Ast.Sbreak }
-     | RETURN elo=option(exprlist) so=option(sempty) { Ast.Sreturn (elo, so) }
+     | RETURN el=separated_list(COMMA, lexpr) so=option(sempty) { Ast.Sreturn (el, so) }
      | DCOLON n=NAME DCOLON { Ast.Slabel n }
      | GOTO n=NAME { Ast.Sgoto n }
      | DO b=block END { Ast.Sblock b }
@@ -112,10 +139,10 @@ stmt :
      | FOR nl=separated_nonempty_list(COMMA, NAME) IN el=separated_nonempty_list(COMMA, lexpr) DO b=block END { Ast.Siterator (nl, el, b) }
      // | FUNCTION n=NAME fb=funcbody { Ast.Sfunction (n, fb) }
      // transform: f = function () body end
-     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
+     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ Ast.VarName n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      // | LOCAL FUNCTION n=NAME fb=funcbody { SfunctionLocal (n, fb) }
      // transform: local f; f = function () body end -- TODO (actually, same as global function)
-     | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], Some [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
+     | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
      | fc=functioncall { SfunctionCall fc }
      | PRINT LPAREN e=lexpr RPAREN { Ast.Sprint e }          // tmp
      ;
@@ -158,6 +185,7 @@ expr :
      | e1=lexpr op=binop e2=lexpr { Ast.Ebinop (op, e1, e2) }
      | v=variadic { v }
      | FUNCTION fb=funcbody { Ast.Efunctiondef fb }
+     | LBRACES fl=fieldlist RBRACES { Ast.Etableconstructor fl }
      | LPAREN e=expr RPAREN { e }
      ;
 
