@@ -1,5 +1,5 @@
 --[[ 
-First classic example : The Fibonacci sequence
+Second classic example : The Fibonacci sequence
 multiple implementations
 --]]
 
