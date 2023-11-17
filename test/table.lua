@@ -66,6 +66,7 @@ end
 print(t()[1])       -- 42
 
 -- doc §3.4.9 https://www.lua.org/manual/5.4/manual.html#3.4.9
+-- to be implemented
 
 -- function idx(i)
 --   return 42 + i

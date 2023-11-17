@@ -223,12 +223,12 @@ and interpret_var v env =
     | _ -> (Vnil (), env) )
 (* typing error - ok ? *)
 
+(* todo: other tableconstructor field type (Fname, Fcol) *)
 and interpret_field field env =
   match field with
   | Fexp exp -> interpret_expr exp env
-  | Fname (_s, _exp) -> (Vnil (), env) (* todo *)
+  | Fname (_s, _exp) -> (Vnil (), env)
   | Fcol (_exp1, _exp2) -> (Vnil (), env)
-(* todo *)
 
 and interpret_expr (loc, expr) env =
   match expr with
@@ -347,6 +347,7 @@ and lists_assign vl vall env =
         lists_assign vl tl env )
   end
 
+(* todo: local name attrib (const/close) support *)
 and lists_lassign nal vall env =
   begin
     match (nal, vall) with
@@ -380,10 +381,11 @@ and lists_lassign nal vall env =
         lists_lassign vl tl env )
   end
 
+(* todo: variadic function (PLvariadic, PLlist some) *)
 and lists_args pl vall env =
   match pl with
-  | PLvariadic _ -> assert false (* to be implemented *)
-  | PLlist (_nl, Some _) -> assert false (* to be implemented *)
+  | PLvariadic _ -> assert false
+  | PLlist (_nl, Some _) -> assert false
   | PLlist (nl, None) ->
     let vl = List.map (fun n -> VarName n) nl in
     lists_assign vl vall env
@@ -407,6 +409,7 @@ and interpret_fct value el env =
   end
   | _ -> error (*Some loc*) None "function call error!"
 
+(* todo: finish ... (FCprename) *)
 and interpret_functioncall fc env =
   match fc with
   (* | FCpreargs (PEexp ((loc, _) as e), Aexpl el) -> *)
