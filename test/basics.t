@@ -18,6 +18,14 @@ basic operations:
   false
   false
   true
+  false
+  true
+  10
+  a
+  nil
+  false
+  nil
+  20
   42
   42
   42

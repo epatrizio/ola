@@ -30,8 +30,28 @@ print(not t[4])       -- true
 print(not id(false))  -- true
 print(not id(42))     -- false
 
-print(true and false)
-print(true or false)
+print(true and false)       -- false
+print(true or false)        -- true
+print(t[3] and id(false))   -- false
+print(id(true) or t[4])     -- true
+
+-- doc 3.4.5 - Logical Operators
+-- https://www.lua.org/manual/5.4/manual.html#3.4.5
+-- 10 or 20            --> 10
+-- 10 or error()       --> 10
+-- nil or "a"          --> "a"
+-- nil and 10          --> nil
+-- false and error()   --> false
+-- false and nil       --> false
+-- false or nil        --> nil
+-- 10 and 20           --> 20
+
+print(10 or 20)       -- 10
+print(nil or "a")     -- a
+print(nil and 10)     -- nil
+print(false and nil)  -- false
+print(false or nil)   -- nil
+print(10 and 20)      -- 20
 
 -- integer
 

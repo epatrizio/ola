@@ -119,7 +119,8 @@ and typecheck_expr expr env =
       | _ -> error l "#operator on this type: to be implemented ..."
     end
   | Eunop (Ulnot, e) -> typecheck_bitwise_unop e env
-  | Ebinop (Band, _, _) | Ebinop (Bor, _, _) -> Ok Tboolean (* TODO *)
+  | Ebinop (Band, _, _) | Ebinop (Bor, _, _) ->
+    Ok Tnil (* Nb. all types are possible! *)
   | Ebinop (((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e1, e2)
     ->
     typecheck_arith_binop op e1 e2 env

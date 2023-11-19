@@ -37,22 +37,21 @@ let get_int f loc =
     error (Some loc)
       ("number has no integer representation: " ^ string_of_float f)
 
-let rec interpret_bbinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
+let rec interpret_bbinop_expr binop ((_loc1, _) as expr1) ((_loc2, _) as expr2)
   env =
-  (* todo: ok for num values *)
   let v1, env = interpret_expr expr1 env in
-  let v2, env = interpret_expr expr2 env in
-  typecheck_expr
-    (loc1, Ebinop (binop, (loc1, Evalue v1), (loc2, Evalue v2)))
-    env;
-  match (v1, v2) with
-  | Vboolean b1, Vboolean b2 -> begin
-    match binop with
-    | Band -> (Vboolean (b1 && b2), env)
-    | Bor -> (Vboolean (b1 || b2), env)
-    | _ -> assert false (* call error *)
+  match binop with
+  | Band -> begin
+    match v1 with
+    | Vboolean false | Vnil () -> (v1, env)
+    | _ -> interpret_expr expr2 env (* short-circuit evaluation *)
   end
-  | _ -> assert false (* typing error *)
+  | Bor -> begin
+    match v1 with
+    | v when v <> Vnil () && v <> Vboolean false -> (v1, env)
+    | _ -> interpret_expr expr2 env (* short-circuit evaluation *)
+  end
+  | _ -> assert false (* call error *)
 
 and interpret_ibinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env =
   let v1, env = interpret_expr expr1 env in
