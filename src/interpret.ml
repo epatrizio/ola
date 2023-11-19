@@ -242,8 +242,9 @@ and interpret_expr (loc, expr) env =
     typecheck_expr (loc, Eunop (Unot, (l, Evalue v))) env;
     begin
       match v with
+      | Vnil () -> (Vboolean true, env)
       | Vboolean b -> (Vboolean (not b), env)
-      | _ -> assert false (* typing error *)
+      | _ -> (Vboolean false, env)
     end
   | Eunop (Uminus, ((l, _) as e)) ->
     let v, env = interpret_expr e env in

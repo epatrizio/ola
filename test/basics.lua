@@ -2,6 +2,12 @@
     Basic stuff
 --]]
 
+t = {1, 2, true, false}
+
+function id(a)
+  return a
+end
+
 -- nil
 
 print(nil)
@@ -10,8 +16,20 @@ print(nil)
 
 print(true)
 print(false)
+
 print(not true)
 print(not false)
+print(not nil)        -- true
+print(not 42)         -- false
+print(not 42.42)      -- false
+print(not "str")      -- false
+print(not t)          -- false
+print(not id)         -- false
+print(not t[1])       -- false
+print(not t[4])       -- true
+print(not id(false))  -- true
+print(not id(42))     -- false
+
 print(true and false)
 print(true or false)
 
