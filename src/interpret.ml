@@ -238,13 +238,29 @@ and interpret_rel_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env
     | Bneq -> (Vboolean false, env)
     | _ -> assert false (* typing error *)
   end
-  | Vnil (), _ | _, Vnil () -> begin
+  | Vboolean b1, Vboolean b2 -> begin
+    match binop with
+    | Beq -> (Vboolean (b1 = b2), env)
+    | Bneq -> (Vboolean (b1 <> b2), env)
+    | _ -> assert false (* typing error *)
+  end
+  | Vstring s1, Vstring s2 -> begin
+    match binop with
+    | Blt -> (Vboolean (s1 < s2), env)
+    | Ble -> (Vboolean (s1 <= s2), env)
+    | Bgt -> (Vboolean (s1 > s2), env)
+    | Bge -> (Vboolean (s1 >= s2), env)
+    | Beq -> (Vboolean (s1 = s2), env)
+    | Bneq -> (Vboolean (s1 <> s2), env)
+    | _ -> assert false
+  end
+  | v1, v2 when v1 <> v2 -> begin
     match binop with
     | Beq -> (Vboolean false, env)
     | Bneq -> (Vboolean true, env)
     | _ -> assert false (* typing error *)
   end
-  | _ -> assert false (* typing error *)
+  | _ -> assert false (* todo: to be implemented *)
 
 and interpret_sbinop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
   let v1, env = interpret_expr expr1 env in

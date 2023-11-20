@@ -70,7 +70,7 @@ print(1+(2-4))  -- -1
 print(1-(2+3))  -- -4
 print(((10+10)-(-10*3))*2)  -- 100
 
--- comparaison
+-- relational operators
 
 print(42 < 42)
 print(42 <= 42)
@@ -78,6 +78,30 @@ print(42 > 42)
 print(42 >= 42)
 print(42 == 42)
 print(42 ~= 42)
+
+print(nil == nil)
+print(nil ~= nil)
+
+print(true == true)
+print(true == false)
+print(true ~= true)
+print(true ~= false)
+
+print("str" < "str")
+print("str" <= "str")
+print("str" > "str")
+print("str" >= "str")
+print("str" == "str")
+print("str" ~= "str")
+print("str1" == "str2")
+print("str1" ~= "str2")
+
+print(1 == true)
+print(1 ~= true)
+print("str" == 42.42)
+print("str" ~= 42.42)
+print(nil == 42)
+print(nil ~= 42)
 
 -- float
 

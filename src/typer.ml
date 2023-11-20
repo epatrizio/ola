@@ -85,6 +85,17 @@ and typecheck_bitwise_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
     error loc2 "attempt to perform bitwise operation on a string value"
   | _ -> assert false (* call error *)
 
+and typecheck_rel_binop binop ((loc1, _e1) as expr1) ((_loc2, _e2) as expr2) env
+    =
+  let* typ1 = typecheck_expr expr1 env in
+  let* typ2 = typecheck_expr expr2 env in
+  match (typ1, typ2) with
+  | Tnumber _, Tnumber _ | Tstring, Tstring -> Ok Tboolean
+  | _, _ -> (
+    match binop with
+    | Beq | Bneq -> Ok Tboolean
+    | _ -> error loc1 "attempt to compare two values with non correct types" )
+
 and typecheck_str_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   let* typ1 = typecheck_expr expr1 env in
   let* typ2 = typecheck_expr expr2 env in
@@ -131,7 +142,8 @@ and typecheck_expr expr env =
     typecheck_arith_binop op e1 e2 env
   | Ebinop ((Bland | Blor | Blxor | Blsl | Blsr), e1, e2) ->
     typecheck_bitwise_binop e1 e2 env
-  | Ebinop ((Blt | Ble | Bgt | Bge | Beq | Bneq), _, _) -> Ok Tboolean
+  | Ebinop (((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e1, e2) ->
+    typecheck_rel_binop op e1 e2 env
   | Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
   | Evariadic -> Ok Tnil (* TODO: OK ? *)
   | Efunctiondef _ -> Ok Tfunction (* TODO: OK ? *)
