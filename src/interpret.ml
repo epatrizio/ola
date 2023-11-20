@@ -252,6 +252,18 @@ and interpret_expr (loc, expr) env =
       match v with
       | Vnumber (Ninteger i) -> (Vnumber (Ninteger (-i)), env)
       | Vnumber (Nfloat f) -> (Vnumber (Nfloat (-.f)), env)
+      | Vstring s -> begin
+        match int_of_string_opt s with
+        | Some i -> (Vnumber (Ninteger (-i)), env)
+        | None -> begin
+          match float_of_string_opt s with
+          | Some f -> (Vnumber (Nfloat (-.f)), env)
+          | None ->
+            error (Some l)
+              (Format.sprintf
+                 "attempt to perform arithmetic on a string (%s) value" s )
+        end
+      end
       | _ -> assert false (* typing error *)
     end
   | Eunop (Usharp, ((l, _) as e)) ->

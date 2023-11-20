@@ -172,3 +172,10 @@ print(123 .. 456)
 print(123.456 .. 789.0)
 print(123 .. 456.789)
 print(123.456 .. 789)
+
+-- string (number operators)
+
+print(-"42")
+print(-"42.")
+print(-"-42")
+print(-"-42.")

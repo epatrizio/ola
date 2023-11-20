@@ -27,9 +27,10 @@ let rec typecheck_arith_unop ((loc, _e) as expr) env =
   match t with
   | Tnumber Tinteger -> Ok (Tnumber Tinteger)
   | Tnumber Tfloat -> Ok (Tnumber Tfloat)
+  | Tstring ->
+    Ok (Tnumber Tinteger) (* or Tfloat - cast & check during interpretation *)
   | Tnil -> error loc "attempt to perform arithmetic on a nil value"
   | Tboolean -> error loc "attempt to perform arithmetic on a boolean value"
-  | Tstring -> error loc "attempt to perform arithmetic on a string value"
   | _ -> assert false (* call error *)
 
 and typecheck_bitwise_unop ((loc, _e) as expr) env =
