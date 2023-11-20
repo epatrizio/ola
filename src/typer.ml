@@ -56,12 +56,16 @@ and typecheck_arith_binop binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2)
     Ok
       (if binop = Bdiv || binop = Bexp then Tnumber Tfloat else Tnumber Tinteger)
   | Tnumber _, Tnumber _ -> Ok (Tnumber Tfloat)
+  | Tstring, Tnumber _ ->
+    Ok (Tnumber Tinteger) (* or Tfloat - cast & check during interpretation *)
+  | Tnumber _, Tstring ->
+    Ok (Tnumber Tinteger) (* or Tfloat - cast & check during interpretation *)
+  | Tstring, Tstring ->
+    Ok (Tnumber Tinteger) (* or Tfloat - cast & check during interpretation *)
   | Tnil, _ -> error loc1 "attempt to perform arithmetic on a nil value"
   | _, Tnil -> error loc2 "attempt to perform arithmetic on a nil value"
   | Tboolean, _ -> error loc1 "attempt to perform arithmetic on a boolean value"
   | _, Tboolean -> error loc2 "attempt to perform arithmetic on a boolean value"
-  | Tstring, _ -> error loc1 "attempt to perform arithmetic on a string value"
-  | _, Tstring -> error loc2 "attempt to perform arithmetic on a string value"
   | _ -> assert false (* call error *)
 
 and typecheck_bitwise_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
@@ -127,8 +131,7 @@ and typecheck_expr expr env =
     typecheck_arith_binop op e1 e2 env
   | Ebinop ((Bland | Blor | Blxor | Blsl | Blsr), e1, e2) ->
     typecheck_bitwise_binop e1 e2 env
-  | Ebinop ((Blt | Ble | Bgt | Bge | Beq | Bneq), _, _) ->
-    Ok Tboolean (* TODO *)
+  | Ebinop ((Blt | Ble | Bgt | Bge | Beq | Bneq), _, _) -> Ok Tboolean
   | Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
   | Evariadic -> Ok Tnil (* TODO: OK ? *)
   | Efunctiondef _ -> Ok Tfunction (* TODO: OK ? *)

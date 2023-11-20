@@ -37,6 +37,16 @@ let get_int f loc =
     error (Some loc)
       ("number has no integer representation: " ^ string_of_float f)
 
+let number_of_string loc str =
+  match int_of_string_opt str with
+  | Some i -> Vnumber (Ninteger i)
+  | None -> (
+    match float_of_string_opt str with
+    | Some f -> Vnumber (Nfloat f)
+    | None ->
+      error loc (Format.sprintf "attempt to perform on a string (%s) value" str)
+    )
+
 let rec interpret_bbinop_expr binop ((_loc1, _) as expr1) ((_loc2, _) as expr2)
   env =
   let v1, env = interpret_expr expr1 env in
@@ -53,12 +63,19 @@ let rec interpret_bbinop_expr binop ((_loc1, _) as expr1) ((_loc2, _) as expr2)
   end
   | _ -> assert false (* call error *)
 
-and interpret_ibinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env =
+and interpret_arith_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
+  env =
   let v1, env = interpret_expr expr1 env in
   let v2, env = interpret_expr expr2 env in
   typecheck_expr
     (loc1, Ebinop (binop, (loc1, Evalue v1), (loc2, Evalue v2)))
     env;
+  let v1 =
+    match v1 with Vstring s -> number_of_string (Some loc1) s | v -> v
+  in
+  let v2 =
+    match v2 with Vstring s -> number_of_string (Some loc2) s | v -> v
+  in
   match (v1, v2) with
   | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
     match binop with
@@ -70,17 +87,6 @@ and interpret_ibinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env =
     | Bmod -> (Vnumber (Ninteger (i1 mod i2)), env)
     | Bexp ->
       (Vnumber (Nfloat (Float.pow (float_of_int i1) (float_of_int i2))), env)
-    | Bland -> (Vnumber (Ninteger (i1 land i2)), env)
-    | Blor -> (Vnumber (Ninteger (i1 lor i2)), env)
-    | Blxor -> (Vnumber (Ninteger (i1 lxor i2)), env)
-    | Blsl -> (Vnumber (Ninteger (i1 lsl i2)), env)
-    | Blsr -> (Vnumber (Ninteger (i1 lsr i2)), env)
-    | Blt -> (Vboolean (i1 < i2), env)
-    | Ble -> (Vboolean (i1 <= i2), env)
-    | Bgt -> (Vboolean (i1 > i2), env)
-    | Bge -> (Vboolean (i1 >= i2), env)
-    | Beq -> (Vboolean (i1 = i2), env)
-    | Bneq -> (Vboolean (i1 != i2), env)
     | _ -> assert false (* call error *)
   end
   | Vnumber (Nfloat f), Vnumber (Ninteger i) -> begin
@@ -97,17 +103,6 @@ and interpret_ibinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env =
       let _, q = Float.modf (f /. fi) in
       (Vnumber (Nfloat (f -. (fi *. q))), env)
     | Bexp -> (Vnumber (Nfloat (Float.pow f (float_of_int i))), env)
-    | Bland -> (Vnumber (Ninteger (get_int f loc1 land i)), env)
-    | Blor -> (Vnumber (Ninteger (get_int f loc1 lor i)), env)
-    | Blxor -> (Vnumber (Ninteger (get_int f loc1 lxor i)), env)
-    | Blsl -> (Vnumber (Ninteger (get_int f loc1 lsl i)), env)
-    | Blsr -> (Vnumber (Ninteger (get_int f loc1 lsr i)), env)
-    | Blt -> (Vboolean (f < float_of_int i), env)
-    | Ble -> (Vboolean (f <= float_of_int i), env)
-    | Bgt -> (Vboolean (f > float_of_int i), env)
-    | Bge -> (Vboolean (f >= float_of_int i), env)
-    | Beq -> (Vboolean (f = float_of_int i), env)
-    | Bneq -> (Vboolean (f != float_of_int i), env)
     | _ -> assert false (* call error *)
   end
   | Vnumber (Ninteger i), Vnumber (Nfloat f) -> begin
@@ -124,17 +119,6 @@ and interpret_ibinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env =
       let _, q = Float.modf (fi /. f) in
       (Vnumber (Nfloat (fi -. (f *. q))), env)
     | Bexp -> (Vnumber (Nfloat (Float.pow (float_of_int i) f)), env)
-    | Bland -> (Vnumber (Ninteger (i land get_int f loc2)), env)
-    | Blor -> (Vnumber (Ninteger (i lor get_int f loc2)), env)
-    | Blxor -> (Vnumber (Ninteger (i lxor get_int f loc2)), env)
-    | Blsl -> (Vnumber (Ninteger (i lsl get_int f loc2)), env)
-    | Blsr -> (Vnumber (Ninteger (i lsr get_int f loc2)), env)
-    | Blt -> (Vboolean (float_of_int i < f), env)
-    | Ble -> (Vboolean (float_of_int i <= f), env)
-    | Bgt -> (Vboolean (float_of_int i > f), env)
-    | Bge -> (Vboolean (float_of_int i >= f), env)
-    | Beq -> (Vboolean (float_of_int i = f), env)
-    | Bneq -> (Vboolean (float_of_int i != f), env)
     | _ -> assert false (* call error *)
   end
   | Vnumber (Nfloat f1), Vnumber (Nfloat f2) -> begin
@@ -150,11 +134,96 @@ and interpret_ibinop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env =
       let _, q = Float.modf (f1 /. f2) in
       (Vnumber (Nfloat (f1 -. (f2 *. q))), env)
     | Bexp -> (Vnumber (Nfloat (Float.pow f1 f2)), env)
+    | _ -> assert false (* call error *)
+  end
+  | _ -> assert false (* typing error *)
+
+and interpret_bitwise_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
+  env =
+  let v1, env = interpret_expr expr1 env in
+  let v2, env = interpret_expr expr2 env in
+  typecheck_expr
+    (loc1, Ebinop (binop, (loc1, Evalue v1), (loc2, Evalue v2)))
+    env;
+  match (v1, v2) with
+  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
+    match binop with
+    | Bland -> (Vnumber (Ninteger (i1 land i2)), env)
+    | Blor -> (Vnumber (Ninteger (i1 lor i2)), env)
+    | Blxor -> (Vnumber (Ninteger (i1 lxor i2)), env)
+    | Blsl -> (Vnumber (Ninteger (i1 lsl i2)), env)
+    | Blsr -> (Vnumber (Ninteger (i1 lsr i2)), env)
+    | _ -> assert false (* call error *)
+  end
+  | Vnumber (Nfloat f), Vnumber (Ninteger i) -> begin
+    match binop with
+    | Bland -> (Vnumber (Ninteger (get_int f loc1 land i)), env)
+    | Blor -> (Vnumber (Ninteger (get_int f loc1 lor i)), env)
+    | Blxor -> (Vnumber (Ninteger (get_int f loc1 lxor i)), env)
+    | Blsl -> (Vnumber (Ninteger (get_int f loc1 lsl i)), env)
+    | Blsr -> (Vnumber (Ninteger (get_int f loc1 lsr i)), env)
+    | _ -> assert false (* call error *)
+  end
+  | Vnumber (Ninteger i), Vnumber (Nfloat f) -> begin
+    match binop with
+    | Bland -> (Vnumber (Ninteger (i land get_int f loc2)), env)
+    | Blor -> (Vnumber (Ninteger (i lor get_int f loc2)), env)
+    | Blxor -> (Vnumber (Ninteger (i lxor get_int f loc2)), env)
+    | Blsl -> (Vnumber (Ninteger (i lsl get_int f loc2)), env)
+    | Blsr -> (Vnumber (Ninteger (i lsr get_int f loc2)), env)
+    | _ -> assert false (* call error *)
+  end
+  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) -> begin
+    match binop with
     | Bland -> (Vnumber (Ninteger (get_int f1 loc1 land get_int f2 loc2)), env)
     | Blor -> (Vnumber (Ninteger (get_int f1 loc1 lor get_int f2 loc2)), env)
     | Blxor -> (Vnumber (Ninteger (get_int f1 loc1 lxor get_int f2 loc2)), env)
     | Blsl -> (Vnumber (Ninteger (get_int f1 loc1 lsl get_int f2 loc2)), env)
     | Blsr -> (Vnumber (Ninteger (get_int f1 loc1 lsr get_int f2 loc2)), env)
+    | _ -> assert false (* call error *)
+  end
+  | _ -> assert false (* typing error *)
+
+and interpret_rel_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env
+    =
+  let v1, env = interpret_expr expr1 env in
+  let v2, env = interpret_expr expr2 env in
+  typecheck_expr
+    (loc1, Ebinop (binop, (loc1, Evalue v1), (loc2, Evalue v2)))
+    env;
+  match (v1, v2) with
+  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
+    match binop with
+    | Blt -> (Vboolean (i1 < i2), env)
+    | Ble -> (Vboolean (i1 <= i2), env)
+    | Bgt -> (Vboolean (i1 > i2), env)
+    | Bge -> (Vboolean (i1 >= i2), env)
+    | Beq -> (Vboolean (i1 = i2), env)
+    | Bneq -> (Vboolean (i1 != i2), env)
+    | _ -> assert false (* call error *)
+  end
+  | Vnumber (Nfloat f), Vnumber (Ninteger i) -> begin
+    match binop with
+    | Blt -> (Vboolean (f < float_of_int i), env)
+    | Ble -> (Vboolean (f <= float_of_int i), env)
+    | Bgt -> (Vboolean (f > float_of_int i), env)
+    | Bge -> (Vboolean (f >= float_of_int i), env)
+    | Beq -> (Vboolean (f = float_of_int i), env)
+    | Bneq -> (Vboolean (f != float_of_int i), env)
+    | _ -> assert false (* call error *)
+  end
+  | Vnumber (Ninteger i), Vnumber (Nfloat f) -> begin
+    match binop with
+    | Blt -> (Vboolean (float_of_int i < f), env)
+    | Ble -> (Vboolean (float_of_int i <= f), env)
+    | Bgt -> (Vboolean (float_of_int i > f), env)
+    | Bge -> (Vboolean (float_of_int i >= f), env)
+    | Beq -> (Vboolean (float_of_int i = f), env)
+    | Bneq -> (Vboolean (float_of_int i != f), env)
+    | _ -> assert false (* call error *)
+  end
+  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) -> begin
+    match binop with
     | Blt -> (Vboolean (f1 < f2), env)
     | Ble -> (Vboolean (f1 <= f2), env)
     | Bgt -> (Vboolean (f1 > f2), env)
@@ -252,18 +321,14 @@ and interpret_expr (loc, expr) env =
       match v with
       | Vnumber (Ninteger i) -> (Vnumber (Ninteger (-i)), env)
       | Vnumber (Nfloat f) -> (Vnumber (Nfloat (-.f)), env)
-      | Vstring s -> begin
-        match int_of_string_opt s with
-        | Some i -> (Vnumber (Ninteger (-i)), env)
-        | None -> begin
-          match float_of_string_opt s with
-          | Some f -> (Vnumber (Nfloat (-.f)), env)
-          | None ->
-            error (Some l)
-              (Format.sprintf
-                 "attempt to perform arithmetic on a string (%s) value" s )
+      | Vstring s ->
+        let v = number_of_string (Some l) s in
+        begin
+          match v with
+          | Vnumber (Ninteger i) -> (Vnumber (Ninteger (-i)), env)
+          | Vnumber (Nfloat f) -> (Vnumber (Nfloat (-.f)), env)
+          | _ -> assert false (* call error *)
         end
-      end
       | _ -> assert false (* typing error *)
     end
   | Eunop (Usharp, ((l, _) as e)) ->
@@ -285,7 +350,13 @@ and interpret_expr (loc, expr) env =
     end
   | Ebinop (((Band | Bor) as op), e1, e2) -> interpret_bbinop_expr op e1 e2 env
   | Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2 env
-  | Ebinop (op, e1, e2) -> interpret_ibinop_expr op e1 e2 env
+  | Ebinop (((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e1, e2)
+    ->
+    interpret_arith_binop_expr op e1 e2 env
+  | Ebinop (((Bland | Blor | Blxor | Blsl | Blsr) as op), e1, e2) ->
+    interpret_bitwise_binop_expr op e1 e2 env
+  | Ebinop (((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e1, e2) ->
+    interpret_rel_binop_expr op e1 e2 env
   | Evariadic -> (Vnil (), env)
   | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
