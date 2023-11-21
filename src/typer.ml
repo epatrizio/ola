@@ -135,16 +135,16 @@ and typecheck_expr expr env =
       | _ -> error l "#operator on this type: to be implemented ..."
     end
   | Eunop (Ulnot, e) -> typecheck_bitwise_unop e env
-  | Ebinop (Band, _, _) | Ebinop (Bor, _, _) ->
+  | Ebinop (_, Band, _) | Ebinop (_, Bor, _) ->
     Ok Tnil (* Nb. all types are possible! *)
-  | Ebinop (((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e1, e2)
+  | Ebinop (e1, ((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e2)
     ->
     typecheck_arith_binop op e1 e2 env
-  | Ebinop ((Bland | Blor | Blxor | Blsl | Blsr), e1, e2) ->
+  | Ebinop (e1, (Bland | Blor | Blxor | Blsl | Blsr), e2) ->
     typecheck_bitwise_binop e1 e2 env
-  | Ebinop (((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e1, e2) ->
+  | Ebinop (e1, ((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e2) ->
     typecheck_rel_binop op e1 e2 env
-  | Ebinop (Bddot, e1, e2) -> typecheck_str_binop e1 e2 env
+  | Ebinop (e1, Bddot, e2) -> typecheck_str_binop e1 e2 env
   | Evariadic -> Ok Tnil (* TODO: OK ? *)
   | Efunctiondef _ -> Ok Tfunction (* TODO: OK ? *)
   | Eprefix pexp -> typecheck_prefixexp pexp env
@@ -174,7 +174,7 @@ and typecheck_stmt stmt env =
   | Sassign (_il, _el) -> Ok () (* todo: to be implemented *)
   | SassignLocal (_nal, _elo) -> Ok () (* todo: to be implemented *)
   | Sbreak -> Ok ()
-  | Sreturn (_el, _so) -> Ok ()
+  | Sreturn _el -> Ok ()
   | Slabel _ -> Ok ()
   | Sgoto _ -> Ok ()
   | Sblock b -> typecheck_block b env

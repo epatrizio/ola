@@ -1,192 +1,210 @@
-/* Syntactic analyzer */
-
-%{ %}
-
-%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT FUNCTION
-%token LPAREN RPAREN LBRACKET RBRACKET LBRACES RBRACES
-%token COLON DCOLON SEMICOLON COMMA SQUOTE DQUOTE
-%token AEQ LT LE GT GE EQ NEQ
-%token NOT SHARP AND OR LAND LOR LSL LSR TILDE
-%token DO END BREAK RETURN WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL
-%token PRINT
-%token EOF
-
-%token <string> NAME
-%token <string> ATTRIB
+%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT FUNCTION LPAREN RPAREN LBRACKET RBRACKET LBRACES RBRACES COLON DCOLON SEMICOLON COMMA SQUOTE DQUOTE EQ LT LE GT GE EQEQ NEQ NOT SHARP AND OR LAND LOR LSL LSR TILDE DO END BREAK RETURN WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL PRINT EOF
+%token UNARY_OP (* administrative token to distinguish unary minus from subtraction *)
+%token <string> NAME ATTRIB
 %token <Ast.value> VALUE
 
-%left MINUS PLUS
-%left MUL DIV
+%left OR
+%left AND
+%left LT GT LE GE NEQ EQEQ
+%left LOR
+%left TILDE
+%left LAND
+%left LSL LSR
+%right DOTDOT
+%left PLUS MINUS
+%left MUL DIV FLDIV MOD
+%left UNARY_OP (* unary operators *)
+%right EXP
 
-%nonassoc uminus
-// %nonassoc IF
-// %nonassoc ELSE
+%{
+
+open Ast
+
+%}
 
 %start chunk
 
 %type <Ast.block> chunk
-// %type <Ast.unop> unop
-// %type <Ast.binop> binop
-// %type <Ast.stmt> stmt
-%type <Ast.expr'> expr
-// %type <Ast.stmt list> stmt_list
-// %type <Ast.expr list> expr_list
+%type <Ast.expr'> exp_bis
 
 %%
 
-chunk : l=block EOF { l }
+let chunk :=
+  | ~ = block; EOF; <>
 
-block :
-     | l=list(stmt) { l }
+let block :=
+  | stat = list(stat); retstat = option(retstat); {
+    match retstat with
+    | None -> stat
+    | Some retstat -> stat @ [ retstat ]
+}
 
-var :
-     | n=NAME { Ast.VarName n }
-     | pe=prefixexp LBRACKET e=lexpr RBRACKET { Ast.VarTableField (pe, e) }
-     // | pe=prefixexp DOT n=NAME { Ast.VarTableFieldName (pe, n) }
-     // var.Name is syntactic sugar for var["Name"]
-     | pe=prefixexp DOT n=NAME { Ast.VarTableField (pe, (($startpos,$endpos), Ast.Evalue (Vstring n))) }
+let stat ==
+  | SEMICOLON; { Sempty }
+  | ~ = varlist; EQ; ~ = explist; <Sassign>
+  | ~ = functioncall; <SfunctionCall>
+  | ~ = label; <Slabel>
+  | BREAK; { Sbreak }
+  | GOTO; ~ = NAME; <Sgoto>
+  | DO; ~ = block; END; <Sblock>
+  | WHILE; ~ = exp; DO; ~ = block; END; <Swhile>
+  | REPEAT; ~ = block; UNTIL; ~ = exp; <Srepeat>
+  | IF; ~ = exp; THEN; ~ = block; ~ = list(elseif); ~ = option(preceded(ELSE, block)); END; <Sif>
+  | FOR; ~ = NAME; EQ; e1 = exp; COMMA; e2 = exp; ~ = option(preceded(COMMA, exp)); DO; ~ = block; END; <Sfor>
+  | FOR; ~ = namelist; IN; ~ = explist; DO; ~ = block; END; <Siterator>
+  | FUNCTION; ~ = funcname; ~ = funcbody; {
+    (* TODO: Sfunction *)
+    Sassign (
+      (* TODO: remove List.hd *)
+      [ VarName (List.hd funcname) ],
+      [ ($startpos, $endpos), (Efunctiondef funcbody) ]
+    )
+  }
+  | LOCAL; FUNCTION; name = NAME; ~ = funcbody; {
+    (* TODO: SfunctionLocal *)
+    SassignLocal (
+      [ name, None ],
+      [ ($startpos, $endpos), (Efunctiondef funcbody) ]
+    )
+  }
+  | LOCAL; ~ = attnamelist; ~ = loption(preceded(EQ, explist)); <SassignLocal>
+  (* TODO: remove hardcoded print function *)
+  | PRINT; LPAREN; ~ = exp; RPAREN; <Sprint>
 
-attrib :
-     | LT a=ATTRIB GT { a }
+(* TODO: remove this one *)
+let elseif :=
+  | ELSEIF; ~ = exp; THEN; ~ = block; <>
 
-attname :
-     | n=NAME oa=option(attrib) { (n, oa) }
+let attname :=
+  | ~ = NAME; ~ = option(attrib); <>
 
-lexpr :
-     | e=expr { (($startpos,$endpos), e) }
+let attnamelist :=
+  | ~ = separated_nonempty_list(COMMA, attname); <>
 
-exprlistopt :
-     | AEQ el=separated_nonempty_list(COMMA, lexpr) { el }
-     | { [] }
+let attrib :=
+  | LT; ~ = ATTRIB; GT; <>
 
-elseif :
-     | ELSEIF e=lexpr THEN b=block { (e, b) }
+let retstat :=
+  | RETURN; ~ = loption(explist); option(SEMICOLON); <Sreturn>
 
-elseop :
-     | ELSE b=block { b }
+let label :=
+  | DCOLON; ~ = NAME; DCOLON; <>
 
-cexpr :
-     | COMMA e=lexpr { e }
+let funcname :=
+  | names = separated_nonempty_list(DOT, NAME); _last_name = option(preceded(DCOLON, NAME)); {
+    names (* TODO: use last_name *)
+  }
 
-sempty :
-     | SEMICOLON { Ast.Sempty }
+let varlist :=
+  | ~ = separated_nonempty_list(COMMA, var); <>
 
-variadic :
-     | TDOT { Ast.Evariadic }
+let var :=
+  | ~ = NAME; <VarName>
+  | ~ = prefixexp; ~ = delimited(LBRACKET, exp, RBRACKET); <VarTableField>
+  | ~ = prefixexp; DOT; name = NAME; {
+    VarTableField (
+      prefixexp,
+      (($startpos, $endpos),
+       Evalue (Vstring name))
+    )
+  }
 
-lvariadic :
-     | v=variadic { (($startpos,$endpos), v) }
+let namelist :=
+  | ~ = separated_nonempty_list(COMMA, NAME); <>
 
-lvariadicopt :
-     | COMMA v=lvariadic { v }
+let explist :=
+  | ~ = separated_nonempty_list(COMMA, exp); <>
 
-parlist :
-     | nl=separated_list(COMMA, NAME) vo=option(lvariadicopt) { Ast.PLlist (nl, vo) }
-     | v=lvariadic { Ast.PLvariadic v }
+let exp_bis :=
+  | ~ = VALUE; <Evalue>
+  | TDOT; { Evariadic }
+  | ~ = functiondef; <Efunctiondef>
+  | ~ = prefixexp; <Eprefix>
+  | ~ = tableconstructor; <Etableconstructor>
+  | e1 = exp; ~ = binop; e2 = exp; <Ebinop>
+  | ~ = unop; ~ = exp; %prec UNARY_OP <Eunop>
 
-funcbody :
-     | LPAREN pl=parlist RPAREN b=block END { (pl, b) }
+let exp :=
+  | ~ = exp_bis; { (($startpos, $endpos), (exp_bis : expr')) : expr }
 
-prefixexp :
-     | v=var { Ast.PEvar v }
-     | fc=functioncall { Ast.PEfunctioncall fc }
-     | LPAREN e=lexpr RPAREN { Ast.PEexp e }
+let prefixexp :=
+  | ~ = var; <PEvar>
+  | ~ = functioncall; <PEfunctioncall>
+  | ~ = delimited(LPAREN, exp, RPAREN); <PEexp>
 
-arg_str_left :
-     | SQUOTE {}
-     | DQUOTE {}
-     | LBRACKET LBRACKET {}
+let functioncall :=
+  | ~ = prefixexp; ~ = args; <FCpreargs>
+  | ~ = prefixexp; COLON; ~ = NAME; ~ = args; <FCprename>
 
-arg_str_right :
-     | SQUOTE {}
-     | DQUOTE {}
-     | RBRACKET RBRACKET {}
+let args :=
+  | ~ = delimited(LPAREN, loption(explist), RPAREN); <Aexpl>
+  | ~ = tableconstructor; <Atable>
+  | SQUOTE; ~ = NAME; SQUOTE; <Astr>
+  | DQUOTE; ~ = NAME; DQUOTE; <Astr>
+  | LBRACKET; LBRACKET; ~ = NAME; RBRACKET; RBRACKET; <Astr>
+  (* TODO should be something like:
+  | ~ = LITERALSTRING; <Astr>
+  *)
 
-args :
-     | LPAREN el=separated_list(COMMA, lexpr) RPAREN { Ast.Aexpl el }
-     //| fl=fieldlist { Ast.Atable fl }           // TODO BUG: A cyclic grammar is ambiguous
-     | arg_str_left n=NAME arg_str_right { Ast.Astr n }
+let functiondef :=
+  | FUNCTION; ~ = funcbody; <>
 
-functioncall :
-     | pe=prefixexp a=args { Ast.FCpreargs (pe, a) }
-     | pe=prefixexp COLON n=NAME a=args { Ast.FCprename (pe, n, a) }
+let funcbody :=
+  | LPAREN; parlist = option(parlist); RPAREN; ~ = block; END; {
+    match parlist with
+    | None -> PLlist ([], None), block
+    | Some parlist -> parlist, block
+  }
 
-field :
-     | e=lexpr { Ast.Fexp e }
-     | n=NAME AEQ e=lexpr { Ast.Fname (n, e) }
-     | LBRACKET e1=lexpr RBRACKET AEQ e2=lexpr { Ast.Fcol (e1, e2) }
+let variadic_bis :=
+  | TDOT; { ($startpos, $endpos), Evariadic }
 
-fieldsep :
-     | COMMA {}
-     | SEMICOLON {}
+let parlist :=
+  | ~ = namelist; ~ = option(preceded(COMMA, variadic_bis)); <PLlist>
+  | ~ = variadic_bis; <PLvariadic>
 
-fieldlist :
-     | fl=separated_list(fieldsep, field) { fl }
+let tableconstructor :=
+  | LBRACES; ~ = loption(fieldlist); RBRACES; <>
 
-stmt :
-     | s=sempty { s }
-     | vl=separated_nonempty_list(COMMA, var) AEQ el=separated_nonempty_list(COMMA, lexpr) { Ast.Sassign (vl, el) }
-     | LOCAL nal=separated_nonempty_list(COMMA, attname) el=exprlistopt { Ast.SassignLocal (nal, el) }
-     | BREAK { Ast.Sbreak }
-     | RETURN el=separated_list(COMMA, lexpr) so=option(sempty) { Ast.Sreturn (el, so) }
-     | DCOLON n=NAME DCOLON { Ast.Slabel n }
-     | GOTO n=NAME { Ast.Sgoto n }
-     | DO b=block END { Ast.Sblock b }
-     | WHILE e=lexpr DO b=block END { Ast.Swhile (e, b) }
-     | REPEAT b=block UNTIL e=lexpr { Ast.Srepeat (b, e) }
-     | IF e=lexpr THEN b=block l=list(elseif) o=option(elseop) END { Ast.Sif (e, b, l, o) }
-     | FOR n=NAME AEQ e1=lexpr COMMA e2=lexpr oe=option(cexpr) DO b=block END { Ast.Sfor (n, e1, e2, oe, b) }
-     | FOR nl=separated_nonempty_list(COMMA, NAME) IN el=separated_nonempty_list(COMMA, lexpr) DO b=block END { Ast.Siterator (nl, el, b) }
-     // | FUNCTION n=NAME fb=funcbody { Ast.Sfunction (n, fb) }
-     // transform: f = function () body end
-     | FUNCTION n=NAME fb=funcbody { Ast.Sassign ([ Ast.VarName n ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
-     // | LOCAL FUNCTION n=NAME fb=funcbody { SfunctionLocal (n, fb) }
-     // transform: local f; f = function () body end -- TODO (actually, same as global function)
-     | LOCAL FUNCTION n=NAME fb=funcbody { Ast.SassignLocal ([ n, None ], [ (($startpos,$endpos), (Ast.Efunctiondef fb)) ]) }
-     | fc=functioncall { SfunctionCall fc }
-     | PRINT LPAREN e=lexpr RPAREN { Ast.Sprint e }          // tmp
-     ;
+let fieldlist :=
+  | ~ = separated_nonempty_list(fieldsep, field); option(fieldsep); <>
 
-unop :
-     | NOT { Ast.Unot }
-     | MINUS { Ast.Uminus }
-     | SHARP { Ast.Usharp }
-     | TILDE { Ast.Ulnot }
-     ;
+let field :=
+  | LBRACKET; e1 = exp; RBRACKET; EQ; e2 = exp; <Fcol>
+  | ~ = NAME; EQ; ~ = exp; <Fname>
+  | ~ = exp; <Fexp>
 
-binop :
-     | AND { Ast.Band }
-     | OR { Ast.Bor }
-     | PLUS { Ast.Badd }
-     | MINUS { Ast.Bsub }
-     | MUL { Ast.Bmul }
-     | DIV { Ast.Bdiv }
-     | FLDIV { Ast.Bfldiv }
-     | MOD { Ast.Bmod }
-     | EXP { Ast.Bexp }
-     | LAND { Ast.Bland }
-     | LOR { Ast.Blor }
-     | TILDE { Ast.Blxor }
-     | LSL { Ast.Blsl }
-     | LSR { Ast.Blsr }
-     | LT { Ast.Blt }
-     | LE { Ast.Ble }
-     | GT { Ast.Bgt }
-     | GE { Ast.Bge }
-     | EQ { Ast.Beq }
-     | NEQ { Ast.Bneq }
-     | DDOT { Ast.Bddot }
-     ;
+let fieldsep :=
+  | COMMA; { }
+  | SEMICOLON; { }
 
-expr :
-     | pe=prefixexp { Ast.Eprefix pe }
-     | v=VALUE { Ast.Evalue v }
-     | op=unop e=lexpr %prec uminus { Ast.Eunop (op, e) }
-     | e1=lexpr op=binop e2=lexpr { Ast.Ebinop (op, e1, e2) }
-     | v=variadic { v }
-     | FUNCTION fb=funcbody { Ast.Efunctiondef fb }
-     | LBRACES fl=fieldlist RBRACES { Ast.Etableconstructor fl }
-     | LPAREN e=expr RPAREN { e }
-     ;
+let binop :=
+  | AND; { Band }
+  | OR; { Bor }
+  | PLUS; { Badd }
+  | MINUS; { Bsub }
+  | MUL; { Bmul }
+  | DIV; { Bdiv }
+  | FLDIV; { Bfldiv }
+  | MOD; { Bmod }
+  | EXP; { Bexp }
+  | LAND; { Bland }
+  | LOR; { Blor }
+  | TILDE; { Blxor }
+  | LSL; { Blsl }
+  | LSR; { Blsr }
+  | LT; { Blt }
+  | LE; { Ble }
+  | GT; { Bgt }
+  | GE; { Bge }
+  | EQEQ; { Beq }
+  | NEQ; { Bneq }
+  | DDOT; { Bddot }
+
+let unop :=
+  | NOT; { Unot }
+  | MINUS; { Uminus }
+  | SHARP; { Usharp }
+  | TILDE; { Ulnot }
 
 %%

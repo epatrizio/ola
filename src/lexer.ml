@@ -112,12 +112,12 @@ let rec token buf =
   | '|' -> LOR
   | "<<" -> LSL
   | ">>" -> LSR
-  | '=' -> AEQ
+  | '=' -> EQ
   | '<' -> LT
   | "<=" -> LE
   | '>' -> GT
   | ">=" -> GE
-  | "==" -> EQ
+  | "==" -> EQEQ
   | "~=" -> NEQ
   | '.' -> DOT
   | ".." -> DDOT
