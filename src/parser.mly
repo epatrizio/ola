@@ -10,7 +10,7 @@
 %left TILDE
 %left LAND
 %left LSL LSR
-%right DOTDOT
+%right DDOT
 %left PLUS MINUS
 %left MUL DIV FLDIV MOD
 %left UNARY_OP (* unary operators *)

@@ -148,3 +148,11 @@ basic operations:
   42.
   1.
   0.
+  43
+  44
+  true
+  false
+  true
+  false
+  17.
+  25.

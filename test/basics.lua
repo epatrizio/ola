@@ -210,3 +210,17 @@ print(44 - "2")
 print("44" - 2.0)
 print(1%"2.0")
 print("1.0"//2.0)
+
+-- operator precedence
+
+print(1+21*2)     -- 43
+print((1+21)*2)   -- 44
+
+print(true and true or false and false)     -- true
+print(true and (true or false) and false)   -- false
+
+print(not false and true or false and not true)     -- true
+print(not false and (true or false) and not true)   -- false
+
+print(1+4^2)    -- 17
+print((1+4)^2)  -- 25

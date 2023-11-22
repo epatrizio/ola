@@ -246,7 +246,6 @@ and print_stmt fmt stmt =
     pp_print_string fmt name;
     Option.iter (fprintf fmt " %a " print_attrib) attrib_opt
   in
-  let _pp_stmt_opt fmt stmt_opt = Option.iter (print_stmt fmt) stmt_opt in
   match stmt with
   | Sempty -> fprintf fmt ""
   | Sassign (vl, lel) ->
@@ -263,7 +262,8 @@ and print_stmt fmt stmt =
       (pp_print_list ~pp_sep print_expr)
       el
   | Sbreak -> fprintf fmt "break@."
-  | Sreturn _ -> fprintf fmt "return TODO@."
+  | Sreturn el ->
+    fprintf fmt "return %a@." (pp_print_list ~pp_sep print_expr) el
   | Slabel n -> fprintf fmt "::%s::@." n
   | Sgoto n -> fprintf fmt "goto %s@." n
   | Sblock b -> fprintf fmt "do@.@[<v>%a@]end@." print_block b
