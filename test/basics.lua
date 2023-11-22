@@ -224,3 +224,5 @@ print(not false and (true or false) and not true)   -- false
 
 print(1+4^2)    -- 17
 print((1+4)^2)  -- 25
+
+-- end basic stuff

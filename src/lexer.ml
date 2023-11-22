@@ -159,7 +159,7 @@ let rec token buf =
 
 and comment buf =
   match%sedlex buf with
-  | newline -> token buf
+  | newline | eof -> token buf
   | any -> comment buf
   | _ ->
     let lxm = Sedlexing.Utf8.lexeme buf in
