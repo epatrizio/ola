@@ -8,10 +8,10 @@ let rec analyse_expr expr env =
   | loc, Eunop (op, e) ->
     let e, env = analyse_expr e env in
     ((loc, Eunop (op, e)), env)
-  | loc, Ebinop (op, e1, e2) ->
+  | loc, Ebinop (e1, op, e2) ->
     let e1, env = analyse_expr e1 env in
     let e2, env = analyse_expr e2 env in
-    ((loc, Ebinop (op, e1, e2)), env)
+    ((loc, Ebinop (e1, op, e2)), env)
   | loc, Evariadic -> ((loc, Evariadic), env)
   | loc, Efunctiondef (pl, b) ->
     let (pl, b), env = analyse_funcbody (pl, b) env in
@@ -160,16 +160,9 @@ and analyse_stmt stmt env =
     let nal, env = analyse_nal nal env in
     (SassignLocal (nal, el), env)
   | Sbreak -> (Sbreak, env)
-  | Sreturn (el, so) ->
+  | Sreturn el ->
     let el, env = analyse_el el env in
-    let so, env =
-      match so with
-      | None -> (None, env)
-      | Some s ->
-        let s, env = analyse_stmt s env in
-        (Some s, env)
-    in
-    (Sreturn (el, so), env)
+    (Sreturn el, env)
   | Slabel n -> (Slabel n, env)
   | Sgoto n -> (Sgoto n, env)
   | Sblock b ->

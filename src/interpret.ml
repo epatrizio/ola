@@ -11,7 +11,7 @@ exception Goto_catch of block_pointer * Env.t
 
 exception Break_catch of Env.t
 
-exception Return_catch of expr list * stmt option * Env.t
+exception Return_catch of expr list * Env.t
 
 exception Interpretation_error of location option * string
 
@@ -68,7 +68,7 @@ and interpret_arith_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   let v1, env = interpret_expr expr1 env in
   let v2, env = interpret_expr expr2 env in
   typecheck_expr
-    (loc1, Ebinop (binop, (loc1, Evalue v1), (loc2, Evalue v2)))
+    (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
     env;
   let v1 =
     match v1 with Vstring s -> number_of_string (Some loc1) s | v -> v
@@ -143,7 +143,7 @@ and interpret_bitwise_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   let v1, env = interpret_expr expr1 env in
   let v2, env = interpret_expr expr2 env in
   typecheck_expr
-    (loc1, Ebinop (binop, (loc1, Evalue v1), (loc2, Evalue v2)))
+    (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
     env;
   match (v1, v2) with
   | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
@@ -189,7 +189,7 @@ and interpret_rel_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env
   let v1, env = interpret_expr expr1 env in
   let v2, env = interpret_expr expr2 env in
   typecheck_expr
-    (loc1, Ebinop (binop, (loc1, Evalue v1), (loc2, Evalue v2)))
+    (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
     env;
   match (v1, v2) with
   | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
@@ -266,7 +266,7 @@ and interpret_sbinop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
   let v1, env = interpret_expr expr1 env in
   let v2, env = interpret_expr expr2 env in
   typecheck_expr
-    (loc1, Ebinop (Bddot, (loc1, Evalue v1), (loc2, Evalue v2)))
+    (loc1, Ebinop ((loc1, Evalue v1), Bddot, (loc2, Evalue v2)))
     env;
   begin
     match (v1, v2) with
@@ -364,14 +364,14 @@ and interpret_expr (loc, expr) env =
       | Vnumber (Nfloat f) -> (Vnumber (Ninteger (lnot (get_int f loc))), env)
       | _ -> assert false (* typing error *)
     end
-  | Ebinop (((Band | Bor) as op), e1, e2) -> interpret_bbinop_expr op e1 e2 env
-  | Ebinop (Bddot, e1, e2) -> interpret_sbinop_expr e1 e2 env
-  | Ebinop (((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e1, e2)
+  | Ebinop (e1, ((Band | Bor) as op), e2) -> interpret_bbinop_expr op e1 e2 env
+  | Ebinop (e1, Bddot, e2) -> interpret_sbinop_expr e1 e2 env
+  | Ebinop (e1, ((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e2)
     ->
     interpret_arith_binop_expr op e1 e2 env
-  | Ebinop (((Bland | Blor | Blxor | Blsl | Blsr) as op), e1, e2) ->
+  | Ebinop (e1, ((Bland | Blor | Blxor | Blsl | Blsr) as op), e2) ->
     interpret_bitwise_binop_expr op e1 e2 env
-  | Ebinop (((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e1, e2) ->
+  | Ebinop (e1, ((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e2) ->
     interpret_rel_binop_expr op e1 e2 env
   | Evariadic -> (Vnil (), env)
   | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env)
@@ -497,7 +497,7 @@ and interpret_fct value el env =
       let env = lists_args pl vall env in
       let env = interpret_block b env in
       (VfunctionReturn [], env)
-    with Return_catch (el, _so, env) -> (
+    with Return_catch (el, env) -> (
       match el with
       | [] -> (VfunctionReturn [], env)
       | [ e ] -> interpret_expr e env
@@ -540,7 +540,7 @@ and interpret_stmt stmt env =
     let vall, env = to_vall el env in
     lists_lassign nal vall env
   | Sbreak -> raise (Break_catch env)
-  | Sreturn (el, so) -> raise (Return_catch (el, so, env))
+  | Sreturn el -> raise (Return_catch (el, env))
   | Slabel _ -> env
   | Sgoto n -> raise (Goto_catch (Label n, env))
   | Sblock b -> interpret_block b env
@@ -614,14 +614,14 @@ and interpret_stmt stmt env =
         | Vnumber (Nfloat f) -> if f >= 0. then Ble else Bge
         | _ -> assert false (* call error *)
       in
-      (loc, Ebinop (op, (loc, Eprefix (PEvar (VarName n))), (loc, Evalue limit)))
+      (loc, Ebinop ((loc, Eprefix (PEvar (VarName n))), op, (loc, Evalue limit)))
     in
     let incr_cnt_stmt loc step =
       Sassign
         ( [ VarName n ]
         , [ ( loc
             , Ebinop
-                (Badd, (loc, Eprefix (PEvar (VarName n))), (loc, Evalue step))
+                ((loc, Eprefix (PEvar (VarName n))), Badd, (loc, Evalue step))
             )
           ] )
     in
@@ -655,8 +655,7 @@ and interpret_stmt stmt env =
       env )
 
 and interpret_block b env =
-  try List.fold_left (fun e stmt -> interpret_stmt stmt e) env b
-  with Return_catch (el, so, env) -> raise (Return_catch (el, so, env))
+  List.fold_left (fun e stmt -> interpret_stmt stmt e) env b
 
 let rec run ?(pt = Begin) chunk env =
   try
@@ -664,4 +663,4 @@ let rec run ?(pt = Begin) chunk env =
     interpret_block bl env
   with
   | Goto_catch (label, env) -> run ~pt:label chunk env
-  | Return_catch (_el, _so, env) -> env
+  | Return_catch (_el, env) -> env

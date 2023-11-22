@@ -64,7 +64,7 @@ and expr = location * expr'
 and expr' =
   | Evalue of value
   | Eunop of unop * expr
-  | Ebinop of binop * expr * expr
+  | Ebinop of expr * binop * expr
   | Evariadic
   | Efunctiondef of (parlist * block)
   | Eprefix of prefixexp
@@ -103,7 +103,7 @@ and stmt =
   | Sassign of var list * expr list
   | SassignLocal of (string * string option) list * expr list
   | Sbreak
-  | Sreturn of expr list * stmt option
+  | Sreturn of expr list
   | Slabel of string
   | Sgoto of string
   | Sblock of block
@@ -232,7 +232,7 @@ and print_expr fmt (_loc, expr) =
   | Eunop (uop, e) ->
     print_unop fmt uop;
     print_expr fmt e
-  | Ebinop (bop, e1, e2) ->
+  | Ebinop (e1, bop, e2) ->
     print_expr fmt e1;
     print_binop fmt bop;
     print_expr fmt e2
@@ -246,7 +246,7 @@ and print_stmt fmt stmt =
     pp_print_string fmt name;
     Option.iter (fprintf fmt " %a " print_attrib) attrib_opt
   in
-  let pp_stmt_opt fmt stmt_opt = Option.iter (print_stmt fmt) stmt_opt in
+  let _pp_stmt_opt fmt stmt_opt = Option.iter (print_stmt fmt) stmt_opt in
   match stmt with
   | Sempty -> fprintf fmt ""
   | Sassign (vl, lel) ->
@@ -263,10 +263,7 @@ and print_stmt fmt stmt =
       (pp_print_list ~pp_sep print_expr)
       el
   | Sbreak -> fprintf fmt "break@."
-  | Sreturn (el, so) ->
-    fprintf fmt "return %a%a@."
-      (pp_print_list ~pp_sep print_expr)
-      el pp_stmt_opt so
+  | Sreturn _ -> fprintf fmt "return TODO@."
   | Slabel n -> fprintf fmt "::%s::@." n
   | Sgoto n -> fprintf fmt "goto %s@." n
   | Sblock b -> fprintf fmt "do@.@[<v>%a@]end@." print_block b
