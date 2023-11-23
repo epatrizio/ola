@@ -27,24 +27,38 @@ let rec typecheck_arith_unop ((loc, _e) as expr) env =
   match t with
   | Tnumber Tinteger -> Ok (Tnumber Tinteger)
   | Tnumber Tfloat -> Ok (Tnumber Tfloat)
-  | Tstring ->
-    Ok (Tnumber Tinteger) (* or Tfloat - cast & check during interpretation *)
-  | Tnil -> error loc "attempt to perform arithmetic on a nil value"
-  | Tboolean -> error loc "attempt to perform arithmetic on a boolean value"
+  | Tstring -> Ok TnumberUndefined (* cast & check during interpretation *)
+  | Tnil -> error (Some loc) "attempt to perform arithmetic on a nil value"
+  | Tboolean ->
+    error (Some loc) "attempt to perform arithmetic on a boolean value"
+  | Tfunction ->
+    error (Some loc) "attempt to perform arithmetic on a function value"
+  | Ttable -> error (Some loc) "attempt to perform arithmetic on a table value"
+  | _ -> assert false (* call error *)
+
+and typecheck_sharp_unop ((loc, _e) as expr) env =
+  let* t = typecheck_expr expr env in
+  match t with
+  | Tstring -> Ok (Tnumber Tinteger)
+  | Ttable -> Ok (Tnumber Tinteger)
+  | Tnil -> error (Some loc) "attempt to get length of a nil value"
+  | Tboolean -> error (Some loc) "attempt to get length of a boolean value"
+  | Tnumber _ -> error (Some loc) "attempt to get length of a number value"
+  | Tfunction -> error (Some loc) "attempt to get length of a function value"
   | _ -> assert false (* call error *)
 
 and typecheck_bitwise_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
   match t with
-  | Tnumber Tinteger -> Ok (Tnumber Tinteger)
-  | Tnumber Tfloat ->
-    Ok (Tnumber Tfloat)
-    (* must be an integer (ex: 42.0) : check during interpretation *)
-  | Tnil -> error loc "attempt to perform bitwise operation on a nil value"
+  | Tnumber Tinteger | Tnumber Tfloat ->
+    Ok (Tnumber Tinteger)
+    (* must have an integer representation (ex: 42.0) : check during interpretation *)
+  | Tnil ->
+    error (Some loc) "attempt to perform bitwise operation on a nil value"
   | Tboolean ->
-    error loc "attempt to perform bitwise operation on a boolean value"
+    error (Some loc) "attempt to perform bitwise operation on a boolean value"
   | Tstring ->
-    error loc "attempt to perform bitwise operation on a string value"
+    error (Some loc) "attempt to perform bitwise operation on a string value"
   | _ -> assert false (* call error *)
 
 and typecheck_arith_binop binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2)
@@ -57,15 +71,17 @@ and typecheck_arith_binop binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2)
       (if binop = Bdiv || binop = Bexp then Tnumber Tfloat else Tnumber Tinteger)
   | Tnumber _, Tnumber _ -> Ok (Tnumber Tfloat)
   | Tstring, Tnumber _ ->
-    Ok (Tnumber Tinteger) (* or Tfloat - cast & check during interpretation *)
+    Ok TnumberUndefined (* cast & check during interpretation *)
   | Tnumber _, Tstring ->
-    Ok (Tnumber Tinteger) (* or Tfloat - cast & check during interpretation *)
+    Ok TnumberUndefined (* cast & check during interpretation *)
   | Tstring, Tstring ->
-    Ok (Tnumber Tinteger) (* or Tfloat - cast & check during interpretation *)
-  | Tnil, _ -> error loc1 "attempt to perform arithmetic on a nil value"
-  | _, Tnil -> error loc2 "attempt to perform arithmetic on a nil value"
-  | Tboolean, _ -> error loc1 "attempt to perform arithmetic on a boolean value"
-  | _, Tboolean -> error loc2 "attempt to perform arithmetic on a boolean value"
+    Ok TnumberUndefined (* cast & check during interpretation *)
+  | Tnil, _ -> error (Some loc1) "attempt to perform arithmetic on a nil value"
+  | _, Tnil -> error (Some loc2) "attempt to perform arithmetic on a nil value"
+  | Tboolean, _ ->
+    error (Some loc1) "attempt to perform arithmetic on a boolean value"
+  | _, Tboolean ->
+    error (Some loc2) "attempt to perform arithmetic on a boolean value"
   | _ -> assert false (* call error *)
 
 and typecheck_bitwise_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
@@ -73,16 +89,18 @@ and typecheck_bitwise_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   let* typ2 = typecheck_expr expr2 env in
   match (typ1, typ2) with
   | Tnumber _, Tnumber _ -> Ok (Tnumber Tinteger)
-  | Tnil, _ -> error loc1 "attempt to perform bitwise operation on a nil value"
-  | _, Tnil -> error loc2 "attempt to perform bitwise operation on a nil value"
+  | Tnil, _ ->
+    error (Some loc1) "attempt to perform bitwise operation on a nil value"
+  | _, Tnil ->
+    error (Some loc2) "attempt to perform bitwise operation on a nil value"
   | Tboolean, _ ->
-    error loc1 "attempt to perform bitwise operation on a boolean value"
+    error (Some loc1) "attempt to perform bitwise operation on a boolean value"
   | _, Tboolean ->
-    error loc2 "attempt to perform bitwise operation on a boolean value"
+    error (Some loc2) "attempt to perform bitwise operation on a boolean value"
   | Tstring, _ ->
-    error loc1 "attempt to perform bitwise operation on a string value"
+    error (Some loc1) "attempt to perform bitwise operation on a string value"
   | _, Tstring ->
-    error loc2 "attempt to perform bitwise operation on a string value"
+    error (Some loc2) "attempt to perform bitwise operation on a string value"
   | _ -> assert false (* call error *)
 
 and typecheck_rel_binop binop ((loc1, _e1) as expr1) ((_loc2, _e2) as expr2) env
@@ -94,17 +112,22 @@ and typecheck_rel_binop binop ((loc1, _e1) as expr1) ((_loc2, _e2) as expr2) env
   | _, _ -> (
     match binop with
     | Beq | Bneq -> Ok Tboolean
-    | _ -> error loc1 "attempt to compare two values with non correct types" )
+    | _ ->
+      error (Some loc1) "attempt to compare two values with non correct types" )
 
 and typecheck_str_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   let* typ1 = typecheck_expr expr1 env in
   let* typ2 = typecheck_expr expr2 env in
   match (typ1, typ2) with
   | (Tstring | Tnumber _), (Tstring | Tnumber _) -> Ok Tstring
-  | Tnil, _ -> error loc1 "attempt to concatenate a nil value"
-  | _, Tnil -> error loc2 "attempt to concatenate a nil value"
-  | Tboolean, _ -> error loc1 "attempt to concatenate a boolean value"
-  | _, Tboolean -> error loc2 "attempt to concatenate a boolean value"
+  | Tnil, _ -> error (Some loc1) "attempt to concatenate a nil value"
+  | _, Tnil -> error (Some loc1) "attempt to concatenate a nil value"
+  | Tboolean, _ -> error (Some loc1) "attempt to concatenate a boolean value"
+  | _, Tboolean -> error (Some loc2) "attempt to concatenate a boolean value"
+  | Tfunction, _ -> error (Some loc1) "attempt to concatenate a function value"
+  | _, Tfunction -> error (Some loc2) "attempt to concatenate a function value"
+  | Ttable, _ -> error (Some loc1) "attempt to concatenate a table value"
+  | _, Ttable -> error (Some loc2) "attempt to concatenate a table value"
   | _ -> assert false (* call error *)
 
 and typecheck_var var env =
@@ -112,7 +135,13 @@ and typecheck_var var env =
   | VarName n ->
     let v = Env.get_value n env in
     Ok (typecheck_value v)
-  | VarTableField (_pexp, _exp) -> Ok Tnil (* TODO *)
+  | VarTableField (pexp, ((l, _e) as _exp)) -> (
+    let* t = typecheck_prefixexp pexp env in
+    match t with
+    | Ttable -> Ok Ttable (* col table type check during interpretation *)
+    | Tfunction ->
+      Ok Tfunction (* function call type check during interpretation *)
+    | _ -> error (Some l) "attempt to access a non table value" )
 
 and typecheck_prefixexp pexp env =
   match pexp with
@@ -125,15 +154,7 @@ and typecheck_expr expr env =
   | Evalue v -> Ok (typecheck_value v)
   | Eunop (Unot, _) -> Ok Tboolean
   | Eunop (Uminus, e) -> typecheck_arith_unop e env
-  | Eunop (Usharp, ((l, _e) as e)) ->
-    let* typ = typecheck_expr e env in
-    begin
-      match typ with
-      | Tstring -> Ok (Tnumber Tinteger)
-      | Tnil | Tboolean | Tnumber _ ->
-        error l "attempt to perform #operator on a not supported type"
-      | _ -> error l "#operator on this type: to be implemented ..."
-    end
+  | Eunop (Usharp, e) -> typecheck_sharp_unop e env
   | Eunop (Ulnot, e) -> typecheck_bitwise_unop e env
   | Ebinop (_, Band, _) | Ebinop (_, Bor, _) ->
     Ok Tnil (* Nb. all types are possible! *)
@@ -145,10 +166,10 @@ and typecheck_expr expr env =
   | Ebinop (e1, ((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e2) ->
     typecheck_rel_binop op e1 e2 env
   | Ebinop (e1, Bddot, e2) -> typecheck_str_binop e1 e2 env
-  | Evariadic -> Ok Tnil (* TODO: OK ? *)
-  | Efunctiondef _ -> Ok Tfunction (* TODO: OK ? *)
+  | Evariadic -> Ok Tnil (* todo: ok? *)
+  | Efunctiondef _ -> Ok Tfunction
   | Eprefix pexp -> typecheck_prefixexp pexp env
-  | Etableconstructor _ -> Ok Ttable (* TODO: OK ? *)
+  | Etableconstructor _ -> Ok Ttable
 
 and typecheck_lexpr lexpr env =
   List.fold_left
@@ -158,15 +179,17 @@ and typecheck_lexpr lexpr env =
       Ok () )
     (Ok ()) lexpr
 
-and typecheck_functioncall _fc _env = Ok Tnil
-(* todo ?? *)
-(* and typecheck_functioncall (FCpreargs (((loc, _e) as e), el)) env =
-   let* typ = typecheck_expr e env in
-   match typ with
-   | Tfunction ->
-     let* () = typecheck_lexpr el env in
-     Ok Tnil
-   | _ -> error loc "attempt to call a not function value" *)
+and typecheck_functioncall fc env =
+  match fc with
+  | FCpreargs (PEvar v, _) ->
+    let t = typecheck_var v env in
+    begin
+      match t with
+      | Ok Tfunction -> Ok Tfunction
+      | Ok Ttable -> Ok Ttable (* col table type check during interpretation *)
+      | _ -> error None "attempt to call a non function value"
+    end
+  | _ -> assert false
 
 and typecheck_stmt stmt env =
   match stmt with
@@ -196,15 +219,13 @@ and typecheck_stmt stmt env =
       match ob with None -> Ok () | Some b -> typecheck_block b env
     end
   | Sfor (_n, e1, e2, oe, b) ->
-    let typecheck_init expr env =
+    let typecheck_init ((loc, _e) as expr) env =
       let* t = typecheck_expr expr env in
       match t with
       | Tnumber Tinteger | Tnumber Tfloat | Tstring ->
         (* string will be cast in float value during interpretation *)
         Ok ()
-      | _ ->
-        let loc, _e = expr in
-        error loc "bad 'for' initial, limit, step (number expected)"
+      | _ -> error (Some loc) "bad 'for' initial, limit, step (number expected)"
     in
     let* () = typecheck_init e1 env in
     let* () = typecheck_init e2 env in
@@ -215,15 +236,7 @@ and typecheck_stmt stmt env =
         typecheck_block b env
       | None -> typecheck_block b env
     end
-  | Siterator (_nl, _el, _b) ->
-    Ok ()
-    (* todo: to be implemented *)
-    (* | Sfunction (_n, (_pl, b)) ->
-       typecheck_block b env *)
-    (* todo: to be continued *)
-    (* | SfunctionLocal (_n, (_pl, b)) ->
-       typecheck_block b env *)
-    (* todo: to be continued *)
+  | Siterator (_nl, _el, _b) -> Ok ()
   | SfunctionCall fc ->
     let* (_ : Ast.typ) = typecheck_functioncall fc env in
     Ok ()

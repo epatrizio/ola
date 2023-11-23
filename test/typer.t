@@ -10,5 +10,8 @@ typer checks:
   20
   1str
   1.1str
+  1
+  nil
+  
   42
-  Interpretation error: File "typer.lua", line 66, char 10: Typing error: attempt to perform arithmetic on a boolean value
+  Interpretation error: File "typer.lua", line 88, char 10: Typing error: attempt to perform arithmetic on a boolean value

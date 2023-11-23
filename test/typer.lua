@@ -56,6 +56,28 @@ print(1.1 .. "str")     -- ok 1.1str
 -- print(nil .. "str")  -- ko
 -- print(true .. "str") -- ko
 
+function void()
+end
+t = {1}
+-- print(void .. "str") -- ko
+-- print(t .. "str")    -- ko
+
+print(t[1])       -- 1
+print(t[2])       -- nil
+-- print(tt[1])   -- ko (tt isn't a table)
+
+print(void())
+-- print(voidd()) -- ko (voidd isn't a function)
+
+-- print(-void)   -- ko
+-- print(-t)      -- ko
+
+-- print(#nil)    -- ko
+-- print(#42)     -- ko
+-- print(#42.)    -- ko
+-- print(#true)   -- ko
+-- print(#void)   -- ko
+
 if false then print(0)
 elseif false then print(0)
 elseif true then

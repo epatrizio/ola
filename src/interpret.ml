@@ -17,10 +17,16 @@ exception Interpretation_error of location option * string
 
 let error loc message = raise (Interpretation_error (loc, message))
 
-let typecheck_expr expr env =
-  match Typer.typecheck_expr expr env with
+let typecheck fct elt env =
+  match fct elt env with
   | Ok _t -> ()
-  | Error (loc, msg) -> error (Some loc) (Format.sprintf "Typing error: %s" msg)
+  | Error (loc, msg) -> error loc (Format.sprintf "Typing error: %s" msg)
+
+let typecheck_expr = typecheck Typer.typecheck_expr
+
+let typecheck_var = typecheck Typer.typecheck_var
+
+let typecheck_functioncall = typecheck Typer.typecheck_functioncall
 
 let rec block_from_pointer pt stmt_list =
   match (pt, stmt_list) with
@@ -47,8 +53,7 @@ let number_of_string loc str =
       error loc (Format.sprintf "attempt to perform on a string (%s) value" str)
     )
 
-let rec interpret_bbinop_expr binop ((_loc1, _) as expr1) ((_loc2, _) as expr2)
-  env =
+let rec interpret_bbinop_expr binop expr1 expr2 env =
   let v1, env = interpret_expr expr1 env in
   match binop with
   | Band -> begin
@@ -262,7 +267,7 @@ and interpret_rel_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env
   end
   | _ -> assert false (* todo: to be implemented *)
 
-and interpret_sbinop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
+and interpret_str_binop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
   let v1, env = interpret_expr expr1 env in
   let v2, env = interpret_expr expr2 env in
   typecheck_expr
@@ -298,14 +303,14 @@ and interpret_var v env =
   match v with
   | VarName n -> (Env.get_value n env, env)
   | VarTableField (pexp, exp) -> (
-    let t, env = interpret_prefixexp pexp env in
+    typecheck_var (VarTableField (pexp, exp)) env;
+    let v, env = interpret_prefixexp pexp env in
     let idx, env = interpret_expr exp env in
-    match t with
+    match v with
     | Vtable (_i, tbl) -> begin
       match Table.get idx tbl with None -> (Vnil (), env) | Some v -> (v, env)
     end
     | _ -> (Vnil (), env) )
-(* typing error - ok ? *)
 
 (* todo: other tableconstructor field type (Fname, Fcol) *)
 and interpret_field field env =
@@ -353,6 +358,9 @@ and interpret_expr (loc, expr) env =
     begin
       match v with
       | Vstring s -> (Vnumber (Ninteger (String.length s)), env)
+      | Vtable (_i, t) ->
+        (Vnumber (Ninteger (Table.len t)), env)
+        (* todo: not correct: Table.len isn't exactly Table.border *)
       | _ -> assert false (* typing error *)
     end
   | Eunop (Ulnot, ((l, _) as e)) ->
@@ -365,7 +373,7 @@ and interpret_expr (loc, expr) env =
       | _ -> assert false (* typing error *)
     end
   | Ebinop (e1, ((Band | Bor) as op), e2) -> interpret_bbinop_expr op e1 e2 env
-  | Ebinop (e1, Bddot, e2) -> interpret_sbinop_expr e1 e2 env
+  | Ebinop (e1, Bddot, e2) -> interpret_str_binop_expr e1 e2 env
   | Ebinop (e1, ((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e2)
     ->
     interpret_arith_binop_expr op e1 e2 env
@@ -506,14 +514,13 @@ and interpret_fct value el env =
         let vl = List.map (fun (_l, v) -> v) vll in
         (VfunctionReturn vl, env) )
   end
-  | _ -> error (*Some loc*) None "function call error!"
+  | _ -> assert false
 
 (* todo: finish ... (FCprename) *)
 and interpret_functioncall fc env =
+  typecheck_functioncall fc env;
   match fc with
-  (* | FCpreargs (PEexp ((loc, _) as e), Aexpl el) -> *)
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
-    (* let e, env = interpret_expr e env in *)
     let value = Env.get_value v env in
     interpret_fct value el env
   | FCpreargs (PEvar (VarTableField (pexp, exp)), Aexpl el) ->

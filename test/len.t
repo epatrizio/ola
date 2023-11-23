@@ -7,3 +7,7 @@ len operations:
   3123
   6
   11
+  5
+  2
+  6
+  3
