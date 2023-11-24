@@ -68,8 +68,11 @@ let integer = [%sedlex.regexp? Plus digit]
 
 let exp = [%sedlex.regexp? ('e' | 'E'), Opt ('-' | '+'), Plus digit]
 
-let float =
-  [%sedlex.regexp? Opt (Plus digit), Opt '.', Opt (Plus digit), Opt exp]
+let float1 = [%sedlex.regexp? Plus digit, Opt '.', Opt (Plus digit), Opt exp]
+
+let float2 = [%sedlex.regexp? Opt '.', Plus digit, Opt exp]
+
+let float = [%sedlex.regexp? float1 | float2]
 
 let str_double_quotes =
   [%sedlex.regexp? "\"", Star (Sub (any, "\"") | "\\\""), "\""]

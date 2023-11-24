@@ -80,6 +80,7 @@ and var =
   | VarName of string
   | VarTableField of prefixexp * expr
 (* | VarTableFieldName of prefixexp * string *)
+(* syntactic sugar: transform VarTableField in parser *)
 
 and args =
   | Aexpl of expr list
@@ -114,9 +115,9 @@ and stmt =
   | Sfor of string * expr * expr * expr option * block
   | Siterator of string list * expr list * block
   (* | Sfunction of funcname * funcbody *)
-  (* transform Sassign *)
+  (* syntactic sugar: transform Sassign in parser *)
   (* | SfunctionLocal of name * funcbody *)
-  (* transform SassignLocal *)
+  (* syntactic sugar: transform SassignLocal in parser *)
   | SfunctionCall of functioncall
   | Sprint of expr
 

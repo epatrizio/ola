@@ -17,6 +17,8 @@ len operations:
   nil
   val1
   val2
+  val2
+  val3
   my_print:
   val1
   my_print:
