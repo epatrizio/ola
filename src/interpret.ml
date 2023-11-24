@@ -28,6 +28,8 @@ let typecheck_var = typecheck Typer.typecheck_var
 
 let typecheck_functioncall = typecheck Typer.typecheck_functioncall
 
+let typecheck_stmt = typecheck Typer.typecheck_stmt
+
 let rec block_from_pointer pt stmt_list =
   match (pt, stmt_list) with
   | Begin, _ -> stmt_list
@@ -602,7 +604,8 @@ and interpret_stmt stmt env =
       | _ -> interpret_block b env
     end
   | Sfor (n, e1, e2, oe, b) ->
-    let init_val expr env =
+    typecheck_stmt (Sfor (n, e1, e2, oe, b)) env;
+    let init_val ((l, _e) as expr) env =
       let v, env = interpret_expr expr env in
       match v with
       | Vnumber (Ninteger i) -> (Vnumber (Ninteger i), env)
@@ -610,7 +613,12 @@ and interpret_stmt stmt env =
       | Vstring s -> begin
         match float_of_string_opt s with
         | Some f -> (Vnumber (Nfloat f), env)
-        | None -> assert false (* typing error *)
+        | None ->
+          error (Some l)
+            (Format.sprintf
+               "Typing error: bad 'for' limit (number expected, got string \
+                '%s' without float representation)"
+               s )
       end
       | _ -> assert false (* typing error *)
     in

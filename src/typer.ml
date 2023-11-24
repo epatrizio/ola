@@ -1,8 +1,8 @@
 (* Typer *)
 
 (* Note :
-   Now typecheck is performed during interpretation.
-   So, statement typecheck is no longer used.
+   Now typecheck is performed during interpretation on each expressions.
+   So, statement typecheck is no longer used, except Sfor for init values.
 *)
 
 open Ast
@@ -121,7 +121,7 @@ and typecheck_str_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   match (typ1, typ2) with
   | (Tstring | Tnumber _), (Tstring | Tnumber _) -> Ok Tstring
   | Tnil, _ -> error (Some loc1) "attempt to concatenate a nil value"
-  | _, Tnil -> error (Some loc1) "attempt to concatenate a nil value"
+  | _, Tnil -> error (Some loc2) "attempt to concatenate a nil value"
   | Tboolean, _ -> error (Some loc1) "attempt to concatenate a boolean value"
   | _, Tboolean -> error (Some loc2) "attempt to concatenate a boolean value"
   | Tfunction, _ -> error (Some loc1) "attempt to concatenate a function value"
@@ -194,16 +194,16 @@ and typecheck_functioncall fc env =
 and typecheck_stmt stmt env =
   match stmt with
   | Sempty -> Ok ()
-  | Sassign (_il, _el) -> Ok () (* todo: to be implemented *)
-  | SassignLocal (_nal, _elo) -> Ok () (* todo: to be implemented *)
+  | Sassign _ -> Ok ()
+  | SassignLocal _ -> Ok ()
   | Sbreak -> Ok ()
-  | Sreturn _el -> Ok ()
+  | Sreturn _ -> Ok ()
   | Slabel _ -> Ok ()
   | Sgoto _ -> Ok ()
   | Sblock b -> typecheck_block b env
   | Swhile (_e, b) ->
-    (* Doc: The condition expression _e of a control structure can return any value *)
     typecheck_block b env
+    (* Doc: The condition expression _e of a control structure can return any value *)
   | Srepeat (b, _e) -> typecheck_block b env (* Memo: Same Swhile *)
   | Sif (_e, b, ebl, ob) ->
     (* Memo: Same Swhile *)
@@ -218,7 +218,7 @@ and typecheck_stmt stmt env =
     begin
       match ob with None -> Ok () | Some b -> typecheck_block b env
     end
-  | Sfor (_n, e1, e2, oe, b) ->
+  | Sfor (_n, e1, e2, oe, _b) ->
     let typecheck_init ((loc, _e) as expr) env =
       let* t = typecheck_expr expr env in
       match t with
@@ -230,13 +230,9 @@ and typecheck_stmt stmt env =
     let* () = typecheck_init e1 env in
     let* () = typecheck_init e2 env in
     begin
-      match oe with
-      | Some e ->
-        let* () = typecheck_init e env in
-        typecheck_block b env
-      | None -> typecheck_block b env
+      match oe with Some e -> typecheck_init e env | None -> Ok ()
     end
-  | Siterator (_nl, _el, _b) -> Ok ()
+  | Siterator (_nl, _el, _b) -> Ok () (* todo: to be implemented *)
   | SfunctionCall fc ->
     let* (_ : Ast.typ) = typecheck_functioncall fc env in
     Ok ()

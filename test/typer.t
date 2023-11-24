@@ -13,5 +13,9 @@ typer checks:
   1
   nil
   
+  while_void
+  while_t
+  while_42
+  repeat
   42
-  Interpretation error: File "typer.lua", line 88, char 10: Typing error: attempt to perform arithmetic on a boolean value
+  Interpretation error: File "typer.lua", line 110, char 10: Typing error: attempt to perform arithmetic on a boolean value

@@ -78,6 +78,28 @@ print(void())
 -- print(#true)   -- ko
 -- print(#void)   -- ko
 
+-- Doc: The condition expression _e of a control structure can return any value
+while nil do  -- idem false
+  print("while")
+  break
+end
+while void do
+  print("while_void")
+  break
+end
+while t do
+  print("while_t")
+  break
+end
+while 42 do
+  print("while_42")
+  break
+end
+repeat
+  print("repeat")
+until void
+--
+
 if false then print(0)
 elseif false then print(0)
 elseif true then
@@ -88,6 +110,6 @@ elseif true then
   print(a+b)
 else print(0) end
 
--- for i = nil,10,1 do      -- ko (todo)
+-- for i = nil,"not_float",true do      -- ko
 --   print(i)
 -- end
