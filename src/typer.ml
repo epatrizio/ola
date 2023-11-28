@@ -20,6 +20,7 @@ let rec typecheck_value value =
   | Vstring _ -> Tstring
   | Vfunction _ -> Tfunction
   | VfunctionReturn vl -> TfunctionReturn (List.map typecheck_value vl)
+  | VfunctionStdLib _ -> TfunctionStdLib
   | Vtable _ -> Ttable
 
 let rec typecheck_arith_unop ((loc, _e) as expr) env =
@@ -187,6 +188,7 @@ and typecheck_functioncall fc env =
       match t with
       | Ok Tfunction -> Ok Tfunction
       | Ok Ttable -> Ok Ttable (* col table type check during interpretation *)
+      | Error (l, mes) -> error l mes
       | _ -> error None "attempt to call a non function value"
     end
   | _ -> assert false

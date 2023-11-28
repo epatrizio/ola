@@ -1,5 +1,7 @@
 (* Environment *)
 
+let () = Random.self_init ()
+
 module SMap = Map.Make (String)
 
 type locals = string SMap.t
@@ -51,3 +53,28 @@ let set_value n v env =
 let get_locals env = env.locals
 
 let with_locals env locals = { env with locals }
+
+let stdlib_load env =
+  let add_empty_lib name env =
+    let values =
+      SMap.add name (Ast.Vtable (Random.bits32 (), Table.empty)) env.values
+    in
+    let globals = SMap.add name name env.globals in
+    { env with values; globals }
+  in
+  let add_function_lib lib_name fct_name fct env =
+    let v = get_value lib_name env in
+    match v with
+    | Vtable (i, tbl) ->
+      let tbl =
+        Table.add (Ast.Vstring fct_name)
+          (Ast.VfunctionStdLib (Random.bits32 (), fct))
+          tbl
+      in
+      set_value lib_name (Vtable (i, tbl)) env
+    | _ -> assert false
+  in
+  let env = add_empty_lib "basic" env in
+  let env = add_empty_lib "math" env in
+  let env = add_function_lib "math" "abs" Lua_stdlib_math.abs env in
+  env

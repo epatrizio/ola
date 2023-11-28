@@ -325,8 +325,8 @@ and interpret_expr (loc, expr) env =
   match expr with
   | Evalue
       ( ( Vnil ()
-        | Vboolean _ | Vnumber _ | Vstring _ | Vfunction _ | VfunctionReturn _
-        | Vtable _ ) as v ) ->
+        | Vboolean _ | Vnumber _ | Vstring _ | Vfunction _ | VfunctionStdLib _
+        | VfunctionReturn _ | Vtable _ ) as v ) ->
     (v, env)
   | Eunop (Unot, ((l, _) as e)) ->
     let v, env = interpret_expr e env in
@@ -407,6 +407,7 @@ and set_var v value env =
   match v with
   | VarName n -> Env.set_value n value env
   | VarTableField (pexp, exp) -> (
+    typecheck_var (VarTableField (pexp, exp)) env;
     let t, env = interpret_prefixexp pexp env in
     let idx, env = interpret_expr exp env in
     match t with
@@ -516,6 +517,13 @@ and interpret_fct value el env =
         let vl = List.map (fun (_l, v) -> v) vll in
         (VfunctionReturn vl, env) )
   end
+  | VfunctionStdLib (_i, fct) ->
+    let vall, env = to_vall el env in
+    let vall = List.map (fun (_l, v) -> v) vall in
+    begin
+      try (VfunctionReturn (fct vall), env)
+      with Lua_stdlib.Stdlib_error mes -> error None mes
+    end
   | _ -> assert false
 
 (* todo: finish ... (FCprename) *)

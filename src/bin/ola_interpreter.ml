@@ -28,7 +28,8 @@ let process source_code_file debug =
       Ast.print_block Format.std_formatter chunk
     end;
     print_endline "interprete ...";
-    let chunk, env = Scope.analysis chunk Env.empty in
+    let env = Env.stdlib_load Env.empty in
+    let chunk, env = Scope.analysis chunk env in
     if debug then begin
       print_endline "debug mode: source after scope analysis view ...";
       Ast.print_block Format.std_formatter chunk

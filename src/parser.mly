@@ -53,15 +53,14 @@ let stat ==
   | FOR; ~ = NAME; EQ; e1 = exp; COMMA; e2 = exp; ~ = option(preceded(COMMA, exp)); DO; ~ = block; END; <Sfor>
   | FOR; ~ = namelist; IN; ~ = explist; DO; ~ = block; END; <Siterator>
   | FUNCTION; ~ = funcname; ~ = funcbody; {
-    (* TODO: Sfunction *)
+    (* Sfunction syntactic sugar *)
     Sassign (
-      (* TODO: remove List.hd *)
-      [ VarName (List.hd funcname) ],
+      [ VarName (String.concat "." funcname) ],
       [ ($startpos, $endpos), (Efunctiondef funcbody) ]
     )
   }
   | LOCAL; FUNCTION; name = NAME; ~ = funcbody; {
-    (* TODO: SfunctionLocal *)
+    (* SfunctionLocal syntactic sugar *)
     SassignLocal (
       [ name, None ],
       [ ($startpos, $endpos), (Efunctiondef funcbody) ]
@@ -91,8 +90,10 @@ let label :=
   | DCOLON; ~ = NAME; DCOLON; <>
 
 let funcname :=
-  | names = separated_nonempty_list(DOT, NAME); _last_name = option(preceded(DCOLON, NAME)); {
-    names (* TODO: use last_name *)
+  | names = separated_nonempty_list(DOT, NAME); last_name = option(preceded(DCOLON, NAME)); {
+    match last_name with
+    | None -> names
+    | Some lname -> names @ [ lname ]
   }
 
 let varlist :=

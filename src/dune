@@ -1,6 +1,16 @@
 (library
  (name ola)
- (modules ast env interpret lexer parser scope table typer)
+ (modules
+  ast
+  env
+  interpret
+  lexer
+  lua_stdlib
+  lua_stdlib_math
+  parser
+  scope
+  table
+  typer)
  (preprocess
   (pps sedlex.ppx))
  (libraries sedlex menhirLib))

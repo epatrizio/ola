@@ -17,3 +17,5 @@ val set_value : string -> Ast.value -> t -> t
 val get_locals : t -> locals
 
 val with_locals : t -> locals -> t
+
+val stdlib_load : t -> t
