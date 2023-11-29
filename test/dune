@@ -7,6 +7,7 @@
   function.lua
   goto.lua
   len.lua
+  stdlib_basic.lua
   stdlib_math.lua
   table.lua
   typer.lua))

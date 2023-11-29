@@ -52,7 +52,16 @@ let get_locals env = env.locals
 
 let with_locals env locals = { env with locals }
 
-let stdlib_load lib env =
+let stdlib_load (lib_basic, lib) env =
+  let add_basic func_name fct env =
+    let values =
+      SMap.add func_name
+        (Ast.VfunctionStdLib (Random.bits32 (), fct))
+        env.values
+    in
+    let globals = SMap.add func_name func_name env.globals in
+    { env with values; globals }
+  in
   let add_empty_lib name env =
     let values =
       SMap.add name (Ast.Vtable (Random.bits32 (), Table.empty)) env.values
@@ -72,13 +81,21 @@ let stdlib_load lib env =
       set_value lib_name (Vtable (i, tbl)) env
     | _ -> assert false
   in
-  Lua_stdlib.LibMap.fold
-    (fun lib_name l e ->
-      let e = add_empty_lib lib_name e in
-      Lua_stdlib.LibMap.fold
-        (fun func_name f e -> add_function_lib lib_name func_name f e)
-        l e )
-    lib env
+  let env =
+    Lua_stdlib.LibMap.fold
+      (fun func_name f e -> add_basic func_name f e)
+      lib_basic env
+  in
+  let env =
+    Lua_stdlib.LibMap.fold
+      (fun lib_name l e ->
+        let e = add_empty_lib lib_name e in
+        Lua_stdlib.LibMap.fold
+          (fun func_name f e -> add_function_lib lib_name func_name f e)
+          l e )
+      lib env
+  in
+  env
 
 let empty () =
   let values = SMap.empty in

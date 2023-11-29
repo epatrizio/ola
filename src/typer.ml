@@ -187,6 +187,7 @@ and typecheck_functioncall fc env =
     begin
       match t with
       | Ok Tfunction -> Ok Tfunction
+      | Ok TfunctionStdLib -> Ok TfunctionStdLib
       | Ok Ttable -> Ok Ttable (* col table type check during interpretation *)
       | Error (l, mes) -> error l mes
       | _ -> error None "attempt to call a non function value"

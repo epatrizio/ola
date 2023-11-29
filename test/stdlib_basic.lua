@@ -1,0 +1,8 @@
+assert(true)
+assert(42)
+assert(42.42, "message")
+assert("42")
+assert({}, "message")
+-- assert(nil)
+-- assert(false)
+assert(4 < 2, "message")

@@ -6,6 +6,7 @@
   interpret
   lexer
   lua_stdlib
+  lua_stdlib_basic
   lua_stdlib_common
   lua_stdlib_math
   parser

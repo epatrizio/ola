@@ -8,8 +8,9 @@ let lib =
       LibMap.add lib_name l lib
     | None -> assert false
   in
+  let lib_basic = LibMap.empty in
+  let lib_basic = LibMap.add "assert" Lua_stdlib_basic.asert lib_basic in
   let lib = LibMap.empty in
-  let lib = LibMap.add "basic" LibMap.empty lib in
   let lib = LibMap.add "math" LibMap.empty lib in
   let lib = add_func "math" "abs" Lua_stdlib_math.abs lib in
-  lib
+  (lib_basic, lib)
