@@ -522,7 +522,7 @@ and interpret_fct value el env =
     let vall = List.map (fun (_l, v) -> v) vall in
     begin
       try (VfunctionReturn (fct vall), env)
-      with Lua_stdlib.Stdlib_error mes -> error None mes
+      with Lua_stdlib_common.Stdlib_error mes -> error None mes
     end
   | _ -> assert false
 

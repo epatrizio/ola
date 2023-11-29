@@ -2,7 +2,7 @@ type t
 
 type locals
 
-val empty : t
+val empty : unit -> t
 
 val get_name : string -> t -> string * t
 
@@ -17,5 +17,3 @@ val set_value : string -> Ast.value -> t -> t
 val get_locals : t -> locals
 
 val with_locals : t -> locals -> t
-
-val stdlib_load : t -> t

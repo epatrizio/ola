@@ -1,10 +1,15 @@
-exception Stdlib_error of string
+module LibMap = Map.Make (String)
 
-let error message = raise (Stdlib_error message)
-
-let float_of_string str =
-  match float_of_string_opt str with
-  | Some f -> f
-  | None ->
-    error
-      (Format.sprintf "math stdlib, string '%s' has no float representation" str)
+let lib =
+  let add_func lib_name func_name func lib =
+    match LibMap.find_opt lib_name lib with
+    | Some l ->
+      let l = LibMap.add func_name func l in
+      LibMap.add lib_name l lib
+    | None -> assert false
+  in
+  let lib = LibMap.empty in
+  let lib = LibMap.add "basic" LibMap.empty lib in
+  let lib = LibMap.add "math" LibMap.empty lib in
+  let lib = add_func "math" "abs" Lua_stdlib_math.abs lib in
+  lib
