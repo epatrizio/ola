@@ -26,6 +26,15 @@ basics functions:
   610
   nil
   print::
+  arg
+  
+  print::
+  arg
+  
+  print::
+  arg
+  
+  print::
   42
   local function
   print::

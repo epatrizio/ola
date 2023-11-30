@@ -88,7 +88,8 @@ and var =
 and args =
   | Aexpl of expr list
   | Atable of field list
-  | Astr of string
+(* | Astr of string *)
+(* syntactic sugar: transform Aexpl in parser *)
 
 and functioncall =
   | FCpreargs of prefixexp * args
@@ -222,7 +223,7 @@ and print_args fmt args =
   match args with
   | Aexpl el -> fprintf fmt "(%a)" (pp_print_list ~pp_sep print_expr) el
   | Atable fl -> print_fieldlist fmt fl
-  | Astr s -> pp_print_string fmt s
+(* | Astr s -> pp_print_string fmt s *)
 
 and print_functioncall fmt fc =
   match fc with

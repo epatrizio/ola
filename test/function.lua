@@ -83,6 +83,15 @@ end
 print(p)                -- nil
 --print(print_fct)      -- Type = function > print = "function: id"
 
+-- single string arg
+-- doc §3.4.10 https://www.lua.org/manual/5.4/manual.html#3.4.10
+
+print(print_fct("arg"))
+-- print(print_fct"arg")  -- bug (syntax error)
+print(print_fct('arg'))
+-- print(print_fct'arg')  -- bug (syntax error)
+print(print_fct[[arg]])
+
 -- local function (current block scope)
 
 local function add_f(a, b, fun)

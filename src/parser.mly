@@ -140,11 +140,17 @@ let functioncall :=
 let args :=
   | ~ = delimited(LPAREN, loption(explist), RPAREN); <Aexpl>
   | ~ = tableconstructor; <Atable>
-  | SQUOTE; ~ = NAME; SQUOTE; <Astr>
-  | DQUOTE; ~ = NAME; DQUOTE; <Astr>
-  | LBRACKET; LBRACKET; ~ = NAME; RBRACKET; RBRACKET; <Astr>
-  (* TODO should be something like:
-  | ~ = LITERALSTRING; <Astr>
+  | SQUOTE; name = NAME; SQUOTE; {
+      Aexpl [ (($startpos, $endpos), Evalue (Vstring name)) ]
+    }
+  | DQUOTE; name = NAME; DQUOTE; {
+      Aexpl [ (($startpos, $endpos), Evalue (Vstring name)) ]
+    }
+  | LBRACKET; LBRACKET; name = NAME; RBRACKET; RBRACKET; {
+      Aexpl [ (($startpos, $endpos), Evalue (Vstring name)) ]
+    }
+  (* Astr syntactic sugar
+  f'string' (or f"string" or f[[string]]) is syntactic sugar for f('string')
   *)
 
 let functiondef :=

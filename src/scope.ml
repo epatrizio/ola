@@ -98,9 +98,6 @@ and analyse_args args env =
   | Atable fl ->
     let fl, env = analyse_fieldlist fl env in
     (Atable fl, env)
-  | Astr s ->
-    let fresh_s, env = Env.get_name s env in
-    (Astr fresh_s, env)
 
 and analyse_prefixexp pexp env =
   match pexp with
