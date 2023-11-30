@@ -73,6 +73,8 @@ end
 
 if true then return end   -- useful for stoping a script during the flow
 
---return
+-- doc §3.4.4 https://www.lua.org/manual/5.4/manual.html#3.3.4
+-- return           -- ok with lua interpreter. Syntax error with ola
+-- do return end    -- transform in "do return end" as mentioned in doc
 
 print(0)
