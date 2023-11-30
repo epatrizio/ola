@@ -521,8 +521,13 @@ and interpret_fct value el env =
     let vall, env = to_vall el env in
     let vall = List.map (fun (_l, v) -> v) vall in
     begin
-      try (VfunctionReturn (fct vall), env)
-      with Lua_stdlib_common.Stdlib_error mes -> error None mes
+      try
+        let ret = fct vall in
+        (VfunctionReturn ret, env)
+      with
+      | Lua_stdlib_common.Stdlib_typing_error msg ->
+        error None (Format.sprintf "Typing error: %s" msg)
+      | Lua_stdlib_common.Stdlib_error msg -> error None msg
     end
   | _ -> assert false
 
