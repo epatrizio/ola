@@ -78,3 +78,7 @@ if true then return end   -- useful for stoping a script during the flow
 -- do return end    -- transform in "do return end" as mentioned in doc
 
 print(0)
+
+break                    -- Bug: must generate a syntax error (break outside loop - for / while / repeat)
+do break end             -- same
+if true then break end   -- same

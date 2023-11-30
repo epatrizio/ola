@@ -33,10 +33,10 @@ let chunk :=
   | ~ = block; EOF; <>
 
 let block :=
-  | stat = list(stat); retstat = option(retstat); {
+  | stats = list(stat); retstat = option(retstat); {
     match retstat with
-    | None -> stat
-    | Some retstat -> stat @ [ retstat ]
+    | None -> stats
+    | Some retstat -> stats @ [ retstat ]
 }
 
 let stat ==
