@@ -1,3 +1,5 @@
+print(nil, true, 1, 2.2, "string")
+
 print(type(nil))
 print(type(true))
 print(type(4 < 2))

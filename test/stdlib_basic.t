@@ -1,6 +1,7 @@
 basic stdlib:
   $ dune exec ola stdlib_basic.lua
   interprete ...
+  nil, true, 1, 2.2, string
   nil
   boolean
   boolean

@@ -29,9 +29,9 @@ let asert v =
   [ Vnil () ]
 
 let print v =
-  List.iter
-    (fun v -> Format.fprintf Format.std_formatter "%s@." (tostring_value v))
-    v;
+  let s = List.map (fun v -> tostring_value v) v in
+  Format.pp_print_list ~pp_sep Format.pp_print_string Format.std_formatter s;
+  Format.fprintf Format.std_formatter "@.";
   [ Vnil () ]
 
 let typ v =
