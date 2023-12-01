@@ -672,15 +672,6 @@ and interpret_stmt stmt env =
   | SfunctionCall fc ->
     let _v, env = interpret_functioncall fc env in
     env
-  | Sprint e -> (
-    let v, _env = interpret_expr e env in
-    match v with
-    | Vstring s ->
-      print_endline s;
-      env
-    | v ->
-      Format.fprintf Format.std_formatter "%a@." print_value v;
-      env )
 
 and interpret_block b env =
   List.fold_left (fun e stmt -> interpret_stmt stmt e) env b

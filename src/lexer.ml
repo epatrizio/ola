@@ -150,7 +150,6 @@ let rec token buf =
   | "elseif" -> ELSEIF
   | "goto" -> GOTO
   | "function" -> FUNCTION
-  | "print" -> PRINT
   | "--" -> comment buf
   | "--[[" -> multiline_comment buf
   | name -> NAME (Sedlexing.Utf8.lexeme buf)

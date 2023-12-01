@@ -123,7 +123,6 @@ and stmt =
   (* | SfunctionLocal of name * funcbody *)
   (* syntactic sugar: transform SassignLocal in parser *)
   | SfunctionCall of functioncall
-  | Sprint of expr
 
 and block = stmt list
 
@@ -301,7 +300,6 @@ and print_stmt fmt stmt =
      fprintf fmt "local function %a%a" print_var (Name name)
        print_funcbody fbody *)
   | SfunctionCall fc -> print_functioncall fmt fc
-  | Sprint e -> fprintf fmt "print(%a)@." print_expr e
 
 and print_block fmt block =
   let pp_sep _fmt () = () in

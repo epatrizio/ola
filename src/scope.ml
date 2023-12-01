@@ -216,9 +216,6 @@ and analyse_stmt stmt env =
   | SfunctionCall fc ->
     let fc, env = analyse_functioncall fc env in
     (SfunctionCall fc, env)
-  | Sprint e ->
-    let e, env = analyse_expr e env in
-    (Sprint e, env)
 
 and analyse_block b env =
   match b with

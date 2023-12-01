@@ -239,9 +239,6 @@ and typecheck_stmt stmt env =
   | SfunctionCall fc ->
     let* (_ : Ast.typ) = typecheck_functioncall fc env in
     Ok ()
-  | Sprint e ->
-    let* (_ : Ast.typ) = typecheck_expr e env in
-    Ok ()
 
 and typecheck_block b env =
   List.fold_left
