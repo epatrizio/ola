@@ -103,11 +103,9 @@ let var :=
   | ~ = NAME; <VarName>
   | ~ = prefixexp; ~ = delimited(LBRACKET, exp, RBRACKET); <VarTableField>
   | ~ = prefixexp; DOT; name = NAME; {
-    VarTableField (
-      prefixexp,
-      (($startpos, $endpos),
-       Evalue (Vstring name))
-    )
+      VarTableField (
+        prefixexp, (($startpos, $endpos), Evalue (Vstring name))
+      )
   }
 
 let namelist :=
@@ -163,12 +161,12 @@ let funcbody :=
     | Some parlist -> parlist, block
   }
 
-let variadic_bis :=
+let variadic :=
   | TDOT; { ($startpos, $endpos), Evariadic }
 
 let parlist :=
-  | ~ = namelist; ~ = option(preceded(COMMA, variadic_bis)); <PLlist>
-  | ~ = variadic_bis; <PLvariadic>
+  | ~ = namelist; ~ = option(preceded(COMMA, variadic)); <PLlist>
+  | ~ = variadic; <PLvariadic>
 
 let tableconstructor :=
   | LBRACES; ~ = loption(fieldlist); RBRACES; <>
