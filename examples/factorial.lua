@@ -1,5 +1,5 @@
 --[[ 
-First classic example : Factorial
+classic example : Factorial
 multiple implementations
 --]]
 

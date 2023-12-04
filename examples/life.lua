@@ -1,5 +1,5 @@
 --[[ 
-Third classic example : Conway's Game of Life
+classic example : Conway's Game of Life
 --]]
 
 h, w = 35, 25
