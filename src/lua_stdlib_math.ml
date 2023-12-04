@@ -11,6 +11,16 @@ let abs v =
     Lua_stdlib_common.typing_error
       "bad argument #1 to math.abs function (number expected)"
 
+(* todo: specification not fully met *)
+let random v =
+  match v with
+  | [] -> [ Vnumber (Nfloat (Random.float 1.)) ]
+  | [ Vnumber (Ninteger 0) ] -> [ Vnumber (Ninteger (Random.bits ())) ]
+  | [ Vnumber (Ninteger i) ] -> [ Vnumber (Ninteger (Random.int i)) ]
+  | [ Vnumber (Ninteger _i); Vnumber (Ninteger j) ] ->
+    [ Vnumber (Ninteger (Random.int j)) ]
+  | _ -> assert false
+
 let trigo func v =
   match v with
   | [ Vnumber (Ninteger i) ] -> [ Vnumber (Nfloat (func (float_of_int i))) ]

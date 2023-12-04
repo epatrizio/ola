@@ -8,7 +8,9 @@
   lua_stdlib
   lua_stdlib_basic
   lua_stdlib_common
+  lua_stdlib_io
   lua_stdlib_math
+  lua_stdlib_os
   parser
   scope
   table

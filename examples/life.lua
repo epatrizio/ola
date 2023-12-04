@@ -2,23 +2,28 @@
 Third classic example : Conway's Game of Life
 --]]
 
-h, w = 20, 20
+h, w = 35, 25
 life_screen = {}
 
 function life_screen_init()
+  local rand_val = function(bound)
+    local r = math.random(bound)
+    return r == 1
+  end
   local matrix = {}
   -- create matrix
   for i = 1, h do
     matrix[i] = {}
     for j = 1, w do
-      matrix[i][j] = false
+      -- matrix[i][j] = false
+      matrix[i][j] = rand_val(6)   -- automatic (random) init
     end
   end
-  -- active cells
-  matrix[11][10] = true
-  matrix[12][9]  = true
-  matrix[12][10] = true
-  matrix[12][11] = true
+  -- active cells - manual init
+  -- matrix[11][10] = true
+  -- matrix[12][9]  = true
+  -- matrix[12][10] = true
+  -- matrix[12][11] = true
   return matrix
 end
 
@@ -28,17 +33,15 @@ end
 
 function life_screen_print()
   local print_cell = function(cell_content)
-    if cell_content then print("| X ") else print("|   ") end
-    -- if cell_content then io.write("| X ") else io.write("|   ") end
+    if cell_content then io.write("| X ") else io.write("|   ") end
   end
   local print_line = function(line)
     for j = 1, w do
       print_cell(line[j])
     end
-    print("\n")
+    io.write("\n")
   end
-  -- io.write("\027[2J")
-  print("\027[2J")
+  io.write("\027[2J")
   for i = 1, h do
     print_line(life_screen[i])
   end
@@ -103,7 +106,7 @@ life_screen = life_screen_init()
 loop = 1
 while loop <= 100 do
   life_screen_print()
-  -- os.execute("sleep 0.3")
+  os.execute("sleep 0.2")
   life_screen_step()
   loop = loop + 1
 end
