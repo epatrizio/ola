@@ -16,3 +16,5 @@ to manipulate the `ola` interpreter in more advanced contexts than test suite.
 
 *Nb. The Game of Life calculations and processes are correct, but the display is not.*
 *Todo: `io.write` and `os.execute` better implementation.*
+
+*Nb. Examples are part of the cram test suite*

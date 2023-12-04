@@ -1,0 +1,5 @@
+(cram
+ (deps
+  even_odd.lua
+  factorial.lua
+  fibonacci.lua))
