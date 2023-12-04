@@ -11,6 +11,10 @@ to manipulate the `ola` interpreter in more advanced contexts than test suite.
 - [Fibonacci sequence multiple implementation](https://en.wikipedia.org/wiki/Fibonacci_sequence) :
 `dune exec ola ./examples/fibonacci.lua`
 
+- [Tower of Hanoi](https://en.wikipedia.org/wiki/Tower_of_Hanoi)
+([Warning: multiple recursive calls bug](https://github.com/epatrizio/ola/issues/14)) :
+`dune exec ola ./examples/hanoi.lua`
+
 - [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) :
 `dune exec ola ./examples/life.lua`
 
