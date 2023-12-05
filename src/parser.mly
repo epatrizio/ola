@@ -1,4 +1,4 @@
-%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT FUNCTION LPAREN RPAREN LBRACKET RBRACKET LBRACES RBRACES COLON DCOLON SEMICOLON COMMA SQUOTE DQUOTE EQ LT LE GT GE EQEQ NEQ NOT SHARP AND OR LAND LOR LSL LSR TILDE DO END BREAK RETURN WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL EOF
+%token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT FUNCTION LPAREN RPAREN LBRACKET RBRACKET LBRACES RBRACES COLON DCOLON SEMICOLON COMMA EQ LT LE GT GE EQEQ NEQ NOT SHARP AND OR LAND LOR LSL LSR TILDE DO END BREAK RETURN WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL EOF
 %token UNARY_OP (* administrative token to distinguish unary minus from subtraction *)
 %token <string> NAME ATTRIB
 %token <Ast.value> VALUE
@@ -13,7 +13,7 @@
 %right DDOT
 %left PLUS MINUS
 %left MUL DIV FLDIV MOD
-%left UNARY_OP (* unary operators *)
+%nonassoc UNARY_OP (* unary operators *)
 %right EXP
 
 %{
@@ -136,11 +136,8 @@ let functioncall :=
 let args :=
   | ~ = delimited(LPAREN, loption(explist), RPAREN); <Aexpl>
   | ~ = tableconstructor; <Atable>
-  | SQUOTE; name = NAME; SQUOTE; {
-      Aexpl [ (($startpos, $endpos), Evalue (Vstring name)) ]
-    }
-  | DQUOTE; name = NAME; DQUOTE; {
-      Aexpl [ (($startpos, $endpos), Evalue (Vstring name)) ]
+  | v = VALUE; {
+      Aexpl [ (($startpos, $endpos), Evalue v) ]
     }
   | LBRACKET; LBRACKET; name = NAME; RBRACKET; RBRACKET; {
       Aexpl [ (($startpos, $endpos), Evalue (Vstring name)) ]

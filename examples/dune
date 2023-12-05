@@ -1,5 +1,2 @@
 (cram
- (deps
-  even_odd.lua
-  factorial.lua
-  fibonacci.lua))
+ (deps even_odd.lua factorial.lua fibonacci.lua))

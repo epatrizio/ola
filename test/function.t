@@ -27,13 +27,14 @@ basics functions:
   nil
   print::
   arg
-  
   print::
   arg
-  
   print::
   arg
-  
+  print::
+  arg
+  print::
+  arg
   print::
   42
   local function
