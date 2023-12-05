@@ -92,6 +92,16 @@ print_fct('arg')
 print_fct'arg'
 print_fct[[arg]]
 
+function add(x)
+  return function(n)
+    return x + n
+  end
+end
+
+local add2 = add(2)
+-- print(add2)          -- Type = function > print = "function: id" (ok)
+-- print(add2(40))      -- bug (closure)
+
 -- local function (current block scope)
 
 local function add_f(a, b, fun)
@@ -111,7 +121,7 @@ end
 
 -- variadic functions
 
---function var1(..., a)  -- memo: must be incorrect
+--function var1(..., a)  -- memo: must be incorrect (ok)
 --function var1(a, ...)  -- todo: bug (syntax error)
 function var1(a)
   print_fct(a)
