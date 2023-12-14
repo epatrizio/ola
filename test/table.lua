@@ -1,11 +1,15 @@
 table1 = {}
 -- print(table1)        -- table id (ok)
 
+-- table1 = {;}         -- syntax error
+table1 = {1, 2; 3;}     -- ok (end separator and ',' & ';' combined separators)
+-- table1 = {1, 2; 3;,} -- syntax error (double end separator)
+
 function id(e)
   return e
 end
 
-table1 = {1, "2", 1+2, nil, true, {11;22;{111,222,333,444}}, id}
+table1 = {1, "2", 1+2, nil, true, {11;22;{111,222,333,444}}, id;}
 print(table1[1])
 print(table1[2])
 print(table1[3])

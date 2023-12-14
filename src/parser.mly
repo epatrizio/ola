@@ -164,10 +164,11 @@ let parlist :=
   | ~ = variadic; <PLvariadic>
 
 let tableconstructor :=
-  | LBRACES; ~ = loption(fieldlist); RBRACES; <>
+  | LBRACES; ~ = loption(opt_endsep_nonempty_list(fieldsep, field)); RBRACES; <>
 
-let fieldlist :=
-  | ~ = separated_nonempty_list(fieldsep, field); option(fieldsep); <>
+let opt_endsep_nonempty_list(sep, elt) :=
+  | x = elt; option(sep); { [ x ] }
+  | x = elt; sep; xs = opt_endsep_nonempty_list(sep, elt); { x :: xs }
 
 let field :=
   | LBRACKET; e1 = exp; RBRACKET; EQ; e2 = exp; <Fcol>
