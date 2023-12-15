@@ -122,7 +122,7 @@ end
 -- variadic functions
 
 --function var1(..., a)  -- memo: must be incorrect (ok)
---function var1(a, ...)  -- todo: bug (syntax error)
+--function var1(a, ...)  -- todo: syntax ok, interpretation to be implemented
 function var1(a)
   print_fct(a)
 end

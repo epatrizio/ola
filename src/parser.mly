@@ -160,8 +160,16 @@ let variadic :=
   | TDOT; { ($startpos, $endpos), Evariadic }
 
 let parlist :=
-  | ~ = namelist; ~ = option(preceded(COMMA, variadic)); <PLlist>
-  | ~ = variadic; <PLvariadic>
+  | l = opt_endelt_nonempty_list(COMMA, NAME, variadic); {
+     match l with
+     | ([], Some v) -> PLvariadic v
+     | (nl, v) -> PLlist (nl, v)
+  }
+
+let opt_endelt_nonempty_list(sep, elt, opt_elt) :=
+  | e = opt_elt; { ([], Some e) }
+  | e = elt; { ([ e ], None) }
+  | e = elt; sep; lsy = opt_endelt_nonempty_list(sep, elt, opt_elt); { (e :: (fst lsy), (snd lsy)) }
 
 let tableconstructor :=
   | LBRACES; ~ = loption(opt_endsep_nonempty_list(fieldsep, field)); RBRACES; <>
