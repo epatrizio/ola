@@ -33,7 +33,7 @@ basic operations:
   -42
   -42
   -1
-  -4
+  2
   -38
   -1
   -4
@@ -110,6 +110,10 @@ basic operations:
   4.
   -1.0763
   inf
+  true
+  true
+  true
+  true
   0
   0
   3

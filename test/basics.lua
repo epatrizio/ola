@@ -64,7 +64,7 @@ print(-42)      -- unary operator
 -- priority
 print(-40-2)    -- -42
 print(1+2-4)    -- -1
-print(1-2+3)    -- 2    KO (-4)
+print(1-2+3)    -- 2
 print(-(40-2))  -- -38
 print(1+(2-4))  -- -1
 print(1-(2+3))  -- -4
@@ -159,6 +159,13 @@ print(-10.0123//-2.234)
 print(-10.0123%-2.234)
 -- print(1//0)  -- todo error div by 0
 print(1.//0)    -- inf
+
+-- precedence
+
+print(6 == 4 + 2) -- true
+print(4 + 2 == 6) -- true
+print(0 ~= 4 % 3) -- true
+print(4 % 3 ~= 0) -- true
 
 -- bitwise
 

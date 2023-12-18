@@ -187,7 +187,7 @@ let fieldsep :=
   | COMMA; { }
   | SEMICOLON; { }
 
-let binop :=
+%inline binop :
   | AND; { Band }
   | OR; { Bor }
   | PLUS; { Badd }
