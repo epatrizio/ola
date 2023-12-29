@@ -181,17 +181,20 @@ and typecheck_lexpr lexpr env =
     (Ok ()) lexpr
 
 and typecheck_functioncall fc env =
+  let typ_check t =
+    match t with
+    | Ok Tfunction -> Ok Tfunction
+    | Ok TfunctionStdLib -> Ok TfunctionStdLib
+    | Ok Ttable -> Ok Ttable (* col table type check during interpretation *)
+    | Error (l, mes) -> error l mes
+    | _ -> error None "attempt to call a non function value"
+  in
   match fc with
   | FCpreargs (PEvar v, _) ->
-    let t = typecheck_var v env in
-    begin
-      match t with
-      | Ok Tfunction -> Ok Tfunction
-      | Ok TfunctionStdLib -> Ok TfunctionStdLib
-      | Ok Ttable -> Ok Ttable (* col table type check during interpretation *)
-      | Error (l, mes) -> error l mes
-      | _ -> error None "attempt to call a non function value"
-    end
+    let t = typecheck_var v env in typ_check t
+  | FCpreargs (PEfunctioncall fc, _) -> typecheck_functioncall fc env
+  | FCpreargs (PEexp e, _) ->
+    let t = typecheck_expr e env in typ_check t
   | _ -> assert false
 
 and typecheck_stmt stmt env =

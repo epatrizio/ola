@@ -550,6 +550,9 @@ and interpret_functioncall fc env =
       end
       | _ -> assert false (* typing error *)
     end
+  | FCpreargs (PEexp e, Aexpl el) ->
+    let v, env = interpret_expr e env in
+    interpret_fct v el env
   | _ -> assert false
 
 and interpret_stmt stmt env =

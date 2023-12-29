@@ -35,6 +35,8 @@ basics functions:
   arg
   print::
   arg
+  hello
+  hello
   print::
   42
   local function

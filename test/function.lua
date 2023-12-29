@@ -92,6 +92,21 @@ print_fct('arg')
 print_fct'arg'
 print_fct[[arg]]
 
+-- function return function
+
+local function hello()
+  return function ()
+    print("hello")
+  end
+end
+
+local h = hello()
+h()
+-- hello()()
+(hello())()
+
+-- closure
+
 function add(x)
   return function(n)
     return x + n
