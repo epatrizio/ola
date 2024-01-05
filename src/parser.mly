@@ -117,6 +117,7 @@ let exp_bis :=
   | TDOT; { Evariadic }
   | ~ = functiondef; <Efunctiondef>
   | ~ = prefixexp; <Eprefix>
+  | e = delimited(LPAREN, exp, RPAREN); { Eprefix (PEexp e) }
   | ~ = tableconstructor; <Etableconstructor>
   | e1 = exp; ~ = binop; e2 = exp; <Ebinop>
   | ~ = unop; ~ = exp; %prec UNARY_OP <Eunop>
@@ -127,7 +128,7 @@ let exp :=
 let prefixexp :=
   | ~ = var; <PEvar>
   | ~ = functioncall; <PEfunctioncall>
-  | ~ = delimited(LPAREN, exp, RPAREN); <PEexp>
+  // | ~ = delimited(LPAREN, exp, RPAREN); <PEexp>  (* moved to exp_bis *)
 
 let functioncall :=
   | ~ = prefixexp; ~ = args; <FCpreargs>

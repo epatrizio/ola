@@ -511,7 +511,7 @@ and interpret_fct value el env =
     with Return_catch (el, env) -> (
       match el with
       | [] -> (VfunctionReturn [], env)
-      | [ e ] -> interpret_expr e env
+      | [ e ] -> interpret_expr e env (* shortcut: directly consider it's a value *)
       | el ->
         let vll, env = to_vall el env in
         let vl = List.map (fun (_l, v) -> v) vll in
@@ -529,6 +529,13 @@ and interpret_fct value el env =
         error None (Format.sprintf "Typing error: %s" msg)
       | Lua_stdlib_common.Stdlib_error msg -> error None msg
     end
+  | VfunctionReturn vl -> begin
+    match vl with
+    | [] -> error None "Typing error: attempt to call a nil value"
+    | [ v ] -> interpret_fct v el env
+    | v :: _vl  -> interpret_fct v el env
+    end
+  | Vnil _ -> error None "Typing error: attempt to call a nil value"
   | _ -> assert false
 
 (* todo: finish ... (FCprename) *)
@@ -552,6 +559,9 @@ and interpret_functioncall fc env =
     end
   | FCpreargs (PEexp e, Aexpl el) ->
     let v, env = interpret_expr e env in
+    interpret_fct v el env
+  | FCpreargs (PEfunctioncall fc, Aexpl el) ->
+    let v, env = interpret_functioncall fc env in
     interpret_fct v el env
   | _ -> assert false
 

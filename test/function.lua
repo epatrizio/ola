@@ -102,8 +102,8 @@ end
 
 local h = hello()
 h()
--- hello()()
-(hello())()
+hello()()
+-- (hello())()    -- OK (Typing error: attempt to call a nil value)
 
 -- closure
 
