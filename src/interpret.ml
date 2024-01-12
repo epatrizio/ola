@@ -314,13 +314,18 @@ and interpret_var v env =
     end
     | _ -> (Vnil (), env) )
 
-(* todo: other tableconstructor field type (Fname, Fcol) *)
 and interpret_field field env =
   match field with
-  | Fexp exp -> interpret_expr exp env
-  | Fname (_s, _exp) -> (Vnil (), env)
-  | Fcol (_exp1, _exp2) -> (Vnil (), env)
-
+  | Fexp exp ->
+    let v, env = interpret_expr exp env in
+    ((Vnil (), v), env)
+  | Fname (n, exp) ->
+    let v, env = interpret_expr exp env in
+    ((Vstring n, v), env)
+  | Fcol (exp1, exp2) -> 
+    let v1, env = interpret_expr exp1 env in
+    let v2, env = interpret_expr exp2 env in
+    ((v1, v2), env)
 and interpret_expr (loc, expr) env =
   match expr with
   | Evalue
@@ -390,8 +395,10 @@ and interpret_expr (loc, expr) env =
     let table, _i, env =
       List.fold_left
         (fun (tbl, idx, ev) f ->
-          let v, ev = interpret_field f ev in
-          (Table.add (Vnumber (Ninteger idx)) v tbl, idx + 1, ev) )
+          let (v_idx, v_val), ev = interpret_field f ev in
+          match v_idx with
+          | Vnil () -> (Table.add (Vnumber (Ninteger idx)) v_val tbl, idx + 1, ev)
+          | v_idx -> (Table.add v_idx v_val tbl, idx, ev) )
         (Table.empty, 1, env) fl
     in
     (Vtable (Random.bits32 (), table), env)

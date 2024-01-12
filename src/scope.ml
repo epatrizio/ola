@@ -50,10 +50,10 @@ and analyse_fieldlist fl env =
       let fl, env = analyse_fieldlist fl env in
       (Fexp e :: fl, env)
     | Fname (n, e) ->
-      let fresh_n, env = Env.get_name n env in
+      (* n should not be freshed: tbl.x > tbl["x"] *)
       let e, env = analyse_expr e env in
       let fl, env = analyse_fieldlist fl env in
-      (Fname (fresh_n, e) :: fl, env)
+      (Fname (n, e) :: fl, env)
     | Fcol (e1, e2) ->
       let e1, env = analyse_expr e1 env in
       let e2, env = analyse_expr e2 env in

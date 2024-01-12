@@ -27,3 +27,19 @@ len operations:
   0
   nil
   42
+  0
+  true
+  x
+  true
+  y
+  true
+  1
+  true
+  1
+  true
+  52
+  true
+  23
+  true
+  45
+  true
