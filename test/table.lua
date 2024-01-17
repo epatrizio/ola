@@ -105,3 +105,33 @@ print(tbl1[30])
 print(tbl1[30] == tbl1[30])
 print(tbl1[4])
 print(tbl1[4] == tbl1[4])
+
+-- return function
+
+local function f()
+  return 1, 2, 3
+end
+
+local tbl3 = {0, f()}
+print(tbl3[1])    -- 0
+print(tbl3[2])    -- 1
+print(tbl3[3])    -- 2
+print(tbl3[4])    -- 3
+print(tbl3[5])    -- nil
+
+local tbl4 = {f(), 0}
+print(tbl4[1])    -- 1
+print(tbl4[2])    -- 0
+print(tbl4[3])    -- nil
+
+local function g()
+  return
+end
+
+local tbl5 = {0, g()}
+print(tbl5[1])    -- 0
+print(tbl5[2])    -- nil
+
+local tbl6 = {g(), 0}
+print(tbl6[1])    -- nil
+print(tbl6[2])    -- 0

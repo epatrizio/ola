@@ -43,3 +43,15 @@ len operations:
   true
   45
   true
+  0
+  1
+  2
+  3
+  nil
+  1
+  0
+  nil
+  0
+  nil
+  nil
+  0

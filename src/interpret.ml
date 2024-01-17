@@ -326,6 +326,45 @@ and interpret_field field env =
     let v1, env = interpret_expr exp1 env in
     let v2, env = interpret_expr exp2 env in
     ((v1, v2), env)
+
+and tableconstructor tbl idx fl env =
+  let tbl_add_rec id v tbl idx fl env =
+    match id with
+    | Vnil () ->
+      let t = Table.add (Vnumber (Ninteger idx)) v tbl in
+      tableconstructor t (idx + 1) fl env
+    | v_idx ->
+      let t = Table.add v_idx v tbl in tableconstructor t idx fl env
+  in
+  match fl with
+  | [] -> tbl, env
+  | [ f ] ->
+    let (v_idx, v_val), env = interpret_field f env in
+    begin match v_val with
+    | VfunctionReturn vl ->
+      let tbl, _i, env = List.fold_left
+        (fun (t, id, ev) v ->
+          match v_idx with
+          | Vnil () -> Table.add (Vnumber (Ninteger id)) v t, id + 1, ev
+          | v_idx -> Table.add v_idx v t, id, ev)
+        (tbl, idx, env) vl in
+      tbl, env
+    | v -> begin match v_idx with
+      | Vnil () -> Table.add (Vnumber (Ninteger idx)) v tbl, env
+      | v_idx -> Table.add v_idx v tbl, env
+      end
+    end
+  | f :: fl ->
+    let (v_idx, v_val), env = interpret_field f env in
+    begin match v_val with
+    | VfunctionReturn vl ->
+      begin match vl with
+      | [] -> tbl_add_rec v_idx (Vnil ()) tbl idx fl env
+      | v :: _vl -> tbl_add_rec v_idx v tbl idx fl env
+      end
+    | v -> tbl_add_rec v_idx v tbl idx fl env
+    end
+
 and interpret_expr (loc, expr) env =
   match expr with
   | Evalue
@@ -392,15 +431,7 @@ and interpret_expr (loc, expr) env =
   | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
   | Etableconstructor fl ->
-    let table, _i, env =
-      List.fold_left
-        (fun (tbl, idx, ev) f ->
-          let (v_idx, v_val), ev = interpret_field f ev in
-          match v_idx with
-          | Vnil () -> (Table.add (Vnumber (Ninteger idx)) v_val tbl, idx + 1, ev)
-          | v_idx -> (Table.add v_idx v_val tbl, idx, ev) )
-        (Table.empty, 1, env) fl
-    in
+    let table, env = tableconstructor Table.empty 1 fl env in
     (Vtable (Random.bits32 (), table), env)
 
 and set_var v value env =
