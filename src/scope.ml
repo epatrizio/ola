@@ -197,14 +197,28 @@ and analyse_stmt stmt env =
         (Some e, env_loc)
     in
     let b, env_loc = analyse_block b env_loc in
-
     let locals = Env.get_locals env in
     let env = Env.with_locals env_loc locals in
-
     (Sfor (fresh_n, e1, e2, oe, b), env)
   | Siterator (nl, el, b) ->
-    (* todo: to be implemented *)
-    (Siterator (nl, el, b), env)
+    let fresh_nl, env_loc =
+      List.fold_left
+        (fun (nl, e) n ->
+          let fresh_n, env_loc = Env.add_local n e in
+          (nl @ [ fresh_n ], env_loc) )
+        ([], env) nl
+    in
+    let analysed_el, env_loc =
+      List.fold_left
+        (fun (el, e) exp ->
+          let analysed_e, env_loc = analyse_expr exp e in
+          (el @ [ analysed_e ], env_loc) )
+        ([], env_loc) el
+    in
+    let b, env_loc = analyse_block b env_loc in
+    let locals = Env.get_locals env in
+    let env = Env.with_locals env_loc locals in
+    (Siterator (fresh_nl, analysed_el, b), env)
   (* | Sfunction (n, fb) ->
      let fresh_n, env = Env.get_funcname n env in
      let fb, env = analyse_funcbody fb env in

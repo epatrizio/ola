@@ -238,7 +238,24 @@ and typecheck_stmt stmt env =
     begin
       match oe with Some e -> typecheck_init e env | None -> Ok ()
     end
-  | Siterator (_nl, _el, _b) -> Ok () (* todo: to be implemented *)
+  | Siterator (_nl, el, _b) ->
+    let typecheck_e ((loc, _e) as expr) env =
+      let* t = typecheck_expr expr env in
+      match t with
+      | Tfunction -> Ok ()
+      | TfunctionReturn tl ->
+        begin match tl with
+        | [ Tfunction ] | [ TfunctionStdLib ] -> Ok ()
+        | Tfunction :: _el | TfunctionStdLib :: _el -> Ok ()
+        | _ -> error (Some loc) "bad 'for iterator' (iterator function, expected)"
+        end
+      | _ -> error (Some loc) "bad 'for iterator' (iterator function, expected)"
+    in
+    begin match el with
+    | [ e ] -> typecheck_e e env
+    | e :: _el -> typecheck_e e env
+    | [] -> assert false (* syntax error *)
+    end
   | SfunctionCall fc ->
     let* (_ : Ast.typ) = typecheck_functioncall fc env in
     Ok ()

@@ -113,3 +113,7 @@ else print(0) end
 -- for i = nil,"not_float",true do      -- ko
 --   print(i)
 -- end
+
+-- for i, n in 42 do   -- ko
+--   print(i, n)
+-- end

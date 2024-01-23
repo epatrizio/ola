@@ -717,7 +717,51 @@ and interpret_stmt stmt env =
     interpret_stmt
       (Swhile (cond_expr l1 limit step env, b @ [ incr_cnt_stmt l1 step ]))
       env
-  | Siterator (_nl, _el, _b) -> env (* todo: to be implemented *)
+  | Siterator (nl, el, b) ->
+    typecheck_stmt (Siterator (nl, el, b)) env;
+    (* 4 values: iterator function, state, an initial value for the control variable, and a closing value. *)
+    let vl, env =
+      List.fold_left
+        (fun (vl, ev) ex ->
+          let v, ev = interpret_expr ex ev in
+          match v with
+          | VfunctionReturn l -> vl @ l, ev
+          | v -> (vl @ [ v ], ev) )
+        ([], env) el
+    in
+    (* runtime additional check *)
+    if List.length vl < 3 then
+      error None "Typing error: bad 'for iterator' construction (bad element number in 'in' argument)";
+    let (loc, _e) = List.nth el 0 in
+    let iterator_func = List.nth vl 0 in
+    let state = List.nth vl 1 in
+    let ctrl_var = List.nth vl 2 in
+    begin match ctrl_var with
+    | ctrl_var ->
+      let iterator_func_param = [loc, Evalue state; loc, Evalue ctrl_var] in
+      let v, env = interpret_fct iterator_func iterator_func_param env in
+      let ctrl_var, env =
+        match v with
+        | VfunctionReturn vl ->
+          begin match vl with
+          | [] -> Vnil (), env
+          | [ v ] -> v, Env.set_value (List.nth nl 0) v env
+          | v1 :: v2 :: _tl ->
+            let env = Env.set_value (List.nth nl 0) v1 env in
+            match List.nth_opt nl 1 with
+            | None -> v1, env
+            | Some n -> let env = Env.set_value n v2 env in v1, env
+          end
+        | v -> v, Env.set_value (List.nth nl 0) v env
+      in
+      match ctrl_var with
+      | Vnil () -> env (* stop condition *)
+      | ctrl_var -> 
+        let env = interpret_block b env in
+        interpret_stmt
+          (Siterator (nl, [loc, Evalue iterator_func; loc, Evalue state; loc, Evalue ctrl_var], b))
+          env
+    end
   (* | Sfunction (_n, _fb) -> env *)
   (* | SfunctionLocal (_n, _fb) -> env *)
   | SfunctionCall fc ->
