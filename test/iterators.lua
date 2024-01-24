@@ -22,3 +22,23 @@ for i, n in squares(5) do
 end
 
 -- Stateful iterators - TODO: to be implemented
+-- https://github.com/epatrizio/ola/issues/18 (Issue bug closure impl)
+
+-- local array = {"elt1", "elt2", "elt3"}
+
+-- function iterator(collection)
+--   local index = 0
+--   local count = #collection
+--   -- The closure function is returned
+--   return function ()
+--     index = index + 1
+--     if index <= count then
+--       -- return the current element of the iterator
+--       return collection[index]
+--     end
+--   end
+-- end
+
+-- for elt in iterator(array) do
+--   print(elt)
+-- end
