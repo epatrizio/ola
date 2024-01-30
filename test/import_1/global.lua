@@ -18,7 +18,10 @@ end
 
 f()
 
+-- TODO : _G (and _ENV) implementation
+-- https://www.lua.org/manual/5.4/manual.html#2.2
+
 -- All variables are stored inside the global table _G, indexed by strings
-_G["f"]()
+-- _G["f"]()
 -- Since _G is a global, this is legal
-print(_G._G._G._G._G.x)
+-- print(_G._G._G._G._G.x)

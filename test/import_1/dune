@@ -12,13 +12,13 @@
   ; garbageCollection.lua
   global.lua
   ifCondition.lua
-  ; iterator.lua
+  iterator.lua
   multiArgFunction.lua
   multipleAssignment.lua
   multipleReturnArgs.lua
   nestedFuncs.lua
   numericFor.lua
-  ; primes.lua -- iterator
+  primes.lua
   recursiveSum.lua
   repeat.lua
   simpleFunc.lua
@@ -30,5 +30,4 @@
   swapFuncs.lua
   tables.lua
   test.lua
-  zCombinator.lua
- ))
+  zCombinator.lua))
