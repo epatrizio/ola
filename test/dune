@@ -6,6 +6,7 @@
   error.lua
   function.lua
   goto.lua
+  iterators.lua
   len.lua
   stdlib_basic.lua
   stdlib_math.lua

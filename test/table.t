@@ -27,3 +27,31 @@ len operations:
   0
   nil
   42
+  0
+  true
+  x
+  true
+  y
+  true
+  1
+  true
+  1
+  true
+  52
+  true
+  23
+  true
+  45
+  true
+  0
+  1
+  2
+  3
+  nil
+  1
+  0
+  nil
+  0
+  nil
+  nil
+  0

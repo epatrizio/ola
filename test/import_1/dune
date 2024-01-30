@@ -1,0 +1,33 @@
+(cram
+ (deps
+  andOr.lua
+  break.lua
+  callingSideways.lua
+  callReturnedFunction.lua
+  closures.lua
+  concatenation.lua
+  delegateReturn.lua
+  equalities.lua
+  fizzbuzz.lua
+  ; garbageCollection.lua
+  global.lua
+  ifCondition.lua
+  iterator.lua
+  multiArgFunction.lua
+  multipleAssignment.lua
+  multipleReturnArgs.lua
+  nestedFuncs.lua
+  numericFor.lua
+  primes.lua
+  recursiveSum.lua
+  repeat.lua
+  simpleFunc.lua
+  simplePrint.lua
+  simpleReturn.lua
+  simpleScoping.lua
+  sumNumbers.lua
+  sumNumbersFunc.lua
+  swapFuncs.lua
+  tables.lua
+  test.lua
+  zCombinator.lua))

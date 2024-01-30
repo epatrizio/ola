@@ -71,23 +71,67 @@ end
 print(t()[1])       -- 42
 
 -- doc §3.4.9 https://www.lua.org/manual/5.4/manual.html#3.4.9
--- to be implemented
 
--- function idx(i)
---   return 42 + i
--- end
--- local x = 10
+local function add42(i)
+  return 42 + i
+end
+local x = 10
 
--- a = { [idx(1)] = g; "x", "y"; x = 1, idx(x), [30] = 23; 45 }
--- --is equivalent to
--- do
---   local t = {}
---   t[idx(1)] = g
---   t[1] = "x"         -- 1st exp
---   t[2] = "y"         -- 2nd exp
---   t.x = 1            -- t["x"] = 1
---   t[3] = idx(x)        -- 3rd exp
---   t[30] = 23
---   t[4] = 45          -- 4th exp
---   a = t
--- end
+local tbl1 = { [add42(1)] = 0; "x", "y"; x = 1, add42(x), [30] = 23; 45 }
+
+local tbl2 = {}
+tbl2[add42(1)] = 0
+tbl2[1] = "x"         -- 1st exp
+tbl2[2] = "y"         -- 2nd exp
+tbl2.x = 1            -- t["x"] = 1
+tbl2[3] = add42(x)    -- 3rd exp
+tbl2[30] = 23
+tbl2[4] = 45          -- 4th exp
+
+-- tbl1 and tbl2 must be equivalent
+print(tbl1[43])
+print(tbl1[43] == tbl2[43])
+print(tbl1[1])
+print(tbl1[1] == tbl2[1])
+print(tbl1[2])
+print(tbl1[2] == tbl2[2])
+print(tbl1.x)
+print(tbl1.x == tbl2.x)
+print(tbl1["x"])
+print(tbl1["x"] == tbl2["x"])
+print(tbl1[3])
+print(tbl1[3] == tbl1[3])
+print(tbl1[30])
+print(tbl1[30] == tbl1[30])
+print(tbl1[4])
+print(tbl1[4] == tbl1[4])
+
+-- return function
+
+local function f()
+  return 1, 2, 3
+end
+
+local tbl3 = {0, f()}
+print(tbl3[1])    -- 0
+print(tbl3[2])    -- 1
+print(tbl3[3])    -- 2
+print(tbl3[4])    -- 3
+print(tbl3[5])    -- nil
+
+local tbl4 = {f(), 0}
+print(tbl4[1])    -- 1
+print(tbl4[2])    -- 0
+print(tbl4[3])    -- nil
+
+local function g()
+  return
+end
+
+local tbl5 = {0, g()}
+print(tbl5[1])    -- 0
+print(tbl5[2])    -- nil
+
+local tbl6 = {g(), 0}
+print(tbl6[1])    -- nil
+print(tbl6[2])    -- 0

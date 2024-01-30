@@ -314,12 +314,62 @@ and interpret_var v env =
     end
     | _ -> (Vnil (), env) )
 
-(* todo: other tableconstructor field type (Fname, Fcol) *)
 and interpret_field field env =
   match field with
-  | Fexp exp -> interpret_expr exp env
-  | Fname (_s, _exp) -> (Vnil (), env)
-  | Fcol (_exp1, _exp2) -> (Vnil (), env)
+  | Fexp exp ->
+    let v, env = interpret_expr exp env in
+    ((Vnil (), v), env)
+  | Fname (n, exp) ->
+    let v, env = interpret_expr exp env in
+    ((Vstring n, v), env)
+  | Fcol (exp1, exp2) ->
+    let v1, env = interpret_expr exp1 env in
+    let v2, env = interpret_expr exp2 env in
+    ((v1, v2), env)
+
+and tableconstructor tbl idx fl env =
+  let tbl_add_rec id v tbl idx fl env =
+    match id with
+    | Vnil () ->
+      let t = Table.add (Vnumber (Ninteger idx)) v tbl in
+      tableconstructor t (idx + 1) fl env
+    | v_idx ->
+      let t = Table.add v_idx v tbl in
+      tableconstructor t idx fl env
+  in
+  match fl with
+  | [] -> (tbl, env)
+  | [ f ] ->
+    let (v_idx, v_val), env = interpret_field f env in
+    begin
+      match v_val with
+      | VfunctionReturn vl ->
+        let tbl, _i, env =
+          List.fold_left
+            (fun (t, id, ev) v ->
+              match v_idx with
+              | Vnil () -> (Table.add (Vnumber (Ninteger id)) v t, id + 1, ev)
+              | v_idx -> (Table.add v_idx v t, id, ev) )
+            (tbl, idx, env) vl
+        in
+        (tbl, env)
+      | v -> begin
+        match v_idx with
+        | Vnil () -> (Table.add (Vnumber (Ninteger idx)) v tbl, env)
+        | v_idx -> (Table.add v_idx v tbl, env)
+      end
+    end
+  | f :: fl ->
+    let (v_idx, v_val), env = interpret_field f env in
+    begin
+      match v_val with
+      | VfunctionReturn vl -> begin
+        match vl with
+        | [] -> tbl_add_rec v_idx (Vnil ()) tbl idx fl env
+        | v :: _vl -> tbl_add_rec v_idx v tbl idx fl env
+      end
+      | v -> tbl_add_rec v_idx v tbl idx fl env
+    end
 
 and interpret_expr (loc, expr) env =
   match expr with
@@ -387,13 +437,7 @@ and interpret_expr (loc, expr) env =
   | Efunctiondef fb -> (Vfunction (Random.bits32 (), fb), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
   | Etableconstructor fl ->
-    let table, _i, env =
-      List.fold_left
-        (fun (tbl, idx, ev) f ->
-          let v, ev = interpret_field f ev in
-          (Table.add (Vnumber (Ninteger idx)) v tbl, idx + 1, ev) )
-        (Table.empty, 1, env) fl
-    in
+    let table, env = tableconstructor Table.empty 1 fl env in
     (Vtable (Random.bits32 (), table), env)
 
 and set_var v value env =
@@ -511,7 +555,8 @@ and interpret_fct value el env =
     with Return_catch (el, env) -> (
       match el with
       | [] -> (VfunctionReturn [], env)
-      | [ e ] -> interpret_expr e env (* shortcut: directly consider it's a value *)
+      | [ e ] ->
+        interpret_expr e env (* shortcut: directly consider it's a value *)
       | el ->
         let vll, env = to_vall el env in
         let vl = List.map (fun (_l, v) -> v) vll in
@@ -533,8 +578,8 @@ and interpret_fct value el env =
     match vl with
     | [] -> error None "Typing error: attempt to call a nil value"
     | [ v ] -> interpret_fct v el env
-    | v :: _vl  -> interpret_fct v el env
-    end
+    | v :: _vl -> interpret_fct v el env
+  end
   | Vnil _ -> error None "Typing error: attempt to call a nil value"
   | _ -> assert false
 
@@ -648,23 +693,19 @@ and interpret_stmt stmt env =
       end
       | _ -> assert false (* typing error *)
     in
-    let cond_expr loc limit step _env =
+    let cond_expr loc ival limit step =
       let op =
         match step with
         | Vnumber (Ninteger i) -> if i >= 0 then Ble else Bge
         | Vnumber (Nfloat f) -> if f >= 0. then Ble else Bge
         | _ -> assert false (* call error *)
       in
-      (loc, Ebinop ((loc, Eprefix (PEvar (VarName n))), op, (loc, Evalue limit)))
+      (loc, Ebinop ((loc, Evalue ival), op, (loc, Evalue limit)))
     in
-    let incr_cnt_stmt loc step =
-      Sassign
-        ( [ VarName n ]
-        , [ ( loc
-            , Ebinop
-                ((loc, Eprefix (PEvar (VarName n))), Badd, (loc, Evalue step))
-            )
-          ] )
+    let incr_cnt loc ival step env =
+      interpret_expr
+        (loc, Ebinop ((loc, Evalue ival), Badd, (loc, Evalue step)))
+        env
     in
     let l1, _e1 = e1 in
     let ival, env = init_val e1 env in
@@ -675,11 +716,78 @@ and interpret_stmt stmt env =
       | Some e -> init_val e env
       | None -> (Vnumber (Ninteger 1), env)
     in
-    (* Syntactic sugar *)
-    interpret_stmt
-      (Swhile (cond_expr l1 limit step env, b @ [ incr_cnt_stmt l1 step ]))
-      env
-  | Siterator (_nl, _el, _b) -> env (* todo: to be implemented *)
+    let cexpr = cond_expr l1 ival limit step in
+    let cond, env = interpret_expr cexpr env in
+    begin
+      match cond with
+      | Vboolean false | Vnil () -> env
+      | _ -> (
+        try
+          let env = interpret_block b env in
+          let env = Env.set_value n ival env in
+          (* control var must be restored *)
+          let ival, _ = incr_cnt l1 ival step env in
+          interpret_stmt (Sfor (n, (l1, Evalue ival), e2, oe, b)) env
+        with Break_catch env -> env )
+    end
+  | Siterator (nl, el, b) ->
+    typecheck_stmt (Siterator (nl, el, b)) env;
+    (* 4 values: iterator function, state, an initial value for the control variable, and a closing value. *)
+    let vl, env =
+      List.fold_left
+        (fun (vl, ev) ex ->
+          let v, ev = interpret_expr ex ev in
+          match v with
+          | VfunctionReturn l -> (vl @ l, ev)
+          | v -> (vl @ [ v ], ev) )
+        ([], env) el
+    in
+    (* runtime additional check *)
+    if List.length vl < 3 then
+      error None
+        "Typing error: bad 'for iterator' construction (bad element number in \
+         'in' argument)";
+    let loc, _e = List.nth el 0 in
+    let iterator_func = List.nth vl 0 in
+    let state = List.nth vl 1 in
+    let ctrl_var = List.nth vl 2 in
+    begin
+      match ctrl_var with
+      | ctrl_var -> (
+        let iterator_func_param =
+          [ (loc, Evalue state); (loc, Evalue ctrl_var) ]
+        in
+        let v, env = interpret_fct iterator_func iterator_func_param env in
+        let ctrl_var, env =
+          match v with
+          | VfunctionReturn vl -> begin
+            match vl with
+            | [] -> (Vnil (), env)
+            | [ v ] -> (v, Env.set_value (List.nth nl 0) v env)
+            | v1 :: v2 :: _tl -> (
+              let env = Env.set_value (List.nth nl 0) v1 env in
+              match List.nth_opt nl 1 with
+              | None -> (v1, env)
+              | Some n ->
+                let env = Env.set_value n v2 env in
+                (v1, env) )
+          end
+          | v -> (v, Env.set_value (List.nth nl 0) v env)
+        in
+        match ctrl_var with
+        | Vnil () -> env (* stop condition *)
+        | ctrl_var ->
+          let env = interpret_block b env in
+          interpret_stmt
+            (Siterator
+               ( nl
+               , [ (loc, Evalue iterator_func)
+                 ; (loc, Evalue state)
+                 ; (loc, Evalue ctrl_var)
+                 ]
+               , b ) )
+            env )
+    end
   (* | Sfunction (_n, _fb) -> env *)
   (* | SfunctionLocal (_n, _fb) -> env *)
   | SfunctionCall fc ->
