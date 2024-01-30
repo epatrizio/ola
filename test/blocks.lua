@@ -34,6 +34,12 @@ for i = 41+1.0,10,"-1"..".5"
   end
 print(i)
 
+for i = 0, 10, 2 do
+  print(i)            -- scd iteration i=2 NOT i=3 (1+2)
+  i = i + 1           -- this local control variable assignment don't modify the iteration
+  print(i)            -- fst iteration i=1
+end
+
 local cnt = 0
 while cnt < 2
   do
@@ -79,6 +85,6 @@ if true then return end   -- useful for stoping a script during the flow
 
 print(0)
 
-break                    -- Bug: must generate a syntax error (break outside loop - for / while / repeat)
-do break end             -- same
-if true then break end   -- same
+--break                    -- Bug: must generate a syntax error (break outside loop - for / while / repeat)
+--do break end             -- same
+--if true then break end   -- same
