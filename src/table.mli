@@ -9,3 +9,5 @@ val remove : ('a -> int option) -> 'a -> ('a, 'b) t -> ('a, 'b) t
 val get : ('a -> int option) -> 'a -> ('a, 'b) t -> 'b option
 
 val len : ('a, 'b) t -> int
+
+val length : ('a, 'b) t -> int

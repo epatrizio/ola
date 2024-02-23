@@ -49,7 +49,16 @@ let get get_int_key_opt key tbl =
   | Some idx -> i_get idx tbl
   | None -> k_get key tbl
 
+(* len: "border" concept https://www.lua.org/manual/5.4/manual.html#3.4.7
+    Here: number of contiguous elements from 1
+    this is not the exact specification
+*)
 let len tbl =
-  (* https://www.lua.org/manual/5.4/manual.html#3.4.7 *)
-  (* todo / border *)
-  List.length tbl.ilist
+  let rec cpt idx itbl acc_len =
+    match List.mem_assoc idx itbl with
+    | false -> acc_len
+    | true -> cpt (idx + 1) itbl (acc_len + 1)
+  in
+  cpt 1 tbl.ilist 0
+
+let length tbl = List.length tbl.ilist + List.length tbl.klist
