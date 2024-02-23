@@ -55,6 +55,9 @@ let number_of_string loc str =
       error loc (Format.sprintf "attempt to perform on a string (%s) value" str)
     )
 
+let get_int_value_opt v =
+  match v with Vnumber (Ninteger i) when i > 0 -> Some i | _ -> None
+
 let rec interpret_bbinop_expr binop expr1 expr2 env =
   let v1, env = interpret_expr expr1 env in
   match binop with
@@ -310,7 +313,9 @@ and interpret_var v env =
     let idx, env = interpret_expr exp env in
     match v with
     | Vtable (_i, tbl) -> begin
-      match Table.get idx tbl with None -> (Vnil (), env) | Some v -> (v, env)
+      match Table.get get_int_value_opt idx tbl with
+      | None -> (Vnil (), env)
+      | Some v -> (v, env)
     end
     | _ -> (Vnil (), env) )
 
@@ -331,10 +336,10 @@ and tableconstructor tbl idx fl env =
   let tbl_add_rec id v tbl idx fl env =
     match id with
     | Vnil () ->
-      let t = Table.add (Vnumber (Ninteger idx)) v tbl in
+      let t = Table.add get_int_value_opt (Vnumber (Ninteger idx)) v tbl in
       tableconstructor t (idx + 1) fl env
     | v_idx ->
-      let t = Table.add v_idx v tbl in
+      let t = Table.add get_int_value_opt v_idx v tbl in
       tableconstructor t idx fl env
   in
   match fl with
@@ -348,15 +353,19 @@ and tableconstructor tbl idx fl env =
           List.fold_left
             (fun (t, id, ev) v ->
               match v_idx with
-              | Vnil () -> (Table.add (Vnumber (Ninteger id)) v t, id + 1, ev)
-              | v_idx -> (Table.add v_idx v t, id, ev) )
+              | Vnil () ->
+                ( Table.add get_int_value_opt (Vnumber (Ninteger id)) v t
+                , id + 1
+                , ev )
+              | v_idx -> (Table.add get_int_value_opt v_idx v t, id, ev) )
             (tbl, idx, env) vl
         in
         (tbl, env)
       | v -> begin
         match v_idx with
-        | Vnil () -> (Table.add (Vnumber (Ninteger idx)) v tbl, env)
-        | v_idx -> (Table.add v_idx v tbl, env)
+        | Vnil () ->
+          (Table.add get_int_value_opt (Vnumber (Ninteger idx)) v tbl, env)
+        | v_idx -> (Table.add get_int_value_opt v_idx v tbl, env)
       end
     end
   | f :: fl ->
@@ -456,7 +465,7 @@ and set_var v value env =
     let idx, env = interpret_expr exp env in
     match t with
     | Vtable (i, tbl) ->
-      let tbl = Table.add idx value tbl in
+      let tbl = Table.add get_int_value_opt idx value tbl in
       let v = var_of_prefixexp pexp env in
       set_var v (Vtable (i, tbl)) env
     | _ -> assert false (* typing error *) )
@@ -596,7 +605,7 @@ and interpret_functioncall fc env =
     begin
       match t with
       | Vtable (_i, tbl) -> begin
-        match Table.get idx tbl with
+        match Table.get get_int_value_opt idx tbl with
         | None -> assert false
         | Some v -> interpret_fct v el env
       end

@@ -9,5 +9,5 @@ len operations:
   11
   5
   2
-  6
-  3
+  5
+  2

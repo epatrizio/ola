@@ -61,7 +61,7 @@ type value =
   | VfunctionStdLib of int32 * (value list -> value list)
     (* int32 = stdlib function unique id *)
   | VfunctionReturn of value list
-  | Vtable of int32 * (value, value) Table.t (*int32 = table unique id*)
+  | Vtable of int32 * (value, value) Table.t (* int32 = table unique id *)
 
 and expr = location * expr'
 
