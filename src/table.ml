@@ -62,3 +62,5 @@ let len tbl =
   cpt 1 tbl.ilist 0
 
 let length tbl = List.length tbl.ilist + List.length tbl.klist
+
+let is_empty tbl = length tbl = 0
