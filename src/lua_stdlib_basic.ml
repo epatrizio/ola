@@ -28,6 +28,25 @@ let asert v =
   end;
   [ Vnil () ]
 
+let next v =
+  try
+    match v with
+    | [ Vtable (_, tbl) ] | [ Vtable (_, tbl); Vnil () ] -> begin
+      match Table.next None tbl with
+      | Some (Table.Ikey i, v) -> [ Vnumber (Ninteger i); v ]
+      | Some (Table.Kkey k, v) -> [ k; v ]
+      | None -> [ Vnil () ]
+    end
+    | [ Vtable (_, tbl); Vnumber (Ninteger i) ] -> begin
+      match Table.next (Some i) tbl with
+      | Some (Table.Ikey i, v) -> [ Vnumber (Ninteger i); v ]
+      | Some (Table.Kkey k, v) -> [ k; v ]
+      | None -> [ Vnil () ]
+    end
+    | [ Vtable _; _ ] -> Lua_stdlib_common.typing_error "invalid key to 'next'"
+    | _ -> assert false
+  with Table.Table_error msg -> Lua_stdlib_common.error msg
+
 let print v =
   let s = List.map (fun v -> tostring_value v) v in
   Format.pp_print_list ~pp_sep Format.pp_print_string Format.std_formatter s;

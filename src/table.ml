@@ -1,8 +1,14 @@
-(* open Ast *)
-
 (* MEMO: compare
    All functions ignore non-numeric keys in the tables given as arguments.
 *)
+
+exception Table_error of string
+
+let error message = raise (Table_error message)
+
+type 'a key =
+  | Ikey of int
+  | Kkey of 'a
 
 type ('a, 'b) t =
   { ilist : (int * 'b) list (* ordered list on key *)
@@ -64,3 +70,36 @@ let len tbl =
 let length tbl = List.length tbl.ilist + List.length tbl.klist
 
 let is_empty tbl = length tbl = 0
+
+let first__elt tbl = match tbl with [] -> None | e :: _ -> Some e
+
+let first_i_elt tbl =
+  match first__elt tbl.ilist with
+  | Some (idx, v) -> Some (Ikey idx, v)
+  | None -> None
+
+let first_k_elt tbl =
+  match first__elt tbl.klist with
+  | Some (k, v) -> Some (Kkey k, v)
+  | None -> None
+
+let first_elt tbl =
+  match first_i_elt tbl with Some _ as elt -> elt | None -> first_k_elt tbl
+
+let rec next_elt idx tbl =
+  match tbl.ilist with
+  | [] -> first_k_elt tbl
+  | (i, _) :: tl when idx = i -> first_elt { ilist = tl; klist = tbl.klist }
+  | _ :: tl -> next_elt idx { ilist = tl; klist = tbl.klist }
+
+(* https://www.lua.org/manual/5.4/manual.html#6.1
+   TODO: Warning spec not fully implemented *)
+
+let next idx tbl =
+  match idx with
+  | Some idx -> begin
+    match i_get idx tbl with
+    | Some _ -> next_elt idx tbl
+    | None -> error "invalid key to 'next'"
+  end
+  | None -> first_elt tbl

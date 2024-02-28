@@ -10,6 +10,7 @@ let lib =
   in
   let lib_basic = LibMap.empty in
   let lib_basic = LibMap.add "assert" Lua_stdlib_basic.asert lib_basic in
+  let lib_basic = LibMap.add "next" Lua_stdlib_basic.next lib_basic in
   let lib_basic = LibMap.add "print" Lua_stdlib_basic.print lib_basic in
   let lib_basic = LibMap.add "type" Lua_stdlib_basic.typ lib_basic in
   let lib_basic = LibMap.add "tostring" Lua_stdlib_basic.tostring lib_basic in
