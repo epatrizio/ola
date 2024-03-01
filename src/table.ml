@@ -83,23 +83,44 @@ let first_k_elt tbl =
   | Some (k, v) -> Some (Kkey k, v)
   | None -> None
 
+(* Pre-condition: table isn't empty
+   Rule: int key first *)
 let first_elt tbl =
   match first_i_elt tbl with Some _ as elt -> elt | None -> first_k_elt tbl
 
-let rec next_elt idx tbl =
-  match tbl.ilist with
-  | [] -> first_k_elt tbl
-  | (i, _) :: tl when idx = i -> first_elt { ilist = tl; klist = tbl.klist }
-  | _ :: tl -> next_elt idx { ilist = tl; klist = tbl.klist }
+(* Pre-condition 1: table isn't empty
+   Pre-condition 2: key exists *)
+let rec next_elt key tbl =
+  match key with
+  | Ikey idx -> begin
+    match tbl.ilist with
+    | [] -> assert false (* PC2 *)
+    | (i, _) :: tl when idx = i -> first_elt { ilist = tl; klist = tbl.klist }
+    | _ :: tl -> next_elt (Ikey idx) { ilist = tl; klist = tbl.klist }
+  end
+  | Kkey key -> (
+    match tbl.klist with
+    | [] -> assert false (* PC2 *)
+    | (k, _) :: tl when key = k -> first_k_elt { ilist = tbl.ilist; klist = tl }
+    | _ :: tl -> next_elt (Kkey key) { ilist = tbl.ilist; klist = tl } )
 
 (* https://www.lua.org/manual/5.4/manual.html#6.1
    TODO: Warning spec not fully implemented *)
 
-let next idx tbl =
-  match idx with
-  | Some idx -> begin
-    match i_get idx tbl with
-    | Some _ -> next_elt idx tbl
-    | None -> error "invalid key to 'next'"
-  end
-  | None -> first_elt tbl
+let next key tbl =
+  (* first level checks : empty table and key existence *)
+  match is_empty tbl with
+  | true -> None
+  | false -> (
+    match key with
+    | Some (Ikey idx) -> begin
+      match i_get idx tbl with
+      | Some _ -> next_elt (Ikey idx) tbl
+      | None -> error ("invalid key to 'next': " ^ Int.to_string idx)
+    end
+    | Some (Kkey key) -> begin
+      match k_get key tbl with
+      | Some _ -> next_elt (Kkey key) tbl
+      | None -> error "invalid key to 'next'"
+    end
+    | None -> first_elt tbl )

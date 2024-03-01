@@ -20,4 +20,4 @@ val len : ('a, 'b) t -> int
 
 val length : ('a, 'b) t -> int
 
-val next : int option -> ('a, 'b) t -> ('a key * 'b) option
+val next : 'a key option -> ('a, 'b) t -> ('a key * 'b) option

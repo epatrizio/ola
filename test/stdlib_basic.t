@@ -22,6 +22,8 @@ basic stdlib:
   10, 10.1
   42, 42
   true, false
+  key, val
+  nil
   assert: message
   Fatal error: exception Assert_failure("src/lua_stdlib_basic.ml", 23, 6)
   [2]

@@ -25,7 +25,7 @@ print(next(tbl, 1))
 print(next(tbl, 2))
 print(next(tbl, 3))
 -- print(next(tbl, 4))      -- ko, invalid key to 'next' (4 not exists)
--- print(next(tbl, "3"))    -- ko, invalid key to 'next' ("3" string)
+-- print(next(tbl, "3"))    -- ko, invalid key to 'next' ("3" not exists)
 
 local table = {}
 table[3] = true
@@ -39,6 +39,8 @@ print(next(table, 3))
 print(next(table, 4))
 print(next(table, 10))
 print(next(table, 42))
+print(next(table, true))
+print(next(table, "key"))
 
 assert(true)
 assert(42)

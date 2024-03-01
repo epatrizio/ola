@@ -38,12 +38,17 @@ let next v =
       | None -> [ Vnil () ]
     end
     | [ Vtable (_, tbl); Vnumber (Ninteger i) ] -> begin
-      match Table.next (Some i) tbl with
+      match Table.next (Some (Table.Ikey i)) tbl with
       | Some (Table.Ikey i, v) -> [ Vnumber (Ninteger i); v ]
       | Some (Table.Kkey k, v) -> [ k; v ]
       | None -> [ Vnil () ]
     end
-    | [ Vtable _; _ ] -> Lua_stdlib_common.typing_error "invalid key to 'next'"
+    | [ Vtable (_, tbl); v ] -> begin
+      match Table.next (Some (Table.Kkey v)) tbl with
+      | Some (Table.Ikey i, v) -> [ Vnumber (Ninteger i); v ]
+      | Some (Table.Kkey k, v) -> [ k; v ]
+      | None -> [ Vnil () ]
+    end
     | _ -> assert false
   with Table.Table_error msg -> Lua_stdlib_common.error msg
 
