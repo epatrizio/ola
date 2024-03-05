@@ -28,6 +28,7 @@ tbl[1] = "elt1"         -- Nb. without an index 1, iteration returns nothing
 tbl[2] = "elt2"
 tbl[3] = "elt3"         -- ipairs: last element
 tbl[5] = "elt5"
+tbl[-42] = -42.0
 tbl["key1"] = "val1"
 tbl["key2"] = "val2"
 
@@ -40,12 +41,8 @@ end
 
 print("2. -----")
 
-local function next_elt(table, key)
-  return next(table, key)     -- direct use of stdlib.next function
-end
-
 local function pairs_impl(table)
-  return next_elt, table, nil
+  return next, table, nil
 end
 
 for k, v in pairs_impl(tbl) do

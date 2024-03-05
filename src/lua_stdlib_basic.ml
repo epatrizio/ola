@@ -37,7 +37,7 @@ let next v =
       | Some (Table.Kkey k, v) -> [ k; v ]
       | None -> [ Vnil () ]
     end
-    | [ Vtable (_, tbl); Vnumber (Ninteger i) ] -> begin
+    | [ Vtable (_, tbl); Vnumber (Ninteger i) ] when i > 0 -> begin
       match Table.next (Some (Table.Ikey i)) tbl with
       | Some (Table.Ikey i, v) -> [ Vnumber (Ninteger i); v ]
       | Some (Table.Kkey k, v) -> [ k; v ]

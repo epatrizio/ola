@@ -9,6 +9,7 @@
   2, elt2
   3, elt3
   5, elt5
+  -42, -42.
   key1, val1
   key2, val2
   3. -----
