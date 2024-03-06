@@ -13,6 +13,52 @@ print(tostring(42))
 print(tostring(41.0+1))
 -- print(tostring({1,2,3}))
 
+-- table next
+-- https://www.lua.org/manual/5.4/manual.html#6.1
+-- TODO: Warning spec not fully implemented
+
+local tbl = {}
+print(next(tbl))
+tbl = {1, 2, 3}
+print(next(tbl))
+print(next(tbl, 1))
+print(next(tbl, 2))
+print(next(tbl, 3))
+-- print(next(tbl, 4))      -- ko, invalid key to 'next' (4 not exists)
+-- print(next(tbl, "3"))    -- ko, invalid key to 'next' ("3" not exists)
+
+local table = {}
+table[3] = true
+table[4] = nil
+table[42] = "42"
+table[10] = 10.10
+table[true] = false
+table["key"] = "val"
+print(next(table))
+print(next(table, 3))
+print(next(table, 4))
+print(next(table, 10))
+print(next(table, 42))
+print(next(table, true))
+print(next(table, "key"))
+
+for k, v in ipairs(table) do    -- nothing to display: no index 1 (int)
+  print(k, v)
+end
+
+local tbl = {1, 2, 3}
+tbl["key1"] = "val1"
+tbl["key2"] = "val2"
+tbl[42] = 42.0
+
+for k, v in ipairs(tbl) do
+  print(k, v)
+end
+
+for k, v in pairs(tbl) do
+  print(k, v)
+end
+
 assert(true)
 assert(42)
 assert(42.42, "message")

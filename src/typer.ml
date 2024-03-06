@@ -244,7 +244,7 @@ and typecheck_stmt stmt env =
     let typecheck_e ((loc, _e) as expr) env =
       let* t = typecheck_expr expr env in
       match t with
-      | Tfunction -> Ok ()
+      | Tfunction | TfunctionStdLib -> Ok ()
       | TfunctionReturn tl -> begin
         match tl with
         | [ Tfunction ] | [ TfunctionStdLib ] -> Ok ()

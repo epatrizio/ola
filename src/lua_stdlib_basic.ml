@@ -1,5 +1,7 @@
 open Ast
 
+let () = Random.self_init ()
+
 let rec tostring_value v =
   match v with
   | Vnil () -> "nil"
@@ -27,6 +29,60 @@ let asert v =
     | _ -> assert true
   end;
   [ Vnil () ]
+
+let next v =
+  try
+    match v with
+    | [ Vtable (_, tbl) ] | [ Vtable (_, tbl); Vnil () ] -> begin
+      match Table.next None tbl with
+      | Some (Table.Ikey i, v) -> [ Vnumber (Ninteger i); v ]
+      | Some (Table.Kkey k, v) -> [ k; v ]
+      | None -> [ Vnil () ]
+    end
+    | [ Vtable (_, tbl); Vnumber (Ninteger i) ] when i > 0 -> begin
+      match Table.next (Some (Table.Ikey i)) tbl with
+      | Some (Table.Ikey i, v) -> [ Vnumber (Ninteger i); v ]
+      | Some (Table.Kkey k, v) -> [ k; v ]
+      | None -> [ Vnil () ]
+    end
+    | [ Vtable (_, tbl); v ] -> begin
+      match Table.next (Some (Table.Kkey v)) tbl with
+      | Some (Table.Ikey i, v) -> [ Vnumber (Ninteger i); v ]
+      | Some (Table.Kkey k, v) -> [ k; v ]
+      | None -> [ Vnil () ]
+    end
+    | _ -> assert false
+  with Table.Table_error msg -> Lua_stdlib_common.error msg
+
+let pairs v =
+  match v with
+  | [ Vtable (i, tbl) ] ->
+    [ VfunctionStdLib (Random.bits32 (), next); Vtable (i, tbl); Vnil () ]
+  | _ ->
+    Lua_stdlib_common.typing_error
+      "bad argument #1 to 'for iterator' (table expected)"
+
+let inext v =
+  match v with
+  | [ Vtable (_, tbl) ] | [ Vtable (_, tbl); Vnil () ] -> begin
+    match Table.inext 0 tbl with
+    | Some (i, v) -> [ Vnumber (Ninteger i); v ]
+    | None -> [ Vnil () ]
+  end
+  | [ Vtable (_, tbl); Vnumber (Ninteger i) ] when i > 0 -> begin
+    match Table.inext i tbl with
+    | Some (i, v) -> [ Vnumber (Ninteger i); v ]
+    | None -> [ Vnil () ]
+  end
+  | _ -> assert false
+
+let ipairs v =
+  match v with
+  | [ Vtable (i, tbl) ] ->
+    [ VfunctionStdLib (Random.bits32 (), inext); Vtable (i, tbl); Vnil () ]
+  | _ ->
+    Lua_stdlib_common.typing_error
+      "bad argument #1 to 'for iterator' (table expected)"
 
 let print v =
   let s = List.map (fun v -> tostring_value v) v in

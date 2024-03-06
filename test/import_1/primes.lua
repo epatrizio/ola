@@ -25,10 +25,10 @@ end
 
 print("I found")
 print(primeCount)
--- print("primes. They were: ")
--- for i, v in ipairs(primeTable) do
---     print("Prime number")
---     print(i)
---     print("is")
---     print(v)
--- end
+print("primes. They were: ")
+for i, v in ipairs(primeTable) do
+    print("Prime number")
+    print(i)
+    print("is")
+    print(v)
+end

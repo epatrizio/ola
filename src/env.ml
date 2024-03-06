@@ -74,7 +74,9 @@ let stdlib_load (lib_basic, lib) env =
     match v with
     | Vtable (i, tbl) ->
       let tbl =
-        Table.add (Ast.Vstring fct_name)
+        Table.add
+          (fun _ -> None)
+          (Ast.Vstring fct_name)
           (Ast.VfunctionStdLib (Random.bits32 (), fct))
           tbl
       in

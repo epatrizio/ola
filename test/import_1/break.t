@@ -34,9 +34,9 @@ break instruction:
   6, break from numeric for
   Done, x should be 5 (since the for loop x is local)
   5
-1
-A
-2
-B
-3
-C
+  1
+  A
+  2
+  B
+  3
+  C

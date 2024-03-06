@@ -18,6 +18,9 @@ to manipulate the `ola` interpreter in more advanced contexts than test suite.
 - [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) :
 `dune exec ola ./examples/life.lua`
 
+- Custom implementation of *iparis* and *pairs* stdlib iterators. As an application,
+implementation of classic functions *table_map*, *table_filter* and *table_fold*.
+
 *Nb. The Game of Life calculations and processes are correct, but the display is not.*
 *Todo: `io.write` and `os.execute` better implementation.*
 
