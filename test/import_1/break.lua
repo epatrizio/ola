@@ -30,11 +30,11 @@ end
 print("Done, x should be 5 (since the for loop x is local)")
 print(x)
 
--- table = {"A", "B", "C", "D", "E"}
--- for i, v in ipairs(table) do
---     print(i)
---     print(v)
---     if (v == "C") then
---         break
---     end
--- end
+table = {"A", "B", "C", "D", "E"}
+for i, v in ipairs(table) do
+    print(i)
+    print(v)
+    if (v == "C") then
+        break
+    end
+end

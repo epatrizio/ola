@@ -124,3 +124,10 @@ let next key tbl =
       | None -> error "invalid key to 'next'"
     end
     | None -> first_elt tbl )
+
+let inext idx tbl =
+  match List.length tbl.ilist > 0 with
+  | true -> begin
+    match i_get (idx + 1) tbl with Some v -> Some (idx + 1, v) | None -> None
+  end
+  | false -> None

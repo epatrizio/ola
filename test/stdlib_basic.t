@@ -24,6 +24,15 @@ basic stdlib:
   true, false
   key, val
   nil
+  1, 1
+  2, 2
+  3, 3
+  1, 1
+  2, 2
+  3, 3
+  42, 42.
+  key1, val1
+  key2, val2
   assert: message
-  Fatal error: exception Assert_failure("src/lua_stdlib_basic.ml", 23, 6)
+  Fatal error: exception Assert_failure("src/lua_stdlib_basic.ml", 25, 6)
   [2]

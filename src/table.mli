@@ -21,3 +21,5 @@ val len : ('a, 'b) t -> int
 val length : ('a, 'b) t -> int
 
 val next : 'a key option -> ('a, 'b) t -> ('a key * 'b) option
+
+val inext : int -> ('a, 'b) t -> (int * 'b) option

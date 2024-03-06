@@ -42,6 +42,23 @@ print(next(table, 42))
 print(next(table, true))
 print(next(table, "key"))
 
+for k, v in ipairs(table) do    -- nothing to display: no index 1 (int)
+  print(k, v)
+end
+
+local tbl = {1, 2, 3}
+tbl["key1"] = "val1"
+tbl["key2"] = "val2"
+tbl[42] = 42.0
+
+for k, v in ipairs(tbl) do
+  print(k, v)
+end
+
+for k, v in pairs(tbl) do
+  print(k, v)
+end
+
 assert(true)
 assert(42)
 assert(42.42, "message")

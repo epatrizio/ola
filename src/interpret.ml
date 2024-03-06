@@ -785,17 +785,19 @@ and interpret_stmt stmt env =
         in
         match ctrl_var with
         | Vnil () -> env (* stop condition *)
-        | ctrl_var ->
-          let env = interpret_block b env in
-          interpret_stmt
-            (Siterator
-               ( nl
-               , [ (loc, Evalue iterator_func)
-                 ; (loc, Evalue state)
-                 ; (loc, Evalue ctrl_var)
-                 ]
-               , b ) )
-            env )
+        | ctrl_var -> (
+          try
+            let env = interpret_block b env in
+            interpret_stmt
+              (Siterator
+                 ( nl
+                 , [ (loc, Evalue iterator_func)
+                   ; (loc, Evalue state)
+                   ; (loc, Evalue ctrl_var)
+                   ]
+                 , b ) )
+              env
+          with Break_catch env -> env ) )
     end
   (* | Sfunction (_n, _fb) -> env *)
   (* | SfunctionLocal (_n, _fb) -> env *)
