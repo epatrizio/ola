@@ -29,6 +29,7 @@ let process source_code_file debug =
     end;
     print_endline "interprete ...";
     let env = Env.empty () in
+    let env = Lua_stdlib.load env in
     let chunk, env = Scope.analysis chunk env in
     if debug then begin
       print_endline "debug mode: source after scope analysis view ...";

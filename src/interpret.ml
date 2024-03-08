@@ -7,11 +7,11 @@ type block_pointer =
   | Last
   | Label of string
 
-exception Goto_catch of block_pointer * Env.t
+exception Goto_catch of block_pointer * value Env.t
 
-exception Break_catch of Env.t
+exception Break_catch of value Env.t
 
-exception Return_catch of expr list * Env.t
+exception Return_catch of expr list * value Env.t
 
 exception Interpretation_error of location option * string
 
