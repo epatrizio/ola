@@ -33,7 +33,7 @@ and analyse_el el env =
 and analyse_var var env =
   match var with
   | VarName n ->
-    let fresh_n, env = Env.get_name n env in
+    let fresh_n, env = Env.get_name n (Vnil ()) env in
     (VarName fresh_n, env)
   | VarTableField (pexp, exp) ->
     let pexp, env = analyse_prefixexp pexp env in
@@ -63,7 +63,7 @@ and analyse_fieldlist fl env =
 and analyse_namelist nl env =
   List.fold_left
     (fun (nl, ev) n ->
-      let n, ev = Env.add_local n ev in
+      let n, ev = Env.add_local n (Vnil ()) ev in
       (nl @ [ n ], ev) )
     ([], env) nl
 
@@ -134,7 +134,7 @@ and analyse_stmt stmt env =
     (* todo : local name attrib (const/close) support *)
     List.fold_left
       (fun (nl, ev) (n, oa) ->
-        let fresh_n, ev = Env.add_local n ev in
+        let fresh_n, ev = Env.add_local n (Vnil ()) ev in
         (nl @ [ (fresh_n, oa) ], ev) )
       ([], env) nal
   in
@@ -186,7 +186,7 @@ and analyse_stmt stmt env =
     in
     (Sif (e, b, ebl, ob), env)
   | Sfor (n, e1, e2, oe, b) ->
-    let fresh_n, env_loc = Env.add_local n env in
+    let fresh_n, env_loc = Env.add_local n (Vnil ()) env in
     let e1, env_loc = analyse_expr e1 env_loc in
     let e2, env_loc = analyse_expr e2 env_loc in
     let oe, env_loc =
@@ -204,7 +204,7 @@ and analyse_stmt stmt env =
     let fresh_nl, env_loc =
       List.fold_left
         (fun (nl, e) n ->
-          let fresh_n, env_loc = Env.add_local n e in
+          let fresh_n, env_loc = Env.add_local n (Vnil ()) e in
           (nl @ [ fresh_n ], env_loc) )
         ([], env) nl
     in
