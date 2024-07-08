@@ -5,7 +5,7 @@ module SMap = Map.Make (String)
 type locals = string SMap.t
 
 type 'a t =
-  { values : 'a SMap.t
+  { values : 'a ref SMap.t
   ; globals : string SMap.t
   ; locals : locals
   }
@@ -42,7 +42,7 @@ let get_name n default_value env =
     | None -> add_global n default_value env )
 
 let get_value n env =
-  match SMap.find_opt n env.values with None -> assert false | Some v -> v
+  match SMap.find_opt n env.values with None -> assert false | Some v -> !v
 
 let set_value n v env =
   match SMap.find_opt n env.values with

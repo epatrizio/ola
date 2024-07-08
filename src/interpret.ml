@@ -465,9 +465,10 @@ and set_var v value env =
     let idx, env = interpret_expr exp env in
     match t with
     | Vtable (i, tbl) ->
-      let tbl = Table.add get_int_value_opt idx value tbl in
+      let tbl = Table.add get_int_value_opt idx !value tbl in
+      let vtbl_ref = ref (Vtable (i, tbl)) in
       let v = var_of_prefixexp pexp env in
-      set_var v (Vtable (i, tbl)) env
+      set_var v vtbl_ref env
     | _ -> assert false (* typing error *) )
 
 and to_vall el env =
@@ -482,31 +483,44 @@ and lists_assign vl vall env =
   begin
     match (vl, vall) with
     | [], [] | [], _ -> env
-    | vl, [] -> List.fold_left (fun e v -> set_var v (Vnil ()) e) env vl
+    | vl, [] ->
+      List.fold_left
+        (fun e v ->
+          let vnil_ref = ref (Vnil ()) in
+          set_var v vnil_ref e )
+        env vl
     | v :: vl, [ (l, va) ] -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] -> set_var v (Vnil ()) env
+        | [] ->
+          let vnil_ref = ref (Vnil ()) in
+          set_var v vnil_ref env
         | va :: vall ->
-          let env = set_var v va env in
+          let va_ref = ref va in
+          let env = set_var v va_ref env in
           let vall = List.map (fun v -> (l, v)) vall in
           lists_assign vl vall env
       end
       | va ->
-        let env = set_var v va env in
+        let va_ref = ref va in
+        let env = set_var v va_ref env in
         lists_assign vl [] env )
     | v :: vl, (_l, va) :: tl -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] -> set_var v (Vnil ()) env
+        | [] ->
+          let vnil_ref = ref (Vnil ()) in
+          set_var v vnil_ref env
         | va :: _vall ->
-          let env = set_var v va env in
+          let va_ref = ref va in
+          let env = set_var v va_ref env in
           lists_assign vl tl env
       end
       | va ->
-        let env = set_var v va env in
+        let va_ref = ref va in
+        let env = set_var v va_ref env in
         lists_assign vl tl env )
   end
 
@@ -516,31 +530,43 @@ and lists_lassign nal vall env =
     match (nal, vall) with
     | [], [] | [], _ -> env
     | nal, [] ->
-      List.fold_left (fun e (n, _on) -> Env.set_value n (Ast.Vnil ()) e) env nal
+      List.fold_left
+        (fun e (n, _on) ->
+          let vnil_ref = ref (Vnil ()) in
+          Env.set_value n vnil_ref e )
+        env nal
     | (n, _on) :: vl, [ (l, va) ] -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] -> Env.set_value n (Ast.Vnil ()) env
+        | [] ->
+          let vnil_ref = ref (Vnil ()) in
+          Env.set_value n vnil_ref env
         | va :: vall ->
-          let env = Env.set_value n va env in
+          let va_ref = ref va in
+          let env = Env.set_value n va_ref env in
           let vall = List.map (fun v -> (l, v)) vall in
           lists_lassign vl vall env
       end
       | va ->
-        let env = Env.set_value n va env in
+        let va_ref = ref va in
+        let env = Env.set_value n va_ref env in
         lists_lassign vl [] env )
     | (n, _on) :: vl, (_l, va) :: tl -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] -> Env.set_value n (Ast.Vnil ()) env
+        | [] ->
+          let vnil_ref = ref (Vnil ()) in
+          Env.set_value n vnil_ref env
         | va :: _vall ->
-          let env = Env.set_value n va env in
+          let va_ref = ref va in
+          let env = Env.set_value n va_ref env in
           lists_lassign vl tl env
       end
       | va ->
-        let env = Env.set_value n va env in
+        let va_ref = ref va in
+        let env = Env.set_value n va_ref env in
         lists_lassign vl tl env )
   end
 
@@ -718,7 +744,8 @@ and interpret_stmt stmt env =
     in
     let l1, _e1 = e1 in
     let ival, env = init_val e1 env in
-    let env = Env.set_value n ival env in
+    let ival_ref = ref ival in
+    let env = Env.set_value n ival_ref env in
     let limit, env = init_val e2 env in
     let step, env =
       match oe with
@@ -733,7 +760,8 @@ and interpret_stmt stmt env =
       | _ -> (
         try
           let env = interpret_block b env in
-          let env = Env.set_value n ival env in
+          let ival_ref = ref ival in
+          let env = Env.set_value n ival_ref env in
           (* control var must be restored *)
           let ival, _ = incr_cnt l1 ival step env in
           interpret_stmt (Sfor (n, (l1, Evalue ival), e2, oe, b)) env
@@ -772,16 +800,22 @@ and interpret_stmt stmt env =
           | VfunctionReturn vl -> begin
             match vl with
             | [] -> (Vnil (), env)
-            | [ v ] -> (v, Env.set_value (List.nth nl 0) v env)
+            | [ v ] ->
+              let v_ref = ref v in
+              (v, Env.set_value (List.nth nl 0) v_ref env)
             | v1 :: v2 :: _tl -> (
-              let env = Env.set_value (List.nth nl 0) v1 env in
+              let v1_ref = ref v1 in
+              let env = Env.set_value (List.nth nl 0) v1_ref env in
               match List.nth_opt nl 1 with
               | None -> (v1, env)
               | Some n ->
-                let env = Env.set_value n v2 env in
+                let v2_ref = ref v2 in
+                let env = Env.set_value n v2_ref env in
                 (v1, env) )
           end
-          | v -> (v, Env.set_value (List.nth nl 0) v env)
+          | v ->
+            let v_ref = ref v in
+            (v, Env.set_value (List.nth nl 0) v_ref env)
         in
         match ctrl_var with
         | Vnil () -> env (* stop condition *)
