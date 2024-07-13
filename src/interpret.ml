@@ -459,7 +459,8 @@ and set_var v value env =
   in
   match v with
   | VarName n ->
-    Env.update_value n value env;
+    let value_ref = ref value in
+    Env.update_value n value_ref env;
     env
   | VarTableField (pexp, exp) -> (
     typecheck_var (VarTableField (pexp, exp)) env;
@@ -467,10 +468,10 @@ and set_var v value env =
     let idx, env = interpret_expr exp env in
     match t with
     | Vtable (i, tbl) ->
-      let tbl = Table.add get_int_value_opt idx !value tbl in
-      let vtbl_ref = ref (Vtable (i, tbl)) in
+      let tbl = Table.add get_int_value_opt idx value tbl in
+      let vtbl = Vtable (i, tbl) in
       let v = var_of_prefixexp pexp env in
-      set_var v vtbl_ref env
+      set_var v vtbl env
     | _ -> assert false (* typing error *) )
 
 and to_vall el env =
@@ -485,44 +486,31 @@ and lists_assign vl vall env =
   begin
     match (vl, vall) with
     | [], [] | [], _ -> env
-    | vl, [] ->
-      List.fold_left
-        (fun e v ->
-          let vnil_ref = ref (Vnil ()) in
-          set_var v vnil_ref e )
-        env vl
+    | vl, [] -> List.fold_left (fun e v -> set_var v (Vnil ()) e) env vl
     | v :: vl, [ (l, va) ] -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] ->
-          let vnil_ref = ref (Vnil ()) in
-          set_var v vnil_ref env
+        | [] -> set_var v (Vnil ()) env
         | va :: vall ->
-          let va_ref = ref va in
-          let env = set_var v va_ref env in
+          let env = set_var v va env in
           let vall = List.map (fun v -> (l, v)) vall in
           lists_assign vl vall env
       end
       | va ->
-        let va_ref = ref va in
-        let env = set_var v va_ref env in
+        let env = set_var v va env in
         lists_assign vl [] env )
     | v :: vl, (_l, va) :: tl -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] ->
-          let vnil_ref = ref (Vnil ()) in
-          set_var v vnil_ref env
+        | [] -> set_var v (Vnil ()) env
         | va :: _vall ->
-          let va_ref = ref va in
-          let env = set_var v va_ref env in
+          let env = set_var v va env in
           lists_assign vl tl env
       end
       | va ->
-        let va_ref = ref va in
-        let env = set_var v va_ref env in
+        let env = set_var v va env in
         lists_assign vl tl env )
   end
 
