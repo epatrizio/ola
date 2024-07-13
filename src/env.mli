@@ -14,7 +14,9 @@ val add_global : string -> 'a ref -> 'a t -> string * 'a t
 
 val add_global_force : string -> 'a ref -> 'a t -> 'a t
 
-val set_value : string -> 'a ref -> 'a t -> 'a t
+val update_value : string -> 'a ref -> 'a t -> unit
+
+val add_value : string -> 'a ref -> 'a t -> 'a t
 
 val get_locals : 'a t -> locals
 

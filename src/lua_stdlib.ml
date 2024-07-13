@@ -55,7 +55,7 @@ let load (env : value Env.t) : value Env.t =
           tbl
       in
       let vtbl_ref = ref (Vtable (i, tbl)) in
-      set_value lib_name vtbl_ref env
+      add_value lib_name vtbl_ref env
     | _ -> assert false
   in
   let env =

@@ -44,7 +44,12 @@ let get_name n default_value env =
 let get_value n env =
   match SMap.find_opt n env.values with None -> assert false | Some v -> !v
 
-let set_value n v env =
+let update_value n v env =
+  match SMap.find_opt n env.values with
+  | None -> assert false
+  | Some value -> value := !v
+
+let add_value n v env =
   match SMap.find_opt n env.values with
   | None -> assert false
   | Some _ ->
