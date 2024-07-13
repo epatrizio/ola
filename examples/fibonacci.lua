@@ -31,7 +31,7 @@ function fibo2(n)
   end
 end
 print(fibo2(15))
---print(fibo1(30))    -- 832040 (again ~2sec : Warning, bug! recursive function implementation problem)
+print(fibo2(30))    -- 832040 (compared with the previous version 'fibo1', performance is OK!)
 
 -- 3: Polynomial algorithm
 function fibo3(n)
