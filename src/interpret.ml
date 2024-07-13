@@ -459,8 +459,7 @@ and set_var v value env =
   in
   match v with
   | VarName n ->
-    let value_ref = ref value in
-    Env.update_value n value_ref env;
+    Env.update_value n value env;
     env
   | VarTableField (pexp, exp) -> (
     typecheck_var (VarTableField (pexp, exp)) env;
@@ -520,47 +519,34 @@ and lists_lassign nal vall env =
     match (nal, vall) with
     | [], [] | [], _ -> env
     | nal, [] ->
-      List.fold_left
-        (fun e (n, _on) ->
-          let vnil_ref = ref (Vnil ()) in
-          Env.add_value n vnil_ref e )
-        env nal
+      List.fold_left (fun e (n, _on) -> Env.add_value n (Vnil ()) e) env nal
     | (n, _on) :: vl, [ (l, va) ] -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] ->
-          let vnil_ref = ref (Vnil ()) in
-          Env.add_value n vnil_ref env
+        | [] -> Env.add_value n (Vnil ()) env
         | va :: vall ->
-          let va_ref = ref va in
-          let env = Env.add_value n va_ref env in
+          let env = Env.add_value n va env in
           let vall = List.map (fun v -> (l, v)) vall in
           lists_lassign vl vall env
       end
       | Vfunction (_i, _bl, cl_env) as f ->
-        let vf_ref = ref f in
-        Env.update_value n vf_ref cl_env;
+        Env.update_value n f cl_env;
         lists_lassign vl [] env
       | va ->
-        let va_ref = ref va in
-        let env = Env.add_value n va_ref env in
+        let env = Env.add_value n va env in
         lists_lassign vl [] env )
     | (n, _on) :: vl, (_l, va) :: tl -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
-        | [] ->
-          let vnil_ref = ref (Vnil ()) in
-          Env.add_value n vnil_ref env
+        | [] -> Env.add_value n (Vnil ()) env
         | va :: _vall ->
-          let va_ref = ref va in
-          let env = Env.add_value n va_ref env in
+          let env = Env.add_value n va env in
           lists_lassign vl tl env
       end
       | va ->
-        let va_ref = ref va in
-        let env = Env.add_value n va_ref env in
+        let env = Env.add_value n va env in
         lists_lassign vl tl env )
   end
 
@@ -626,8 +612,7 @@ and interpret_functioncall fc env =
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
     let value = Env.get_value v env in
     let closure, return, env = interpret_fct value el env in
-    let closure_ref = ref closure in
-    Env.update_value v closure_ref env;
+    Env.update_value v closure env;
     (return, env)
   | FCpreargs (PEvar (VarTableField (pexp, exp)), Aexpl el) ->
     let t, env = interpret_prefixexp pexp env in
@@ -752,8 +737,7 @@ and interpret_stmt stmt env =
     in
     let l1, _e1 = e1 in
     let ival, env = init_val e1 env in
-    let ival_ref = ref ival in
-    let env = Env.add_value n ival_ref env in
+    let env = Env.add_value n ival env in
     let limit, env = init_val e2 env in
     let step, env =
       match oe with
@@ -768,8 +752,7 @@ and interpret_stmt stmt env =
       | _ -> (
         try
           let env = interpret_block b env in
-          let ival_ref = ref ival in
-          let env = Env.add_value n ival_ref env in
+          let env = Env.add_value n ival env in
           (* control var must be restored *)
           let ival, _ = incr_cnt l1 ival step env in
           interpret_stmt (Sfor (n, (l1, Evalue ival), e2, oe, b)) env
@@ -810,22 +793,16 @@ and interpret_stmt stmt env =
           | VfunctionReturn vl -> begin
             match vl with
             | [] -> (Vnil (), env)
-            | [ v ] ->
-              let v_ref = ref v in
-              (v, Env.add_value (List.nth nl 0) v_ref env)
+            | [ v ] -> (v, Env.add_value (List.nth nl 0) v env)
             | v1 :: v2 :: _tl -> (
-              let v1_ref = ref v1 in
-              let env = Env.add_value (List.nth nl 0) v1_ref env in
+              let env = Env.add_value (List.nth nl 0) v1 env in
               match List.nth_opt nl 1 with
               | None -> (v1, env)
               | Some n ->
-                let v2_ref = ref v2 in
-                let env = Env.add_value n v2_ref env in
+                let env = Env.add_value n v2 env in
                 (v1, env) )
           end
-          | v ->
-            let v_ref = ref v in
-            (v, Env.add_value (List.nth nl 0) v_ref env)
+          | v -> (v, Env.add_value (List.nth nl 0) v env)
         in
         match ctrl_var with
         | Vnil () -> env (* stop condition *)

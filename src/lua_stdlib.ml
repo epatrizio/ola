@@ -36,12 +36,12 @@ let lib () =
 let load (env : value Env.t) : value Env.t =
   let lib_basic, lib = lib () in
   let add_basic func_name fct env =
-    let vfct_ref = ref (VfunctionStdLib (Random.bits32 (), fct)) in
-    add_global_force func_name vfct_ref env
+    let vfct = VfunctionStdLib (Random.bits32 (), fct) in
+    add_global_force func_name vfct env
   in
   let add_empty_lib name env =
-    let vtbl_ref = ref (Vtable (Random.bits32 (), Table.empty)) in
-    add_global_force name vtbl_ref env
+    let vtbl = Vtable (Random.bits32 (), Table.empty) in
+    add_global_force name vtbl env
   in
   let add_function_lib lib_name fct_name fct env =
     let v = get_value lib_name env in
@@ -54,8 +54,7 @@ let load (env : value Env.t) : value Env.t =
           (VfunctionStdLib (Random.bits32 (), fct))
           tbl
       in
-      let vtbl_ref = ref (Vtable (i, tbl)) in
-      add_value lib_name vtbl_ref env
+      add_value lib_name (Vtable (i, tbl)) env
     | _ -> assert false
   in
   let env =
