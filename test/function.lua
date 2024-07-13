@@ -105,18 +105,6 @@ h()
 hello()()
 -- (hello())()    -- OK (Typing error: attempt to call a nil value)
 
--- closure
-
-function add(x)
-  return function(n)
-    return x + n
-  end
-end
-
-local add2 = add(2)
--- print(add2)          -- Type = function > print = "function: id" (ok)
--- print(add2(40))      -- bug (closure)
-
 -- local function (current block scope)
 
 local function add_f(a, b, fun)

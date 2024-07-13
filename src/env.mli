@@ -1,19 +1,23 @@
-type t
+type 'a t
 
 type locals
 
-val empty : unit -> t
+val empty : unit -> 'a t
 
-val get_name : string -> t -> string * t
+val get_name : string -> 'a -> 'a t -> string * 'a t
 
-val get_value : string -> t -> Ast.value
+val get_value : string -> 'a t -> 'a
 
-val add_local : string -> t -> string * t
+val add_local : string -> 'a -> 'a t -> string * 'a t
 
-val add_global : string -> t -> string * t
+val add_global : string -> 'a -> 'a t -> string * 'a t
 
-val set_value : string -> Ast.value -> t -> t
+val add_global_force : string -> 'a -> 'a t -> 'a t
 
-val get_locals : t -> locals
+val update_value : string -> 'a -> 'a t -> unit
 
-val with_locals : t -> locals -> t
+val add_value : string -> 'a -> 'a t -> 'a t
+
+val get_locals : 'a t -> locals
+
+val with_locals : 'a t -> locals -> 'a t

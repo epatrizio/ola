@@ -10,7 +10,7 @@ let rec tostring_value v =
   | Vnumber (Nfloat f) -> string_of_float f
   | Vstring s -> s
   | Vtable (i, _) -> "table: " ^ string_of_int (Int32.to_int i)
-  | Vfunction (i, _) | VfunctionStdLib (i, _) ->
+  | Vfunction (i, _, _) | VfunctionStdLib (i, _) ->
     "function: " ^ string_of_int (Int32.to_int i)
   | VfunctionReturn vl -> (
     match vl with

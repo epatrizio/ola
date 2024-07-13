@@ -3,6 +3,7 @@
   assign.lua
   basics.lua
   blocks.lua
+  closure.lua
   error.lua
   function.lua
   goto.lua

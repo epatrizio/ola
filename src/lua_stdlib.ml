@@ -1,6 +1,10 @@
+open Ast
+open Env
 module LibMap = Map.Make (String)
 
-let lib =
+let () = Random.self_init ()
+
+let lib () =
   let add_func lib_name func_name func lib =
     match LibMap.find_opt lib_name lib with
     | Some l ->
@@ -28,3 +32,41 @@ let lib =
   let lib = LibMap.add "os" LibMap.empty lib in
   let lib = add_func "os" "execute" Lua_stdlib_os.execute lib in
   (lib_basic, lib)
+
+let load (env : value Env.t) : value Env.t =
+  let lib_basic, lib = lib () in
+  let add_basic func_name fct env =
+    let vfct = VfunctionStdLib (Random.bits32 (), fct) in
+    add_global_force func_name vfct env
+  in
+  let add_empty_lib name env =
+    let vtbl = Vtable (Random.bits32 (), Table.empty) in
+    add_global_force name vtbl env
+  in
+  let add_function_lib lib_name fct_name fct env =
+    let v = get_value lib_name env in
+    match v with
+    | Vtable (i, tbl) ->
+      let tbl =
+        Table.add
+          (fun _ -> None)
+          (Vstring fct_name)
+          (VfunctionStdLib (Random.bits32 (), fct))
+          tbl
+      in
+      add_value lib_name (Vtable (i, tbl)) env
+    | _ -> assert false
+  in
+  let env =
+    LibMap.fold (fun func_name f e -> add_basic func_name f e) lib_basic env
+  in
+  let env =
+    LibMap.fold
+      (fun lib_name l e ->
+        let e = add_empty_lib lib_name e in
+        LibMap.fold
+          (fun func_name f e -> add_function_lib lib_name func_name f e)
+          l e )
+      lib env
+  in
+  env

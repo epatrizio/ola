@@ -57,7 +57,8 @@ type value =
   | Vboolean of bool
   | Vnumber of number
   | Vstring of string
-  | Vfunction of int32 * (parlist * block) (* int32 = function unique id *)
+  | Vfunction of int32 * (parlist * block) * value Env.t
+    (* int32 = function unique id *)
   | VfunctionStdLib of int32 * (value list -> value list)
     (* int32 = stdlib function unique id *)
   | VfunctionReturn of value list
@@ -180,7 +181,7 @@ let rec print_value fmt value =
   | Vboolean b -> pp_print_bool fmt b
   | Vnumber num -> print_number fmt num
   | Vstring s -> fprintf fmt {|"%a"|} pp_print_string s
-  | Vfunction (i, _) | VfunctionStdLib (i, _) ->
+  | Vfunction (i, _, _) | VfunctionStdLib (i, _) ->
     fprintf fmt "function: %a" pp_print_int (Int32.to_int i)
   | VfunctionReturn vl -> (pp_print_list ~pp_sep print_value) fmt vl
   | Vtable (i, _flo) -> fprintf fmt "table: %a" pp_print_int (Int32.to_int i)
