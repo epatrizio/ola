@@ -34,24 +34,25 @@ for i, i2, i3 in mul23, 5, 0 do
   print(i, i2, i3)
 end
 
--- Stateful iterators - TODO: to be implemented
--- https://github.com/epatrizio/ola/issues/18 (Issue bug closure impl)
+-- Stateful iterators
 
--- local array = {"elt1", "elt2", "elt3"}
+local array = {"elt1", "elt2", "elt3"}
 
--- function iterator(collection)
---   local index = 0
---   local count = #collection
---   -- The closure function is returned
---   return function ()
---     index = index + 1
---     if index <= count then
---       -- return the current element of the iterator
---       return collection[index]
---     end
---   end
--- end
+local function iterator(collection)
+  local index = 0
+  local count = #collection
+  -- The closure function is returned
+  return function ()
+    index = index + 1
+    if index <= count then
+      -- return the current element(s) of the iterator
+      -- same as above, it's possible to return several values,
+      -- but it's the closure that manages the current context (here= local index).
+      return index, collection[index]
+    end
+  end
+end
 
--- for elt in iterator(array) do
---   print(elt)
--- end
+for idx, elt in iterator(array) do
+  print(idx, elt)
+end

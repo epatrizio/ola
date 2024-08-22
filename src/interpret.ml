@@ -760,7 +760,7 @@ and interpret_stmt stmt env =
     end
   | Siterator (nl, el, b) ->
     typecheck_stmt (Siterator (nl, el, b)) env;
-    (* 4 values: iterator function, state, an initial value for the control variable, and a closing value. *)
+    let loc, _e = List.nth el 0 in
     let vl, env =
       List.fold_left
         (fun (vl, ev) ex ->
@@ -770,61 +770,104 @@ and interpret_stmt stmt env =
           | v -> (vl @ [ v ], ev) )
         ([], env) el
     in
-    (* runtime additional check *)
-    if List.length vl < 3 then
-      error None
-        "Typing error: bad 'for iterator' construction (bad element number in \
-         'in' argument)";
-    let loc, _e = List.nth el 0 in
-    let iterator_func = List.nth vl 0 in
-    let state = List.nth vl 1 in
-    let ctrl_var = List.nth vl 2 in
     begin
-      match ctrl_var with
-      | ctrl_var -> (
-        let iterator_func_param =
-          [ (loc, Evalue state); (loc, Evalue ctrl_var) ]
-        in
-        let _closure, v, env =
-          interpret_fct iterator_func iterator_func_param env
-        in
-        let ctrl_var, env =
-          match v with
-          | VfunctionReturn vl -> begin
-            match vl with
-            | [] -> (Vnil (), env)
-            | [ v ] -> (v, Env.add_value (List.nth nl 0) v env)
-            | v1 :: tl ->
-              let env = Env.add_value (List.nth nl 0) v1 env in
-              let ni = ref 0 in
-              let env =
-                List.fold_left
-                  (fun ev v ->
-                    ni := !ni + 1;
-                    match List.nth_opt nl !ni with
-                    | None -> ev
-                    | Some n -> Env.add_value n v ev )
-                  env tl
-              in
-              (v1, env)
-          end
-          | v -> (v, Env.add_value (List.nth nl 0) v env)
-        in
-        match ctrl_var with
-        | Vnil () -> env (* stop condition *)
-        | ctrl_var -> (
+      match List.length vl with
+      | 1 ->
+        (* Stateful iterator *)
+        let iter cl env =
           try
             let env = interpret_block b env in
-            interpret_stmt
-              (Siterator
-                 ( nl
-                 , [ (loc, Evalue iterator_func)
-                   ; (loc, Evalue state)
-                   ; (loc, Evalue ctrl_var)
-                   ]
-                 , b ) )
-              env
-          with Break_catch env -> env ) )
+            interpret_stmt (Siterator (nl, [ (loc, Evalue cl) ], b)) env
+          with Break_catch env -> env
+        in
+        let ctrl_value = List.nth vl 0 in
+        begin
+          match ctrl_value with
+          | Vfunction (_i, (_pl, _bl), cl_env) as closure -> (
+            let closure, v, _cl_env = interpret_fct closure [] cl_env in
+            match v with
+            | Vnil () -> env (* stop condition *)
+            | VfunctionReturn vl -> begin
+              match vl with
+              | [] -> env
+              | v :: tl ->
+                let env = Env.add_value (List.nth nl 0) v env in
+                let ni = ref 0 in
+                let env =
+                  List.fold_left
+                    (fun ev v ->
+                      ni := !ni + 1;
+                      match List.nth_opt nl !ni with
+                      | None -> ev
+                      | Some n -> Env.add_value n v ev )
+                    env tl
+                in
+                iter closure env
+            end
+            | v ->
+              let env = Env.add_value (List.nth nl 0) v env in
+              iter closure env )
+          | _ ->
+            error None
+              "Typing error: bad 'for iterator' stateful construction \
+               (iterator function in 'in' argument does not return a closure)"
+        end
+      | n when n < 3 ->
+        error None
+          "Typing error: bad 'for iterator' stateless construction (bad \
+           element number in 'in' argument)"
+      | _ ->
+        (* Stateless iterator *)
+        (* 4 values: iterator function, state, an initial value for the control variable, and a closing value. *)
+        let iterator_func = List.nth vl 0 in
+        let state = List.nth vl 1 in
+        let ctrl_var = List.nth vl 2 in
+        begin
+          match ctrl_var with
+          | ctrl_var -> (
+            let iterator_func_param =
+              [ (loc, Evalue state); (loc, Evalue ctrl_var) ]
+            in
+            let _closure, v, env =
+              interpret_fct iterator_func iterator_func_param env
+            in
+            let ctrl_var, env =
+              match v with
+              | VfunctionReturn vl -> begin
+                match vl with
+                | [] -> (Vnil (), env)
+                | v :: tl ->
+                  let env = Env.add_value (List.nth nl 0) v env in
+                  let ni = ref 0 in
+                  let env =
+                    List.fold_left
+                      (fun ev v ->
+                        ni := !ni + 1;
+                        match List.nth_opt nl !ni with
+                        | None -> ev
+                        | Some n -> Env.add_value n v ev )
+                      env tl
+                  in
+                  (v, env)
+              end
+              | v -> (v, Env.add_value (List.nth nl 0) v env)
+            in
+            match ctrl_var with
+            | Vnil () -> env (* stop condition *)
+            | ctrl_var -> (
+              try
+                let env = interpret_block b env in
+                interpret_stmt
+                  (Siterator
+                     ( nl
+                     , [ (loc, Evalue iterator_func)
+                       ; (loc, Evalue state)
+                       ; (loc, Evalue ctrl_var)
+                       ]
+                     , b ) )
+                  env
+              with Break_catch env -> env ) )
+        end
     end
   (* | Sfunction (_n, _fb) -> env *)
   (* | SfunctionLocal (_n, _fb) -> env *)

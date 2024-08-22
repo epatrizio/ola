@@ -21,3 +21,6 @@ iterators basics:
   3, 6, 9
   4, 8, 12
   5, 10, 15
+  1, elt1
+  2, elt2
+  3, elt3
