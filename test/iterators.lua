@@ -21,6 +21,19 @@ for i, n in squares(5) do
   print(i, n)
 end
 
+local function mul23(iteratorMaxCount, currentNumber)
+  if currentNumber<iteratorMaxCount then
+    currentNumber = currentNumber + 1
+    -- iterator function should return a list of values
+    -- first one is always the control variable
+    return currentNumber, currentNumber*2, currentNumber*3
+  end
+end
+
+for i, i2, i3 in mul23, 5, 0 do
+  print(i, i2, i3)
+end
+
 -- Stateful iterators - TODO: to be implemented
 -- https://github.com/epatrizio/ola/issues/18 (Issue bug closure impl)
 

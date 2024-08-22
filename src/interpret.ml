@@ -794,13 +794,19 @@ and interpret_stmt stmt env =
             match vl with
             | [] -> (Vnil (), env)
             | [ v ] -> (v, Env.add_value (List.nth nl 0) v env)
-            | v1 :: v2 :: _tl -> (
+            | v1 :: tl ->
               let env = Env.add_value (List.nth nl 0) v1 env in
-              match List.nth_opt nl 1 with
-              | None -> (v1, env)
-              | Some n ->
-                let env = Env.add_value n v2 env in
-                (v1, env) )
+              let ni = ref 0 in
+              let env =
+                List.fold_left
+                  (fun ev v ->
+                    ni := !ni + 1;
+                    match List.nth_opt nl !ni with
+                    | None -> ev
+                    | Some n -> Env.add_value n v ev )
+                  env tl
+              in
+              (v1, env)
           end
           | v -> (v, Env.add_value (List.nth nl 0) v env)
         in
