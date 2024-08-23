@@ -7,6 +7,21 @@ written in [OCaml](https://ocaml.org) with the [Dune](https://dune.build) build 
 - Execute [Cram test](https://dune.readthedocs.io/en/stable/tests.html): `dune test`
 - Run examples: `dune exec ola ./examples/file_name.lua`
 
+<!-- $MDX file=examples/hello.lua -->
+```lua
+local function hello(msg)
+  print("Hello, "..msg.."!")
+end
+
+hello("world")
+```
+
+```sh
+$ dune exec ola examples/hello.lua
+interprete ...
+Hello, world!
+```
+
 ## Why ?
 
 This experimental project has only two objectives (for now ;) :
