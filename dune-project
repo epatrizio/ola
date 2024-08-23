@@ -19,3 +19,22 @@
 (generate_opam_files true)
 
 (implicit_transitive_deps false)
+
+(package
+ (name ola)
+ (synopsis "OCaml Lua Interpreter")
+ (description "OCaml Lua Interpreter. Experimental project, work in progress ...")
+ (tags (ola ocaml lua interpreter))
+ (depends
+  (ocaml
+   (>= 4.14))
+  sedlex
+  (menhir
+   (and
+    :build
+    (>= 20220210)))
+  (odoc :with-doc)
+  (mdx
+   (and
+    :with-test
+    (>= "2.1")))))
