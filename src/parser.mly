@@ -54,10 +54,15 @@ let stat ==
   | FOR; ~ = namelist; IN; ~ = explist; DO; ~ = block; END; <Siterator>
   | FUNCTION; ~ = funcname; ~ = funcbody; {
     (* Sfunction syntactic sugar *)
-    Sassign (
-      [ VarName (String.concat "." funcname) ],
-      [ ($startpos, $endpos), (Efunctiondef funcbody) ]
-    )
+    let fl = match funcname with
+      | [] -> assert false
+      | [ name ] -> [ VarName name ]
+      | name :: tl ->
+        [ VarTableField (
+            PEvar (VarName name),
+            (($startpos, $endpos), Evalue (Vstring (String.concat "." tl)))) ]
+    in
+    Sassign (fl, [ ($startpos, $endpos), (Efunctiondef funcbody) ])
   }
   | LOCAL; FUNCTION; name = NAME; ~ = funcbody; {
     (* SfunctionLocal syntactic sugar *)

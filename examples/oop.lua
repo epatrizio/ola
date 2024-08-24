@@ -9,8 +9,8 @@ https://www.tutorialspoint.com/lua/lua_object_oriented.htm
 
 AbstractGeometric = {}
 
-AbstractGeometric.new = function (name)
--- function AbstractGeometric.new(name)
+-- AbstractGeometric.new = function (name)
+function AbstractGeometric.new(name)
     local self = {}
     local name = name
 
@@ -31,8 +31,8 @@ end
 
 Point = {}
 
-Point.new = function (name, x, y)
--- function Point.new(name, x, y)
+-- Point.new = function (name, x, y)
+function Point.new(name, x, y)
     local self = AbstractGeometric.new(name)
     local x = x
     local y = y
@@ -50,8 +50,8 @@ end
 
 Circle = {}
 
-Circle.new = function (name, x, y, r)
--- function Circle.new(name, x, y, r)
+-- Circle.new = function (name, x, y, r)
+function Circle.new(name, x, y, r)
     local self = Point.new(name, x, y)
     local radius = r
     local center = Point.new("Center", x, y)
