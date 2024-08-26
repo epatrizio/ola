@@ -12,3 +12,4 @@
   My circle 2
   Circle:My circle 2;Point:Center;x:2;y:2;radius:20
   125.6
+  my_class

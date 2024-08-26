@@ -93,7 +93,7 @@ let label :=
   | DCOLON; ~ = NAME; DCOLON; <>
 
 let funcname :=
-  | names = separated_nonempty_list(DOT, NAME); last_name = option(preceded(DCOLON, NAME)); {
+  | names = separated_nonempty_list(DOT, NAME); last_name = option(preceded(COLON, NAME)); {
     match last_name with
     | None -> names
     | Some lname -> names @ [ lname ]

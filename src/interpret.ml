@@ -605,7 +605,6 @@ and interpret_fct value el env =
   | Vnil _ -> error None "Typing error: attempt to call a nil value"
   | _ -> assert false
 
-(* todo: finish ... (FCprename) *)
 and interpret_functioncall fc env =
   typecheck_functioncall fc env;
   match fc with
@@ -636,7 +635,20 @@ and interpret_functioncall fc env =
     let value, env = interpret_functioncall fc env in
     let _closure, return, env = interpret_fct value el env in
     (return, env)
-  | _ -> assert false
+  | FCprename (PEvar (VarName v), name, Aexpl el) ->
+    let value = Env.get_value v env in
+    begin
+      match value with
+      | Vtable (_i, tbl) -> begin
+        match Table.get get_int_value_opt (Vstring name) tbl with
+        | None -> assert false
+        | Some value ->
+          let _closure, return, env = interpret_fct value el env in
+          (return, env)
+      end
+      | _ -> error None "Typing error: attempt to access a non table field"
+    end
+  | _ -> assert false (* TODO: pattern matching non exhaustive *)
 
 and interpret_stmt stmt env =
   match stmt with
