@@ -108,3 +108,125 @@ local cl = Class:new("my_class")
 
 -- print(cl)                -- table: ID
 print(cl.name)
+
+-- An oop implementation of classic functional programming Option type
+
+Option = {}
+
+function Option.Some(value)
+    local self = {}
+    local value = value
+
+    self.getValue = function()
+        return value
+    end
+
+    self.isSome = function()
+        return true
+    end
+
+    self.isNone = function()
+        return false
+    end
+
+    return self
+end
+
+function Option.None()
+    local self = {}
+    local value = nil
+
+    self.getValue = function()
+        return value
+    end
+
+    self.isSome = function()
+        return false
+    end
+
+    self.isNone = function()
+        return true
+    end
+
+    return self
+end
+
+-- An Option type is always returned
+local function div_o(a, b)
+    if b == 0 then
+        return Option.None()
+    else
+        return Option.Some(a/b)
+    end
+end
+
+local d = div_o(84,2)
+if d.isSome() then print(d.getValue()) else print("error: div by zero") end
+d = div_o(42,0)
+if d.isSome() then print(d.getValue()) else print("error: div by zero") end
+
+-- An oop implementation of classic functional programming Result type
+
+Result = {}
+
+function Result.Ok(value)
+    local self = {}
+    local value = value
+    local error = nil
+
+    self.getValue = function()
+        return value
+    end
+
+    self.getError = function()
+        return error
+    end
+
+    self.isOk = function()
+        return true
+    end
+
+    self.isError = function()
+        return false
+    end
+
+    return self
+end
+
+function Result.Error(error)
+    local self = {}
+    local value = nil
+    local error = error
+
+    self.getValue = function()
+        return value
+    end
+
+    self.getError = function()
+        return error
+    end
+
+    self.isOk = function()
+        return false
+    end
+
+    self.isError = function()
+        return true
+    end
+
+    return self
+end
+
+-- A Result type is always returned
+local function div_r(a, b)
+    if b == 0 then
+        return Result.Error("error: div by zero")
+    else
+        return Result.Ok(a/b)
+    end
+end
+
+d = div_r(84,2)
+if d.isOk() then print(d.getValue()) else print(d.getError()) end
+d = div_r(42,0)
+if d.isOk() then print(d.getValue()) else print(d.getError()) end
