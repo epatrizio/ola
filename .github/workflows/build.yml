@@ -1,0 +1,72 @@
+name: build
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          # - macos-latest
+          # - windows-latest see #5
+        ocaml-compiler:
+          - "4.14"
+        include:
+          - os: ubuntu-latest
+            ocaml-compiler: "4.14"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: cache
+        id: cache-opam
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-opam-build
+        with:
+          path: |
+            ~/work/ola/ola/_opam/
+          key: ${{ runner.os }}-build-${{ matrix.ocaml-compiler }}-${{ env.cache-name }}-${{ hashFiles('**/*.opam') }}
+      - name: setup-ocaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: true
+          opam-pin: true
+          allow-prerelease-opam: false
+      # - name: depext
+      #   run: |
+      #     if [ "$RUNNER_OS" == "linux" ]; then
+      #       apt update
+      #     fi
+      #     opam install . --depext-only --with-test --with-doc
+      - name: setup
+        if: steps.cache-opam.outputs.cache-hit != 'true'
+        run: |
+          opam install . --deps-only --with-test --with-doc
+          opam install ocamlformat
+          opam clean --switch-cleanup
+      - name: build
+        run: |
+          opam exec -- dune build @install
+      - name: test
+        run: |
+          opam exec -- dune runtest
+      - name: lint-doc
+        run: |
+          ODOC_WARN_ERROR=true opam exec -- dune build @doc 2> output.txt || true
+          # $(exit $(wc -l output.txt | cut -d " " -f1))
+      - name: lint-fmt
+        run: |
+          opam exec -- dune build @fmt || (echo "\n please run \`dune fmt\` and try again" && exit 1)
+      - name: lint-fresh-opam-file
+        run: |
+          git diff --exit-code ola.opam || (echo " please run \`dune build\`, commit the changes to ola.opam, and then try again" && exit 1)
