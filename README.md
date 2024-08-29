@@ -1,4 +1,4 @@
-# ola - An OCaml Lua language interpreter
+# ola - An OCaml Lua language interpreter [![build status](https://github.com/epatrizio/ola/workflows/build/badge.svg)](https://github.com/epatrizio/ola/actions)
 
 This project is an interpreter of the [Lua 5.4](https://www.lua.org/manual/5.4/manual.html) programming language
 written in [OCaml](https://ocaml.org) with the [Dune](https://dune.build) build system.
@@ -21,6 +21,12 @@ hello("world")
 $ dune exec ola -- examples/hello.lua
 interprete ...
 Hello, world!
+```
+
+```console
+$ BISECT_FILE=$(pwd)/bisect opam exec -- dune runtest --force --instrument-with bisect_ppx
+$ bisect-ppx-report summary
+Coverage: 225/1379 (16.32%)
 ```
 
 - Install in current [opam OCaml switch](https://ocaml.org/docs/opam-switch-introduction): `dune install`

@@ -1,0 +1,65 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: cache
+        id: cache-opam
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-opam-deploy
+        with:
+          path: |
+            ~/work/ola/ola/_opam/
+          key: ${{ runner.os }}-deploy-${{ env.cache-name }}-${{ hashFiles('**/*.opam') }}
+      - name: setup-ocaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "4.14"
+          dune-cache: true
+          opam-pin: true
+          allow-prerelease-opam: false
+    #   - name: depext
+    #     run: |
+    #       sudo apt update
+    #       opam install . --depext-only --with-test --with-doc
+      - name: setup-deploy
+        if: steps.cache-opam.outputs.cache-hit != 'true'
+        run: |
+          opam install . --deps-only --with-test --with-doc
+          opam install bisect_ppx ocb
+    #   - name: api
+    #     run: |
+    #       touch doc/.nojekyll
+    #       opam exec -- dune build @doc
+    #       mv _build/default/_doc/_html doc/api
+      - name: build
+        run: |
+          opam exec -- dune build @install
+      - name: coverage
+        run: |
+          BISECT_FILE=$(pwd)/bisect opam exec -- dune runtest --force --instrument-with bisect_ppx
+          opam exec -- bisect-ppx-report html
+      - name: coverage-badge
+        run: |
+          label=coverage
+          percentage=$(opam exec -- bisect-ppx-report summary | sed -E 's/.*\((..).*/\1/g')
+          color=$(printf "%x%x%x" $((255-$percentage)) $((155+$percentage)) 85)
+          opam exec -- ocb --style classic --label $label --status $percentage'%' --color $color > _coverage/badge.svg
+    #   - name: deploy
+    #     uses: JamesIves/github-pages-deploy-action@v4.6.3
+    #     with:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #       BRANCH: gh-pages
+    #       FOLDER: doc/
+    #       CLEAN: true

@@ -14,7 +14,8 @@
 
 (maintainers "Eric Patrizio <epatrizio@mpns.fr>")
 
-(source (github epatrizio/ola))
+(source
+ (github epatrizio/ola))
 
 (generate_opam_files true)
 
@@ -23,8 +24,10 @@
 (package
  (name ola)
  (synopsis "OCaml Lua Interpreter")
- (description "OCaml Lua Interpreter. Experimental project, work in progress ...")
- (tags (ola ocaml lua interpreter))
+ (description
+  "OCaml Lua Interpreter. Experimental project, work in progress ...")
+ (tags
+  (ola ocaml lua interpreter))
  (depends
   (ocaml
    (>= 4.14))
@@ -33,6 +36,15 @@
    (and
     :build
     (>= 20220210)))
+  (bisect_ppx
+   (and
+    (>= 2.5)
+    :with-dev-setup))
+  (ocb
+   (and
+    :with-test
+    (>= "0.1")
+    :dev))
   (odoc :with-doc)
   (mdx
    (and
