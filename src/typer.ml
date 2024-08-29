@@ -197,7 +197,9 @@ and typecheck_functioncall fc env =
   | FCpreargs (PEexp e, _) ->
     let t = typecheck_expr e env in
     typ_check t
-  | _ -> assert false
+  | FCprename (pe, _, _) ->
+    let t = typecheck_prefixexp pe env in
+    typ_check t
 
 and typecheck_stmt stmt env =
   match stmt with
