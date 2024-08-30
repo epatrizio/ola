@@ -41,7 +41,10 @@ function life_screen_print()
     end
     io.write("\n")
   end
-  io.write("\027[2J")
+  io.write("\027[2J")  -- This clear screen impl doesn't work
+  io.write("\n")
+  io.flush()
+  -- os.execute("clear")
   for i = 1, h do
     print_line(life_screen[i])
   end

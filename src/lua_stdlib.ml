@@ -28,6 +28,7 @@ let lib () =
   let lib = add_func "math" "tan" Lua_stdlib_math.tan lib in
   let lib = add_func "math" "random" Lua_stdlib_math.random lib in
   let lib = LibMap.add "io" LibMap.empty lib in
+  let lib = add_func "io" "flush" Lua_stdlib_io.flush lib in
   let lib = add_func "io" "write" Lua_stdlib_io.write lib in
   let lib = LibMap.add "os" LibMap.empty lib in
   let lib = add_func "os" "execute" Lua_stdlib_os.execute lib in
