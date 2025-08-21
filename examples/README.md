@@ -26,7 +26,4 @@ By the way, classic functional programming Option and Result types could be impl
 implementation of classic functions *table_map*, *table_filter* and *table_fold*:
 `dune exec ola -- ./examples/table.lua`
 
-*Nb. The Game of Life calculations and processes are correct, but the display is not.*
-*Todo: `io.write` and `os.execute` better implementation.*
-
 *Nb. Examples are part of the cram test suite*
