@@ -6,10 +6,9 @@
 *)
 
 open Ast
+open Syntax
 
 let error loc message = Error (loc, message)
-
-let ( let* ) = Result.bind
 
 let rec typecheck_value value =
   match value with
