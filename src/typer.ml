@@ -172,14 +172,6 @@ and typecheck_expr expr env =
   | Eprefix pexp -> typecheck_prefixexp pexp env
   | Etableconstructor _ -> Ok Ttable
 
-and typecheck_lexpr lexpr env =
-  List.fold_left
-    (fun acc e ->
-      let* () = acc in
-      let* _ = typecheck_expr e env in
-      Ok () )
-    (Ok ()) lexpr
-
 and typecheck_functioncall fc env =
   let typ_check t =
     match t with
