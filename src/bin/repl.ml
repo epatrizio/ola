@@ -1,4 +1,5 @@
 open Ola
+open Syntax
 
 let prompt () =
   try
@@ -19,7 +20,7 @@ let rec loop (chunk : Ast.block) (env : Ast.value Env.t) =
     let stmt = parser lexer in
     let stmt, env = Scope.analysis stmt env in
     let chunk = chunk @ stmt in
-    let env = Interpret.run ~pt:Interpret.Last chunk env in
+    let* env = Interpret.run ~pt:Interpret.Last chunk env in
     loop chunk env
   with
   | Lexer.Lexing_error message ->

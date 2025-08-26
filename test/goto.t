@@ -7,4 +7,3 @@ goto operations:
   4
   7
   Interpretation error: no visible label for <goto> l42
-  [1]
