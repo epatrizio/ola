@@ -8,7 +8,9 @@
 open Ast
 open Syntax
 
-let error loc message = Error (loc, message)
+exception Typing_error of Ast.location option * string
+
+let error loc_opt message = raise (Typing_error (loc_opt, message))
 
 let rec typecheck_value value =
   match value with

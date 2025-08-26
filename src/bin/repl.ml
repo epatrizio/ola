@@ -29,6 +29,9 @@ let rec loop (chunk : Ast.block) (env : Ast.value Env.t) =
   | Parser.Error ->
     print_endline "Syntax error";
     loop chunk env
+  | Typer.Typing_error (_loc, message) ->
+    print_endline ("Typing error: " ^ message);
+    loop chunk env
   | Interpret.Interpretation_error (_loc, message) ->
     print_endline ("Interpretation error: " ^ message);
     loop chunk env

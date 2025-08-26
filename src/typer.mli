@@ -1,3 +1,5 @@
+exception Typing_error of Ast.location option * string
+
 val typecheck_var :
   Ast.var -> Ast.value Env.t -> (Ast.typ, Ast.location option * string) result
 

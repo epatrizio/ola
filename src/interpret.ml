@@ -1,5 +1,6 @@
 open Ast
 open Syntax
+open Typer
 
 let () = Random.self_init ()
 
@@ -16,20 +17,7 @@ exception Return_catch of expr list * value Env.t
 
 exception Interpretation_error of location option * string
 
-let error loc message = raise (Interpretation_error (loc, message))
-
-let typecheck fct elt env =
-  match fct elt env with
-  | Ok _t -> ()
-  | Error (loc, msg) -> error loc (Format.sprintf "Typing error: %s" msg)
-
-let typecheck_expr = typecheck Typer.typecheck_expr
-
-let typecheck_var = typecheck Typer.typecheck_var
-
-let typecheck_functioncall = typecheck Typer.typecheck_functioncall
-
-let typecheck_stmt = typecheck Typer.typecheck_stmt
+let error loc_opt message = raise (Interpretation_error (loc_opt, message))
 
 let rec block_from_pointer pt stmt_list =
   match (pt, stmt_list) with
@@ -78,9 +66,11 @@ and interpret_arith_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   env =
   let* v1, env = interpret_expr expr1 env in
   let* v2, env = interpret_expr expr2 env in
-  typecheck_expr
-    (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
-    env;
+  let* _ =
+    typecheck_expr
+      (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
+      env
+  in
   let v1 =
     match v1 with Vstring s -> number_of_string (Some loc1) s | v -> v
   in
@@ -153,9 +143,11 @@ and interpret_bitwise_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   env =
   let* v1, env = interpret_expr expr1 env in
   let* v2, env = interpret_expr expr2 env in
-  typecheck_expr
-    (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
-    env;
+  let* _ =
+    typecheck_expr
+      (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
+      env
+  in
   match (v1, v2) with
   | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
     match binop with
@@ -201,9 +193,11 @@ and interpret_rel_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env
     =
   let* v1, env = interpret_expr expr1 env in
   let* v2, env = interpret_expr expr2 env in
-  typecheck_expr
-    (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
-    env;
+  let* _ =
+    typecheck_expr
+      (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
+      env
+  in
   match (v1, v2) with
   | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
     match binop with
@@ -278,9 +272,11 @@ and interpret_rel_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env
 and interpret_str_binop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
   let* v1, env = interpret_expr expr1 env in
   let* v2, env = interpret_expr expr2 env in
-  typecheck_expr
-    (loc1, Ebinop ((loc1, Evalue v1), Bddot, (loc2, Evalue v2)))
-    env;
+  let* _ =
+    typecheck_expr
+      (loc1, Ebinop ((loc1, Evalue v1), Bddot, (loc2, Evalue v2)))
+      env
+  in
   begin
     match (v1, v2) with
     | Vstring s1, Vstring s2 -> Ok (Vstring (s1 ^ s2), env)
@@ -309,7 +305,7 @@ and interpret_var v env =
   match v with
   | VarName n -> Ok (Env.get_value n env, env)
   | VarTableField (pexp, exp) -> (
-    typecheck_var (VarTableField (pexp, exp)) env;
+    let* _ = typecheck_var (VarTableField (pexp, exp)) env in
     let* v, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
     match v with
@@ -390,7 +386,7 @@ and interpret_expr (loc, expr) env =
     Ok (v, env)
   | Eunop (Unot, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
-    typecheck_expr (loc, Eunop (Unot, (l, Evalue v))) env;
+    let* _ = typecheck_expr (loc, Eunop (Unot, (l, Evalue v))) env in
     begin
       match v with
       | Vnil () -> Ok (Vboolean true, env)
@@ -399,7 +395,7 @@ and interpret_expr (loc, expr) env =
     end
   | Eunop (Uminus, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
-    typecheck_expr (loc, Eunop (Uminus, (l, Evalue v))) env;
+    let* _ = typecheck_expr (loc, Eunop (Uminus, (l, Evalue v))) env in
     begin
       match v with
       | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (-i)), env)
@@ -416,7 +412,7 @@ and interpret_expr (loc, expr) env =
     end
   | Eunop (Usharp, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
-    typecheck_expr (loc, Eunop (Usharp, (l, Evalue v))) env;
+    let* _ = typecheck_expr (loc, Eunop (Usharp, (l, Evalue v))) env in
     begin
       match v with
       | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
@@ -427,7 +423,7 @@ and interpret_expr (loc, expr) env =
     end
   | Eunop (Ulnot, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
-    typecheck_expr (loc, Eunop (Ulnot, (l, Evalue v))) env;
+    let* _ = typecheck_expr (loc, Eunop (Ulnot, (l, Evalue v))) env in
     begin
       match v with
       | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (lnot i)), env)
@@ -463,7 +459,7 @@ and set_var v value env =
     Env.update_value n value env;
     Ok env
   | VarTableField (pexp, exp) -> (
-    typecheck_var (VarTableField (pexp, exp)) env;
+    let* _ = typecheck_var (VarTableField (pexp, exp)) env in
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
     match t with
@@ -613,7 +609,7 @@ and interpret_fct value el env =
   | _ -> assert false
 
 and interpret_functioncall fc env =
-  typecheck_functioncall fc env;
+  let* _ = typecheck_functioncall fc env in
   match fc with
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
     let value = Env.get_value v env in
@@ -722,7 +718,7 @@ and interpret_stmt stmt env : _ result =
       | _ -> interpret_block b env
     end
   | Sfor (n, e1, e2, oe, b) ->
-    typecheck_stmt (Sfor (n, e1, e2, oe, b)) env;
+    let* () = typecheck_stmt (Sfor (n, e1, e2, oe, b)) env in
     let init_val ((l, _e) as expr) env =
       let* v, env = interpret_expr expr env in
       match v with
@@ -778,7 +774,7 @@ and interpret_stmt stmt env : _ result =
         with Break_catch env -> Ok env )
     end
   | Siterator (nl, el, b) ->
-    typecheck_stmt (Siterator (nl, el, b)) env;
+    let* () = typecheck_stmt (Siterator (nl, el, b)) env in
     let loc, _e = List.nth el 0 in
     let* vl, env =
       List.fold_left

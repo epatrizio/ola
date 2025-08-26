@@ -45,6 +45,9 @@ let process source_code_file debug =
   | Parser.Error ->
     let loc = Sedlexing.lexing_positions lexbuf in
     Error (Some loc, "Syntax error")
+  | Typer.Typing_error (loc, message) ->
+    let message = sprintf "Typing error: %s" message in
+    Error (loc, message)
   | Interpret.Interpretation_error (loc, message) ->
     let message = sprintf "Interpretation error: %s" message in
     Error (loc, message)
