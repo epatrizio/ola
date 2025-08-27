@@ -39,5 +39,8 @@ let rec loop (chunk : Ast.block) (env : Ast.value Env.t) =
 let run () =
   print_endline "ola, Lua language interpreter!";
   let env = Env.empty () in
-  let env = Lua_stdlib.load env in
-  loop [] env
+  match Lua_stdlib.load env with
+  | Ok env -> loop [] env
+  | Error message ->
+    print_endline ("Lua_stdlib.load error: " ^ message);
+    exit 1

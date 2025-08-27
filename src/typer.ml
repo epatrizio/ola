@@ -134,9 +134,11 @@ and typecheck_str_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
 
 and typecheck_var var env =
   match var with
-  | VarName n ->
-    let v = Env.get_value n env in
-    Ok (typecheck_value v)
+  | VarName n -> begin
+    match Env.get_value n env with
+    | Ok v -> Ok (typecheck_value v)
+    | Error msg -> error None ("Env error: " ^ msg)
+  end
   | VarTableField (pexp, ((l, _e) as _exp)) -> (
     let* t = typecheck_prefixexp pexp env in
     match t with

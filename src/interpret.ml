@@ -19,6 +19,11 @@ exception Interpretation_error of location option * string
 
 let error loc_opt message = raise (Interpretation_error (loc_opt, message))
 
+let env_result_check res =
+  match res with
+  | Ok v -> Ok v
+  | Error message -> error None (Format.sprintf "Env error: %s" message)
+
 let rec block_from_pointer pt stmt_list =
   match (pt, stmt_list) with
   | Begin, _ -> stmt_list
@@ -303,7 +308,9 @@ and interpret_prefixexp pexp env =
 
 and interpret_var v env =
   match v with
-  | VarName n -> Ok (Env.get_value n env, env)
+  | VarName n ->
+    let* v = env_result_check (Env.get_value n env) in
+    Ok (v, env)
   | VarTableField (pexp, exp) -> (
     let* _ = typecheck_var (VarTableField (pexp, exp)) env in
     let* v, env = interpret_prefixexp pexp env in
@@ -456,7 +463,7 @@ and set_var v value env =
   in
   match v with
   | VarName n ->
-    Env.update_value n value env;
+    let* () = env_result_check (Env.update_value n value env) in
     Ok env
   | VarTableField (pexp, exp) -> (
     let* _ = typecheck_var (VarTableField (pexp, exp)) env in
@@ -520,24 +527,28 @@ and lists_assign vl vall env =
 and lists_lassign nal vall env =
   begin
     match (nal, vall) with
-    | [], [] | [], _ -> env
+    | [], [] | [], _ -> Ok env
     | nal, [] ->
-      List.fold_left (fun e (n, _on) -> Env.add_value n (Vnil ()) e) env nal
+      List.fold_left
+        (fun acc (n, _on) ->
+          let e = Result.get_ok acc in
+          Env.add_value n (Vnil ()) e )
+        (Ok env) nal
     | (n, _on) :: vl, [ (l, va) ] -> (
       match va with
       | VfunctionReturn vall -> begin
         match vall with
         | [] -> Env.add_value n (Vnil ()) env
         | va :: vall ->
-          let env = Env.add_value n va env in
+          let* env = Env.add_value n va env in
           let vall = List.map (fun v -> (l, v)) vall in
           lists_lassign vl vall env
       end
       | Vfunction (_i, _bl, cl_env) as f ->
-        Env.update_value n f cl_env;
+        let* () = env_result_check (Env.update_value n f cl_env) in
         lists_lassign vl [] env
       | va ->
-        let env = Env.add_value n va env in
+        let* env = Env.add_value n va env in
         lists_lassign vl [] env )
     | (n, _on) :: vl, (_l, va) :: tl -> (
       match va with
@@ -545,11 +556,11 @@ and lists_lassign nal vall env =
         match vall with
         | [] -> Env.add_value n (Vnil ()) env
         | va :: _vall ->
-          let env = Env.add_value n va env in
+          let* env = Env.add_value n va env in
           lists_lassign vl tl env
       end
       | va ->
-        let env = Env.add_value n va env in
+        let* env = Env.add_value n va env in
         lists_lassign vl tl env )
   end
 
@@ -567,7 +578,7 @@ and interpret_fct value el env =
   | Vfunction (i, (pl, b), cl_env) as closure -> begin
     try
       let* vall, env = to_vall el env in
-      let cl_env = lists_args pl vall cl_env in
+      let* cl_env = lists_args pl vall cl_env in
       let* cl_env = interpret_block b cl_env in
       let closure = Vfunction (i, (pl, b), cl_env) in
       Ok (closure, VfunctionReturn [], env)
@@ -612,9 +623,9 @@ and interpret_functioncall fc env =
   let* _ = typecheck_functioncall fc env in
   match fc with
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
-    let value = Env.get_value v env in
+    let* value = env_result_check (Env.get_value v env) in
     let* closure, return, env = interpret_fct value el env in
-    Env.update_value v closure env;
+    let* () = env_result_check (Env.update_value v closure env) in
     Ok (return, env)
   | FCpreargs (PEvar (VarTableField (pexp, exp)), Aexpl el) ->
     let* t, env = interpret_prefixexp pexp env in
@@ -639,7 +650,7 @@ and interpret_functioncall fc env =
     let* _closure, return, env = interpret_fct value el env in
     Ok (return, env)
   | FCprename (PEvar (VarName v), name, Aexpl el) ->
-    let value = Env.get_value v env in
+    let* value = env_result_check (Env.get_value v env) in
     begin
       match value with
       | Vtable (_i, tbl) -> begin
@@ -661,7 +672,7 @@ and interpret_stmt stmt env : _ result =
     lists_assign vl vall env
   | SassignLocal (nal, el) ->
     let* vall, env = to_vall el env in
-    Ok (lists_lassign nal vall env)
+    lists_lassign nal vall env
   | Sbreak -> raise (Break_catch env)
   | Sreturn el -> raise (Return_catch (el, env))
   | Slabel _ -> Ok env
@@ -752,7 +763,7 @@ and interpret_stmt stmt env : _ result =
     in
     let l1, _e1 = e1 in
     let* ival, env = init_val e1 env in
-    let env = Env.add_value n ival env in
+    let* env = Env.add_value n ival env in
     let* limit, env = init_val e2 env in
     let* step, env =
       match oe with
@@ -767,7 +778,7 @@ and interpret_stmt stmt env : _ result =
       | _ -> (
         try
           let* env = interpret_block b env in
-          let env = Env.add_value n ival env in
+          let* env = Env.add_value n ival env in
           (* control var must be restored *)
           let* ival, _ = incr_cnt l1 ival step env in
           interpret_stmt (Sfor (n, (l1, Evalue ival), e2, oe, b)) env
@@ -808,21 +819,22 @@ and interpret_stmt stmt env : _ result =
               match vl with
               | [] -> Ok env
               | v :: tl ->
-                let env = Env.add_value (List.nth nl 0) v env in
+                let* env = Env.add_value (List.nth nl 0) v env in
                 let ni = ref 0 in
-                let env =
+                let* env =
                   List.fold_left
-                    (fun ev v ->
+                    (fun acc v ->
+                      let ev = Result.get_ok acc in
                       ni := !ni + 1;
                       match List.nth_opt nl !ni with
-                      | None -> ev
+                      | None -> Ok ev
                       | Some n -> Env.add_value n v ev )
-                    env tl
+                    (Ok env) tl
                 in
                 iter closure env
             end
             | v ->
-              let env = Env.add_value (List.nth nl 0) v env in
+              let* env = Env.add_value (List.nth nl 0) v env in
               iter closure env )
           | _ ->
             error None
@@ -848,26 +860,29 @@ and interpret_stmt stmt env : _ result =
             let* _closure, v, env =
               interpret_fct iterator_func iterator_func_param env
             in
-            let ctrl_var, env =
+            let* ctrl_var, env =
               match v with
               | VfunctionReturn vl -> begin
                 match vl with
-                | [] -> (Vnil (), env)
+                | [] -> Ok (Vnil (), env)
                 | v :: tl ->
-                  let env = Env.add_value (List.nth nl 0) v env in
+                  let* env = Env.add_value (List.nth nl 0) v env in
                   let ni = ref 0 in
-                  let env =
+                  let* env =
                     List.fold_left
-                      (fun ev v ->
+                      (fun acc v ->
+                        let ev = Result.get_ok acc in
                         ni := !ni + 1;
                         match List.nth_opt nl !ni with
-                        | None -> ev
+                        | None -> Ok ev
                         | Some n -> Env.add_value n v ev )
-                      env tl
+                      (Ok env) tl
                   in
-                  (v, env)
+                  Ok (v, env)
               end
-              | v -> (v, Env.add_value (List.nth nl 0) v env)
+              | v ->
+                let* env = Env.add_value (List.nth nl 0) v env in
+                Ok (v, env)
             in
             match ctrl_var with
             | Vnil () -> Ok env (* stop condition *)

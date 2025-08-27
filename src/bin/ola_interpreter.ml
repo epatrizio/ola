@@ -30,7 +30,7 @@ let process source_code_file debug =
     end;
     print_endline "interprete ...";
     let env = Env.empty () in
-    let env = Lua_stdlib.load env in
+    let* env = Lua_stdlib.load env in
     let chunk, env = Scope.analysis chunk env in
     if debug then begin
       print_endline "debug mode: source after scope analysis view ...";
@@ -45,6 +45,9 @@ let process source_code_file debug =
   | Parser.Error ->
     let loc = Sedlexing.lexing_positions lexbuf in
     Error (Some loc, "Syntax error")
+  | Env.Env_error message ->
+    let message = sprintf "Env error: %s" message in
+    Error (None, message)
   | Typer.Typing_error (loc, message) ->
     let message = sprintf "Typing error: %s" message in
     Error (loc, message)
