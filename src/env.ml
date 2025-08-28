@@ -10,6 +10,10 @@ type 'a t =
   ; locals : locals
   }
 
+exception Env_error of string
+
+let error message = raise (Env_error message)
+
 let fresh =
   let count = ref ~-1 in
   fun () ->
@@ -46,21 +50,28 @@ let get_name n default_value env =
     | None -> add_global n !default_value env )
 
 let get_value n env =
-  match SMap.find_opt n env.values with None -> assert false | Some v -> !v
+  match SMap.find_opt n env.values with
+  | None ->
+    error (Format.sprintf "name: %s not found in get_value env.values" n)
+  | Some v -> Ok !v
 
 let update_value n v env =
   let v = ref v in
   match SMap.find_opt n env.values with
-  | None -> assert false
-  | Some value -> value := !v
+  | None ->
+    error (Format.sprintf "name: %s not found in update_value env.values" n)
+  | Some value ->
+    value := !v;
+    Ok ()
 
 let add_value n v env =
   let v = ref v in
   match SMap.find_opt n env.values with
-  | None -> assert false
+  | None ->
+    error (Format.sprintf "name: %s not found in add_value env.values" n)
   | Some _ ->
     let values = SMap.add n v env.values in
-    { env with values }
+    Ok { env with values }
 
 let get_locals env = env.locals
 

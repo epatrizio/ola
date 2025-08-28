@@ -1,5 +1,6 @@
 open Ast
 open Env
+open Syntax
 module LibMap = Map.Make (String)
 
 let () = Random.self_init ()
@@ -34,7 +35,7 @@ let lib () =
   let lib = add_func "os" "execute" Lua_stdlib_os.execute lib in
   (lib_basic, lib)
 
-let load (env : value Env.t) : value Env.t =
+let load env =
   let lib_basic, lib = lib () in
   let add_basic func_name fct env =
     let vfct = VfunctionStdLib (Random.bits32 (), fct) in
@@ -45,7 +46,7 @@ let load (env : value Env.t) : value Env.t =
     add_global_force name vtbl env
   in
   let add_function_lib lib_name fct_name fct env =
-    let v = get_value lib_name env in
+    let* v = get_value lib_name env in
     match v with
     | Vtable (i, tbl) ->
       let tbl =
@@ -66,8 +67,11 @@ let load (env : value Env.t) : value Env.t =
       (fun lib_name l e ->
         let e = add_empty_lib lib_name e in
         LibMap.fold
-          (fun func_name f e -> add_function_lib lib_name func_name f e)
+          (fun func_name f e ->
+            match add_function_lib lib_name func_name f e with
+            | Ok v -> v
+            | Error _ -> assert false )
           l e )
       lib env
   in
-  env
+  Ok env
