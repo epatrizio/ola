@@ -475,7 +475,9 @@ and set_var v value env =
       let vtbl = Vtable (i, tbl) in
       let v = var_of_prefixexp pexp env in
       set_var v vtbl env
-    | _ -> assert false (* typing error *) )
+    | _ ->
+      error None
+        (Format.sprintf "Typing error: attempt to index a non table value") )
 
 and to_vall el env =
   List.fold_left
