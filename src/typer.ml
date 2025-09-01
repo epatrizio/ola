@@ -61,6 +61,10 @@ and typecheck_bitwise_unop ((loc, _e) as expr) env =
     error (Some loc) "attempt to perform bitwise operation on a boolean value"
   | Tstring ->
     error (Some loc) "attempt to perform bitwise operation on a string value"
+  | Tfunction ->
+    error (Some loc) "attempt to perform bitwise operation on a function value"
+  | Ttable ->
+    error (Some loc) "attempt to perform bitwise operation on a table value"
   | _ -> assert false (* call error *)
 
 and typecheck_arith_binop binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2)
@@ -186,6 +190,7 @@ and typecheck_functioncall fc env =
   in
   match fc with
   | FCpreargs (PEvar v, _) ->
+    (* -- *)
     let t = typecheck_var v env in
     typ_check t
   | FCpreargs (PEfunctioncall fc, _) -> typecheck_functioncall fc env
