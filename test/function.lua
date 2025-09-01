@@ -134,3 +134,11 @@ var1(42)
 function var2(...)
   f()
 end
+
+-- 3.4.10 - Function Calls - results adjusted to 1
+
+function f_res_adj()
+    return 42,41,40
+end
+
+print((f_res_adj()))  -- 42

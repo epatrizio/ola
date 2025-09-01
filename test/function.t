@@ -42,3 +42,4 @@ basics functions:
   local function
   print::
   42
+  42

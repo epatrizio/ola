@@ -303,7 +303,13 @@ and interpret_str_binop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
 and interpret_prefixexp pexp env =
   match pexp with
   | PEvar v -> interpret_var v env
-  | PEexp exp -> interpret_expr exp env
+  | PEexp exp ->
+    let* v, env = interpret_expr exp env in
+    begin
+      match v with
+      | VfunctionReturn (v :: _tl) -> Ok (VfunctionReturn [ v ], env)
+      | _ -> Ok (v, env)
+    end
   | PEfunctioncall fc -> interpret_functioncall fc env
 
 and interpret_var v env =
