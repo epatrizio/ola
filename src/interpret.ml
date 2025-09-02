@@ -465,7 +465,10 @@ and set_var v value env =
     | PEvar v -> v
     | PEfunctioncall (FCpreargs (pexp, _a)) -> var_of_prefixexp pexp env
     | PEfunctioncall (FCprename (pexp, _s, _a)) -> var_of_prefixexp pexp env
-    | PEexp _exp -> assert false (* todo *)
+    | PEexp (_loc, Eprefix pexp) -> var_of_prefixexp pexp env
+    | PEexp (loc, _) ->
+      error (Some loc) (Format.sprintf "Typing error: var_of_prefixexp PEexp")
+    (* WIP *)
   in
   match v with
   | VarName n ->
