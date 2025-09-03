@@ -158,23 +158,21 @@ let functiondef :=
 let funcbody :=
   | LPAREN; parlist = option(parlist); RPAREN; ~ = block; END; {
     match parlist with
-    | None -> PLlist ([], None), block
+    | None -> PLlist ([], false), block
     | Some parlist -> parlist, block
   }
 
-let variadic :=
-  | TDOT; { ($startpos, $endpos), Evariadic }
-
 let parlist :=
-  | l = opt_endelt_nonempty_list(COMMA, NAME, variadic); {
+  | l = opt_endelt_nonempty_list(COMMA, NAME, TDOT); {
      match l with
-     | ([], Some v) -> PLvariadic v
-     | (nl, v) -> PLlist (nl, v)
+     | ([], true) -> PLvariadic
+     | (nl, true) -> PLlist (nl, true)
+     | (nl, false) -> PLlist (nl, false)
   }
 
 let opt_endelt_nonempty_list(sep, elt, opt_elt) :=
-  | e = opt_elt; { ([], Some e) }
-  | e = elt; { ([ e ], None) }
+  | opt_elt; { ([], true) }
+  | e = elt; { ([ e ], false) }
   | e = elt; sep; lsy = opt_endelt_nonempty_list(sep, elt, opt_elt); { (e :: (fst lsy), (snd lsy)) }
 
 let tableconstructor :=

@@ -99,8 +99,8 @@ and functioncall =
   | FCprename of prefixexp * string * args
 
 and parlist =
-  | PLlist of string list * expr option
-  | PLvariadic of expr
+  | PLlist of string list * bool
+  | PLvariadic
 
 and field =
   | Fexp of expr
@@ -191,9 +191,11 @@ let rec print_value fmt value =
 
 let rec print_parlist fmt pl =
   match pl with
-  | PLlist (nl, eo) ->
-    fprintf fmt {|%a%a|} (pp_print_list ~pp_sep pp_print_string) nl print_eo eo
-  | PLvariadic e -> print_expr fmt e
+  | PLlist (nl, true) ->
+    fprintf fmt {|%a, ...|} (pp_print_list ~pp_sep pp_print_string) nl
+  | PLlist (nl, false) ->
+    fprintf fmt {|%a|} (pp_print_list ~pp_sep pp_print_string) nl
+  | PLvariadic -> fprintf fmt "..."
 
 and print_var fmt v =
   match v with

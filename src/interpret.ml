@@ -578,9 +578,9 @@ and lists_lassign nal vall env =
 (* todo: variadic function (PLvariadic, PLlist some) *)
 and lists_args pl vall env =
   match pl with
-  | PLvariadic _ -> assert false
-  | PLlist (_nl, Some _) -> assert false
-  | PLlist (nl, None) ->
+  | PLvariadic -> assert false
+  | PLlist (_nl, true) -> assert false
+  | PLlist (nl, false) ->
     let vl = List.map (fun n -> (n, None)) nl in
     lists_lassign vl vall env
 
