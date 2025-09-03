@@ -394,8 +394,8 @@ and interpret_expr (loc, expr) env =
   match expr with
   | Evalue
       ( ( Vnil ()
-        | Vboolean _ | Vnumber _ | Vstring _ | Vfunction _ | VfunctionStdLib _
-        | VfunctionReturn _ | Vtable _ ) as v ) ->
+        | Vboolean _ | Vnumber _ | Vstring _ | Vvariadic _ | Vfunction _
+        | VfunctionStdLib _ | VfunctionReturn _ | Vtable _ ) as v ) ->
     Ok (v, env)
   | Eunop (Unot, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in

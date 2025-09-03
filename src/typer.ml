@@ -19,6 +19,7 @@ let rec typecheck_value value =
   | Vnumber (Ninteger _) -> Tnumber Tinteger
   | Vnumber (Nfloat _) -> Tnumber Tfloat
   | Vstring _ -> Tstring
+  | Vvariadic vl -> Tvariadic (List.map typecheck_value vl)
   | Vfunction _ -> Tfunction
   | VfunctionReturn vl -> TfunctionReturn (List.map typecheck_value vl)
   | VfunctionStdLib _ -> TfunctionStdLib

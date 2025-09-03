@@ -12,7 +12,7 @@ let rec tostring_value v =
   | Vtable (i, _) -> "table: " ^ string_of_int (Int32.to_int i)
   | Vfunction (i, _, _) | VfunctionStdLib (i, _) ->
     "function: " ^ string_of_int (Int32.to_int i)
-  | VfunctionReturn vl -> (
+  | VfunctionReturn vl | Vvariadic vl -> (
     match vl with
     | [] -> ""
     | [ v ] -> tostring_value v
