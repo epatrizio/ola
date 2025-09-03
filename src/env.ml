@@ -40,6 +40,12 @@ let add_local n default_value env =
   let locals = SMap.add n fresh_name env.locals in
   (fresh_name, { env with values; locals })
 
+let add_local_force n v env =
+  let v = ref v in
+  let values = SMap.add n v env.values in
+  let locals = SMap.add n n env.locals in
+  { env with values; locals }
+
 let get_name n default_value env =
   let default_value = ref default_value in
   match SMap.find_opt n env.locals with

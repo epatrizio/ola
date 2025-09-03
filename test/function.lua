@@ -132,8 +132,15 @@ end
 var1(42)
 
 function var2(...)
-  f()
+  local l1, l2 = ...
+  print(l1, l2)
+  g1, g2 = ...
+  print(g1, g2)
 end
+var2()
+var2(1)
+var2(1,2)
+var2(1,2,3)
 
 -- 3.4.10 - Function Calls - results adjusted to 1
 

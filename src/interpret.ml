@@ -452,7 +452,9 @@ and interpret_expr (loc, expr) env =
     interpret_bitwise_binop_expr op e1 e2 env
   | Ebinop (e1, ((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e2) ->
     interpret_rel_binop_expr op e1 e2 env
-  | Evariadic -> Ok (Vnil (), env)
+  | Evariadic ->
+    let* v = env_result_check (Env.get_value "vararg" env) in
+    Ok (v, env)
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
   | Etableconstructor fl ->
@@ -509,7 +511,7 @@ and lists_assign vl vall env =
         (Ok env) vl
     | v :: vl, [ (l, va) ] -> (
       match va with
-      | VfunctionReturn vall -> begin
+      | VfunctionReturn vall | Vvariadic vall -> begin
         match vall with
         | [] -> set_var v (Vnil ()) env
         | va :: vall ->
@@ -522,7 +524,7 @@ and lists_assign vl vall env =
         lists_assign vl [] env )
     | v :: vl, (_l, va) :: tl -> (
       match va with
-      | VfunctionReturn vall -> begin
+      | VfunctionReturn vall | Vvariadic vall -> begin
         match vall with
         | [] -> set_var v (Vnil ()) env
         | va :: _vall ->
@@ -547,7 +549,7 @@ and lists_lassign nal vall env =
         (Ok env) nal
     | (n, _on) :: vl, [ (l, va) ] -> (
       match va with
-      | VfunctionReturn vall -> begin
+      | VfunctionReturn vall | Vvariadic vall -> begin
         match vall with
         | [] -> Env.add_value n (Vnil ()) env
         | va :: vall ->
@@ -563,7 +565,7 @@ and lists_lassign nal vall env =
         lists_lassign vl [] env )
     | (n, _on) :: vl, (_l, va) :: tl -> (
       match va with
-      | VfunctionReturn vall -> begin
+      | VfunctionReturn vall | Vvariadic vall -> begin
         match vall with
         | [] -> Env.add_value n (Vnil ()) env
         | va :: _vall ->
@@ -575,10 +577,15 @@ and lists_lassign nal vall env =
         lists_lassign vl tl env )
   end
 
-(* todo: variadic function (PLvariadic, PLlist some) *)
 and lists_args pl vall env =
+  let vall_to_vvariadic vall =
+    let _, vl = List.split vall in
+    Vvariadic vl
+  in
   match pl with
-  | PLvariadic -> assert false
+  | PLvariadic ->
+    let env = Env.add_local_force "vararg" (vall_to_vvariadic vall) env in
+    Ok env
   | PLlist (_nl, true) -> assert false
   | PLlist (nl, false) ->
     let vl = List.map (fun n -> (n, None)) nl in

@@ -42,4 +42,12 @@ basics functions:
   local function
   print::
   42
+  nil, nil
+  nil, nil
+  1, nil
+  1, nil
+  1, 2
+  1, 2
+  1, 2
+  1, 2
   42
