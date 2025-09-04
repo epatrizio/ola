@@ -358,7 +358,7 @@ and tableconstructor tbl idx fl env =
     let* (v_idx, v_val), env = interpret_field f env in
     begin
       match v_val with
-      | VfunctionReturn vl ->
+      | VfunctionReturn vl | Vvariadic vl ->
         let tbl, _i, env =
           List.fold_left
             (fun (t, id, ev) v ->
@@ -382,7 +382,7 @@ and tableconstructor tbl idx fl env =
     let* (v_idx, v_val), env = interpret_field f env in
     begin
       match v_val with
-      | VfunctionReturn vl -> begin
+      | VfunctionReturn vl | Vvariadic vl -> begin
         match vl with
         | [] -> tbl_add_rec v_idx (Vnil ()) tbl idx fl env
         | v :: _vl -> tbl_add_rec v_idx v tbl idx fl env

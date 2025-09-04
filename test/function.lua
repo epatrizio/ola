@@ -124,7 +124,7 @@ end
 
 -- variadic functions
 
---function var1(..., a)  -- memo: must be incorrect (ok)
+--function var1(..., a)  -- memo: must be incorrect (ok - direct in parser.mly)
 function var1(a1, a2, ...)
   print(a1, a2)
   local l1, l2, l3 = 42, ...
@@ -149,6 +149,15 @@ var2()
 var2(1)
 var2(1,2)
 var2(1,2,3)
+
+function var3(...)
+  local args = {...}
+  -- print(args)    -- table
+  for i,v in ipairs(args) do
+      print(i, v)
+  end
+end
+var3(11,22,33,44,55)
 
 -- 3.4.10 - Function Calls - results adjusted to 1
 
