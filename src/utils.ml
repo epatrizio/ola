@@ -8,3 +8,15 @@ let analyse_list list func env =
       let item, env = func item env in
       (l @ [ item ], env) )
     ([], env) list
+
+(* [1,2,3,4,5] 3 -> [1,2,3] [4,5] *)
+(* 'a list -> int -> 'a list * 'a list *)
+let rec cut_list_at list n =
+  assert (n >= 0);
+  if n = 0 then ([], list)
+  else
+    match list with
+    | [] -> ([], [])
+    | hd :: tl ->
+      let l1, l2 = cut_list_at tl (n - 1) in
+      (hd :: l1, l2)

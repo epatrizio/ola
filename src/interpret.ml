@@ -578,15 +578,22 @@ and lists_lassign nal vall env =
   end
 
 and lists_args pl vall env =
-  let vall_to_vvariadic vall =
+  let vall_to_vvariadic vall cut_at_n =
     let _, vl = List.split vall in
+    let _, vl = Utils.cut_list_at vl cut_at_n in
     Vvariadic vl
   in
   match pl with
   | PLvariadic ->
-    let env = Env.add_local_force "vararg" (vall_to_vvariadic vall) env in
+    let env = Env.add_local_force "vararg" (vall_to_vvariadic vall 0) env in
     Ok env
-  | PLlist (_nl, true) -> assert false
+  | PLlist (nl, true) ->
+    let cut_at_n = List.length nl in
+    let env =
+      Env.add_local_force "vararg" (vall_to_vvariadic vall cut_at_n) env
+    in
+    let vl = List.map (fun n -> (n, None)) nl in
+    lists_lassign vl vall env
   | PLlist (nl, false) ->
     let vl = List.map (fun n -> (n, None)) nl in
     lists_lassign vl vall env
