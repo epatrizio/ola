@@ -1,13 +1,7 @@
 (* Scope analysis *)
 
 open Ast
-
-let analyse_list list fct env =
-  List.fold_left
-    (fun (l, ev) elt ->
-      let elt, ev = fct elt ev in
-      (l @ [ elt ], ev) )
-    ([], env) list
+open Utils
 
 let rec analyse_expr expr env =
   match expr with

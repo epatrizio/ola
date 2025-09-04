@@ -15,7 +15,8 @@
   scope
   syntax
   table
-  typer)
+  typer
+  utils)
  (preprocess
   (pps sedlex.ppx))
  (libraries sedlex menhirLib)
