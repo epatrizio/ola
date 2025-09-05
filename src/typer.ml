@@ -19,10 +19,20 @@ let rec typecheck_value value =
   | Vnumber (Ninteger _) -> Tnumber Tinteger
   | Vnumber (Nfloat _) -> Tnumber Tfloat
   | Vstring _ -> Tstring
+  | Vvariadic vl -> Tvariadic (List.map typecheck_value vl)
   | Vfunction _ -> Tfunction
   | VfunctionReturn vl -> TfunctionReturn (List.map typecheck_value vl)
   | VfunctionStdLib _ -> TfunctionStdLib
   | Vtable _ -> Ttable
+
+let check_value_type loc_opt value typ =
+  match (typecheck_value value, typ) with
+  | Tnumber _, Tnumber _
+  | Tvariadic _, Tvariadic _
+  | TfunctionReturn _, TfunctionReturn _ ->
+    Ok ()
+  | typ1, typ2 when typ1 = typ2 -> Ok ()
+  | _, _ -> error loc_opt "the value does not have the expected type"
 
 let rec typecheck_arith_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
@@ -174,7 +184,8 @@ and typecheck_expr expr env =
   | Ebinop (e1, ((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e2) ->
     typecheck_rel_binop op e1 e2 env
   | Ebinop (e1, Bddot, e2) -> typecheck_str_binop e1 e2 env
-  | Evariadic -> Ok Tnil (* todo: ok? *)
+  | Evariadic ->
+    Ok (Tvariadic []) (* type check explicit during interpretation *)
   | Efunctiondef _ -> Ok Tfunction
   | Eprefix pexp -> typecheck_prefixexp pexp env
   | Etableconstructor _ -> Ok Ttable

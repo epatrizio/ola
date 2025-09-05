@@ -124,16 +124,40 @@ end
 
 -- variadic functions
 
---function var1(..., a)  -- memo: must be incorrect (ok)
---function var1(a, ...)  -- todo: syntax ok, interpretation to be implemented
-function var1(a)
-  print_fct(a)
+--function var1(..., a)  -- memo: must be incorrect (ok - direct in parser.mly)
+function var1(a1, a2, ...)
+  print(a1, a2)
+  local l1, l2, l3 = 42, ...
+  print(l1, l2, l3)
+  g1, g2, g3 = 24, ...
+  print(g1, g2, g3)
 end
-var1(42)
+var1()
+var1(1)
+var1(1,2)
+var1(1,2,3)
+var1(1,2,3,4)
+var1(1,2,3,4,5)
 
 function var2(...)
-  f()
+  local l1, l2 = ...
+  print(l1, l2)
+  g1, g2 = ...
+  print(g1, g2)
 end
+var2()
+var2(1)
+var2(1,2)
+var2(1,2,3)
+
+function var3(...)
+  local args = {...}
+  -- print(args)    -- table
+  for i,v in ipairs(args) do
+      print(i, v)
+  end
+end
+var3(11,22,33,44,55)
 
 -- 3.4.10 - Function Calls - results adjusted to 1
 

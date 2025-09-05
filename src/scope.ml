@@ -1,13 +1,7 @@
 (* Scope analysis *)
 
 open Ast
-
-let analyse_list list fct env =
-  List.fold_left
-    (fun (l, ev) elt ->
-      let elt, ev = fct elt ev in
-      (l @ [ elt ], ev) )
-    ([], env) list
+open Utils
 
 let rec analyse_expr expr env =
   match expr with
@@ -62,21 +56,12 @@ and analyse_fieldlist fl env =
 
 and analyse_parlist pl env =
   match pl with
-  | PLlist (nl, eo) ->
+  | PLlist (nl, b) ->
     let nl, env =
       analyse_list nl (fun n ev -> Env.add_local n (Vnil ()) ev) env
     in
-    let eo, env =
-      match eo with
-      | None -> (None, env)
-      | Some e ->
-        let e, env = analyse_expr e env in
-        (Some e, env)
-    in
-    (PLlist (nl, eo), env)
-  | PLvariadic e ->
-    let e, env = analyse_expr e env in
-    (PLvariadic e, env)
+    (PLlist (nl, b), env)
+  | PLvariadic -> (PLvariadic, env)
 
 and analyse_funcbody ((pl, b) as _fb) env =
   let pl, env_loc = analyse_parlist pl env in

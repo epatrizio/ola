@@ -358,7 +358,7 @@ and tableconstructor tbl idx fl env =
     let* (v_idx, v_val), env = interpret_field f env in
     begin
       match v_val with
-      | VfunctionReturn vl ->
+      | VfunctionReturn vl | Vvariadic vl ->
         let tbl, _i, env =
           List.fold_left
             (fun (t, id, ev) v ->
@@ -382,7 +382,7 @@ and tableconstructor tbl idx fl env =
     let* (v_idx, v_val), env = interpret_field f env in
     begin
       match v_val with
-      | VfunctionReturn vl -> begin
+      | VfunctionReturn vl | Vvariadic vl -> begin
         match vl with
         | [] -> tbl_add_rec v_idx (Vnil ()) tbl idx fl env
         | v :: _vl -> tbl_add_rec v_idx v tbl idx fl env
@@ -394,8 +394,8 @@ and interpret_expr (loc, expr) env =
   match expr with
   | Evalue
       ( ( Vnil ()
-        | Vboolean _ | Vnumber _ | Vstring _ | Vfunction _ | VfunctionStdLib _
-        | VfunctionReturn _ | Vtable _ ) as v ) ->
+        | Vboolean _ | Vnumber _ | Vstring _ | Vvariadic _ | Vfunction _
+        | VfunctionStdLib _ | VfunctionReturn _ | Vtable _ ) as v ) ->
     Ok (v, env)
   | Eunop (Unot, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
@@ -452,7 +452,10 @@ and interpret_expr (loc, expr) env =
     interpret_bitwise_binop_expr op e1 e2 env
   | Ebinop (e1, ((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e2) ->
     interpret_rel_binop_expr op e1 e2 env
-  | Evariadic -> Ok (Vnil (), env)
+  | Evariadic ->
+    let* v = env_result_check (Env.get_value "vararg" env) in
+    let* () = check_value_type (Some loc) v (Tvariadic []) in
+    Ok (v, env)
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
   | Etableconstructor fl ->
@@ -509,7 +512,7 @@ and lists_assign vl vall env =
         (Ok env) vl
     | v :: vl, [ (l, va) ] -> (
       match va with
-      | VfunctionReturn vall -> begin
+      | VfunctionReturn vall | Vvariadic vall -> begin
         match vall with
         | [] -> set_var v (Vnil ()) env
         | va :: vall ->
@@ -522,7 +525,7 @@ and lists_assign vl vall env =
         lists_assign vl [] env )
     | v :: vl, (_l, va) :: tl -> (
       match va with
-      | VfunctionReturn vall -> begin
+      | VfunctionReturn vall | Vvariadic vall -> begin
         match vall with
         | [] -> set_var v (Vnil ()) env
         | va :: _vall ->
@@ -547,7 +550,7 @@ and lists_lassign nal vall env =
         (Ok env) nal
     | (n, _on) :: vl, [ (l, va) ] -> (
       match va with
-      | VfunctionReturn vall -> begin
+      | VfunctionReturn vall | Vvariadic vall -> begin
         match vall with
         | [] -> Env.add_value n (Vnil ()) env
         | va :: vall ->
@@ -563,7 +566,7 @@ and lists_lassign nal vall env =
         lists_lassign vl [] env )
     | (n, _on) :: vl, (_l, va) :: tl -> (
       match va with
-      | VfunctionReturn vall -> begin
+      | VfunctionReturn vall | Vvariadic vall -> begin
         match vall with
         | [] -> Env.add_value n (Vnil ()) env
         | va :: _vall ->
@@ -575,12 +578,24 @@ and lists_lassign nal vall env =
         lists_lassign vl tl env )
   end
 
-(* todo: variadic function (PLvariadic, PLlist some) *)
 and lists_args pl vall env =
+  let vall_to_vvariadic vall cut_at_n =
+    let _, vl = List.split vall in
+    let _, vl = Utils.cut_list_at vl cut_at_n in
+    Vvariadic vl
+  in
   match pl with
-  | PLvariadic _ -> assert false
-  | PLlist (_nl, Some _) -> assert false
-  | PLlist (nl, None) ->
+  | PLvariadic ->
+    let env = Env.add_local_force "vararg" (vall_to_vvariadic vall 0) env in
+    Ok env
+  | PLlist (nl, true) ->
+    let cut_at_n = List.length nl in
+    let env =
+      Env.add_local_force "vararg" (vall_to_vvariadic vall cut_at_n) env
+    in
+    let vl = List.map (fun n -> (n, None)) nl in
+    lists_lassign vl vall env
+  | PLlist (nl, false) ->
     let vl = List.map (fun n -> (n, None)) nl in
     lists_lassign vl vall env
 

@@ -12,6 +12,7 @@ type typ =
   | TnumberUndefined
   | Tnumber of number_type
   | Tstring
+  | Tvariadic of typ list
   | Tfunction
   | TfunctionStdLib
   | TfunctionReturn of typ list
@@ -57,6 +58,7 @@ type value =
   | Vboolean of bool
   | Vnumber of number
   | Vstring of string
+  | Vvariadic of value list
   | Vfunction of int32 * (parlist * block) * value Env.t
     (* int32 = function unique id *)
   | VfunctionStdLib of int32 * (value list -> value list)
@@ -97,8 +99,8 @@ and functioncall =
   | FCprename of prefixexp * string * args
 
 and parlist =
-  | PLlist of string list * expr option
-  | PLvariadic of expr
+  | PLlist of string list * bool
+  | PLvariadic
 
 and field =
   | Fexp of expr
@@ -183,14 +185,17 @@ let rec print_value fmt value =
   | Vstring s -> fprintf fmt {|"%a"|} pp_print_string s
   | Vfunction (i, _, _) | VfunctionStdLib (i, _) ->
     fprintf fmt {|function: %a|} pp_print_int (Int32.to_int i)
-  | VfunctionReturn vl -> (pp_print_list ~pp_sep print_value) fmt vl
+  | VfunctionReturn vl | Vvariadic vl ->
+    (pp_print_list ~pp_sep print_value) fmt vl
   | Vtable (i, _flo) -> fprintf fmt {|table: %a|} pp_print_int (Int32.to_int i)
 
 let rec print_parlist fmt pl =
   match pl with
-  | PLlist (nl, eo) ->
-    fprintf fmt {|%a%a|} (pp_print_list ~pp_sep pp_print_string) nl print_eo eo
-  | PLvariadic e -> print_expr fmt e
+  | PLlist (nl, true) ->
+    fprintf fmt {|%a, ...|} (pp_print_list ~pp_sep pp_print_string) nl
+  | PLlist (nl, false) ->
+    fprintf fmt {|%a|} (pp_print_list ~pp_sep pp_print_string) nl
+  | PLvariadic -> fprintf fmt "..."
 
 and print_var fmt v =
   match v with
