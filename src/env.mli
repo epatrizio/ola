@@ -16,6 +16,8 @@ val add_global : string -> 'a -> 'a t -> string * 'a t
 
 val add_global_force : string -> 'a -> 'a t -> 'a t
 
+val add_local_force : string -> 'a -> 'a t -> 'a t
+
 val update_value : string -> 'a -> 'a t -> (unit, 'b) result
 
 val add_value : string -> 'a -> 'a t -> ('a t, 'b) result

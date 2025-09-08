@@ -40,6 +40,35 @@ basics functions:
   print::
   42
   local function
-  print::
-  42
+  nil, nil
+  42, nil, nil
+  24, nil, nil
+  1, nil
+  42, nil, nil
+  24, nil, nil
+  1, 2
+  42, nil, nil
+  24, nil, nil
+  1, 2
+  42, 3, nil
+  24, 3, nil
+  1, 2
+  42, 3, 4
+  24, 3, 4
+  1, 2
+  42, 3, 4
+  24, 3, 4
+  nil, nil
+  nil, 3
+  1, nil
+  1, nil
+  1, 2
+  1, 2
+  1, 2
+  1, 2
+  1, 11
+  2, 22
+  3, 33
+  4, 44
+  5, 55
   42

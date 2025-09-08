@@ -13,9 +13,11 @@
   lua_stdlib_os
   parser
   scope
+  static_analysis_variadic_func
   syntax
   table
-  typer)
+  typer
+  utils)
  (preprocess
   (pps sedlex.ppx))
  (libraries sedlex menhirLib)
