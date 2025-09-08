@@ -9,6 +9,11 @@ let analyse_list list func env =
       (l @ [ item ], env) )
     ([], env) list
 
+(* checks all list items with a boolean func *)
+(* 'a list -> ('a -> bool) -> bool *)
+let check_list list func =
+  List.fold_left (fun acc item -> func item || acc) false list
+
 (* [1,2,3,4,5] 3 -> [1,2,3] [4,5] *)
 (* 'a list -> int -> 'a list * 'a list *)
 let rec cut_list_at list n =
