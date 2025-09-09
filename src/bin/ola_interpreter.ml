@@ -23,21 +23,25 @@ let process source_code_file debug =
     let parser =
       MenhirLib.Convert.Simplified.traditional2revised Parser.chunk
     in
+    print_endline "lexing parsing ...";
     let chunk = parser lexer in
     if debug then begin
       print_endline "debug mode: initial source view ...";
       Ast.print_block Format.std_formatter chunk
     end;
-    print_endline "interprete ...";
+    print_endline "static analyses ...";
     let* () = Static_analysis.Variadic_func.analyze chunk in
     let* () = Static_analysis.Const_var.analyze chunk in
     let env = Env.empty () in
+    print_endline "stdlib loading ...";
     let* env = Lua_stdlib.load env in
+    print_endline "scope analysis ...";
     let chunk, env = Scope.analysis chunk env in
     if debug then begin
       print_endline "debug mode: source after scope analysis view ...";
       Ast.print_block Format.std_formatter chunk
     end;
+    print_endline "interprete ...";
     let* _env = Interpret.run chunk env in
     Ok (close_in ic)
   with
