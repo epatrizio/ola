@@ -39,27 +39,20 @@ end = struct
 
   and analyze_prefixexp prefixexp =
     match prefixexp with
-    | PEvar _ -> false
-    | PEfunctioncall _ -> false
+    | PEvar _ | PEfunctioncall _ -> false
     | PEexp e -> analyze_expr e
 
   and analyze_field field =
     match field with
-    | Fexp e -> analyze_expr e
-    | Fname (_, e) -> analyze_expr e
+    | Fexp e | Fname (_, e) -> analyze_expr e
     | Fcol (e1, e2) -> analyze_expr e1 || analyze_expr e2
 
   and analyze_stmt stmt =
     match stmt with
-    | Sempty -> false
     | Sassign (_, el) | SassignLocal (_, el) -> check_list el analyze_expr
-    | Sbreak -> false
-    | Sreturn _ -> false
-    | Slabel _ -> false
-    | Sgoto _ -> false
-    | Sblock b -> analyze_block b
-    | Swhile (_, b) -> analyze_block b
-    | Srepeat (b, _) -> analyze_block b
+    | Sempty | Sbreak | Sreturn _ | Slabel _ | Sgoto _ | SfunctionCall _ ->
+      false
+    | Sblock b | Swhile (_, b) | Srepeat (b, _) -> analyze_block b
     | Sif (e, b, ebl, ob) ->
       let be = analyze_expr e in
       let bb = analyze_block b in
@@ -81,7 +74,6 @@ end = struct
       let bel = check_list el analyze_expr in
       let bb = analyze_block b in
       bel || bb
-    | SfunctionCall _ -> false
 
   and analyze_block block = check_list block analyze_stmt
 
@@ -119,21 +111,18 @@ end = struct
 
   and analyze_prefixexp prefixexp env =
     match prefixexp with
-    | PEvar _ -> env
-    | PEfunctioncall _ -> env
+    | PEvar _ | PEfunctioncall _ -> env
     | PEexp e -> analyze_expr e env
 
   and analyze_field field env =
     match field with
-    | Fexp e -> analyze_expr e env
-    | Fname (_, e) -> analyze_expr e env
+    | Fexp e | Fname (_, e) -> analyze_expr e env
     | Fcol (e1, e2) ->
       let env = analyze_expr e1 env in
       analyze_expr e2 env
 
   and analyze_stmt stmt env =
     match stmt with
-    | Sempty -> env
     | Sassign (vl, _) ->
       List.iter
         (fun var ->
@@ -156,17 +145,8 @@ end = struct
           | Some attrib -> SMap.add name (is_const_var attrib) env
           | None -> SMap.add name false env )
         env vl
-    | Sbreak -> env
-    | Sreturn _ -> env
-    | Slabel _ -> env
-    | Sgoto _ -> env
-    | Sblock b ->
-      let _ = analyze_block b env in
-      env
-    | Swhile (_, b) ->
-      let _ = analyze_block b env in
-      env
-    | Srepeat (b, _) ->
+    | Sempty | Sbreak | Sreturn _ | Slabel _ | Sgoto _ | SfunctionCall _ -> env
+    | Sblock b | Swhile (_, b) | Srepeat (b, _) ->
       let _ = analyze_block b env in
       env
     | Sif (e, b, ebl, ob) -> (
@@ -194,7 +174,6 @@ end = struct
       let env = List.fold_left (fun env exp -> analyze_expr exp env) env el in
       let _ = analyze_block b env in
       env
-    | SfunctionCall _ -> env
 
   and analyze_block block env =
     List.fold_left (fun env stmt -> analyze_stmt stmt env) env block
