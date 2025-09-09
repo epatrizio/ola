@@ -537,7 +537,6 @@ and lists_assign vl vall env =
         lists_assign vl tl env )
   end
 
-(* todo: local name attrib (const/close) support *)
 and lists_lassign nal vall env =
   begin
     match (nal, vall) with

@@ -1,6 +1,7 @@
 (cram
  (deps
   assign.lua
+  assign_const.lua
   basics.lua
   blocks.lua
   closure.lua
