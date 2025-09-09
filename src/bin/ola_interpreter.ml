@@ -31,7 +31,7 @@ let process source_code_file debug =
     print_endline "interprete ...";
     let env = Env.empty () in
     let* env = Lua_stdlib.load env in
-    let* () = Static_analysis_variadic_func.analyze chunk in
+    let* () = Static_analysis.Variadic_func.analyze chunk in
     let chunk, env = Scope.analysis chunk env in
     if debug then begin
       print_endline "debug mode: source after scope analysis view ...";
@@ -49,7 +49,7 @@ let process source_code_file debug =
   | Env.Env_error message ->
     let message = sprintf "Env error: %s" message in
     Error (None, message)
-  | Static_analysis_variadic_func.Static_analysis_error (loc, message) ->
+  | Static_analysis.Static_analysis_error (loc, message) ->
     let message = sprintf "Static analysis error: %s" message in
     Error (Some loc, message)
   | Typer.Typing_error (loc, message) ->
