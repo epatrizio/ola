@@ -23,7 +23,8 @@ By the way, classic functional programming Option and Result types could be impl
 `dune exec ola -- ./examples/oop.lua`
 
 - Custom implementation of *iparis* and *pairs* stdlib iterators. As an application,
-implementation of classic functions *table_map*, *table_filter* and *table_fold*:
+implementation of classic functions *table_map*, *table_filter*, *table_fold_left*,
+*table_iter*, *table_iteri* and *table_find*:
 `dune exec ola -- ./examples/table.lua`
 
 *Nb. Examples are part of the cram test suite*

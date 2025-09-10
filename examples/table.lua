@@ -120,3 +120,44 @@ end
 
 -- calculating the sum of all table elements
 print(table_fold_left(add, 0, tbl_nums))
+
+-- 6. table_iter
+-- iterates over table elements with a "statement" function
+
+print("6. -----")
+
+local function table_iter(fun_iter, table)
+  for _k, v in pairs_impl(table) do
+    fun_iter(v)
+  end
+end
+
+local function table_iteri(fun_iteri, table)
+  for k, v in pairs_impl(table) do
+    fun_iteri(k, v)
+  end
+end
+
+table_iter(print, tbl_names)
+table_iteri(print, tbl_names)
+
+-- 7. table_find
+-- find the first table element that satisfies the predicate function
+
+print("7. -----")
+
+local function table_find(fun_pred, table)
+  for _k, v in pairs_impl(table) do
+    if fun_pred(v) then return v end
+  end
+end
+
+local function greater_than(num, val)
+  return num > val
+end
+
+local function greater_than_42(num)
+  return greater_than(num, 42)
+end
+
+print(table_find(greater_than_42, tbl_nums))
