@@ -13,9 +13,10 @@ type 'a key =
 type ('a, 'b) t =
   { ilist : (int * 'b) list (* ordered list on key *)
   ; klist : ('a * 'b) list
+  ; metatable : ('a, 'b) t option
   }
 
-let empty = { ilist = []; klist = [] }
+let empty = { ilist = []; klist = []; metatable = None }
 
 let rec k_add key value ktbl =
   match ktbl with
@@ -32,14 +33,12 @@ let rec i_add idx value itbl =
 
 let add get_int_key_opt key value tbl =
   match get_int_key_opt key with
-  | Some idx -> { ilist = i_add idx value tbl.ilist; klist = tbl.klist }
-  | None -> { ilist = tbl.ilist; klist = k_add key value tbl.klist }
+  | Some idx -> { tbl with ilist = i_add idx value tbl.ilist }
+  | None -> { tbl with klist = k_add key value tbl.klist }
 
-let i_remove idx tbl =
-  { ilist = List.remove_assoc idx tbl.ilist; klist = tbl.klist }
+let i_remove idx tbl = { tbl with ilist = List.remove_assoc idx tbl.ilist }
 
-let k_remove key tbl =
-  { ilist = tbl.ilist; klist = List.remove_assoc key tbl.klist }
+let k_remove key tbl = { tbl with klist = List.remove_assoc key tbl.klist }
 
 let remove get_int_key_opt key tbl =
   match get_int_key_opt key with
@@ -95,14 +94,14 @@ let rec next_elt key tbl =
   | Ikey idx -> begin
     match tbl.ilist with
     | [] -> assert false (* PC2 *)
-    | (i, _) :: tl when idx = i -> first_elt { ilist = tl; klist = tbl.klist }
-    | _ :: tl -> next_elt (Ikey idx) { ilist = tl; klist = tbl.klist }
+    | (i, _) :: tl when idx = i -> first_elt { tbl with ilist = tl }
+    | _ :: tl -> next_elt (Ikey idx) { tbl with ilist = tl }
   end
   | Kkey key -> (
     match tbl.klist with
     | [] -> assert false (* PC2 *)
-    | (k, _) :: tl when key = k -> first_k_elt { ilist = tbl.ilist; klist = tl }
-    | _ :: tl -> next_elt (Kkey key) { ilist = tbl.ilist; klist = tl } )
+    | (k, _) :: tl when key = k -> first_k_elt { tbl with klist = tl }
+    | _ :: tl -> next_elt (Kkey key) { tbl with klist = tl } )
 
 (* https://www.lua.org/manual/5.4/manual.html#6.1
    TODO: Warning spec not fully implemented *)
@@ -131,3 +130,5 @@ let inext idx tbl =
     match i_get (idx + 1) tbl with Some v -> Some (idx + 1, v) | None -> None
   end
   | false -> None
+
+let get_metatable tbl = tbl.metatable

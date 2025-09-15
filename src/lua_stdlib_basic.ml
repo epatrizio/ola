@@ -101,3 +101,16 @@ let typ v =
 
 let tostring v =
   match v with [ v ] -> [ Vstring (tostring_value v) ] | _ -> assert false
+
+let getmetatable v =
+  match v with
+  | [ Vtable (_, tbl) ] -> begin
+    match Table.get_metatable tbl with
+    | Some mt -> begin
+      match Table.get (fun _ -> None) (Vstring "__metatable") mt with
+      | Some v -> [ v ]
+      | None -> [ Vtable (Random.bits32 (), mt) ]
+    end
+    | None -> [ Vnil () ]
+  end
+  | _ -> [ Vnil () ]

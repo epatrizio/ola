@@ -9,6 +9,7 @@
   goto.lua
   iterators.lua
   len.lua
+  metatable.lua
   stdlib_basic.lua
   stdlib_math.lua
   table.lua

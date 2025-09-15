@@ -21,6 +21,9 @@ let lib () =
   let lib_basic = LibMap.add "print" Lua_stdlib_basic.print lib_basic in
   let lib_basic = LibMap.add "type" Lua_stdlib_basic.typ lib_basic in
   let lib_basic = LibMap.add "tostring" Lua_stdlib_basic.tostring lib_basic in
+  let lib_basic =
+    LibMap.add "getmetatable" Lua_stdlib_basic.getmetatable lib_basic
+  in
   let lib = LibMap.empty in
   let lib = LibMap.add "math" LibMap.empty lib in
   let lib = add_func "math" "abs" Lua_stdlib_math.abs lib in
