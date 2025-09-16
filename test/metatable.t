@@ -9,3 +9,6 @@ metatables operations:
   nil
   nil
   nil
+  protected metatable!
+  nil
+  value_mt2

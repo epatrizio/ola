@@ -132,3 +132,7 @@ let inext idx tbl =
   | false -> None
 
 let get_metatable tbl = tbl.metatable
+
+let set_metatable meta_tbl tbl = { tbl with metatable = Some meta_tbl }
+
+let remove_metatable tbl = { tbl with metatable = None }

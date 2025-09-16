@@ -25,3 +25,7 @@ val next : 'a key option -> ('a, 'b) t -> ('a key * 'b) option
 val inext : int -> ('a, 'b) t -> (int * 'b) option
 
 val get_metatable : ('a, 'b) t -> ('a, 'b) t option
+
+val set_metatable : ('a, 'b) t -> ('a, 'b) t -> ('a, 'b) t
+
+val remove_metatable : ('a, 'b) t -> ('a, 'b) t

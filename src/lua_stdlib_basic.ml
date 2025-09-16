@@ -114,3 +114,32 @@ let getmetatable v =
     | None -> [ Vnil () ]
   end
   | _ -> [ Vnil () ]
+
+let setmetatable v =
+  match v with
+  | Vtable (id, tbl) :: Vnil () :: _tl ->
+    let tbl = Table.remove_metatable tbl in
+    [ Vtable (id, tbl) ]
+  | Vtable (id, tbl) :: Vtable (_, meta_tbl) :: _tl -> begin
+    match Table.get_metatable tbl with
+    | Some mt -> begin
+      match Table.get (fun _ -> None) (Vstring "__metatable") mt with
+      | Some _ ->
+        Lua_stdlib_common.typing_error "cannot change a protected metatable"
+      | None ->
+        let tbl = Table.set_metatable meta_tbl tbl in
+        [ Vtable (id, tbl) ]
+    end
+    | None ->
+      let tbl = Table.set_metatable meta_tbl tbl in
+      [ Vtable (id, tbl) ]
+  end
+  | Vtable (_, _) :: _tl ->
+    Lua_stdlib_common.typing_error
+      "bad argument #2 to 'setmetatable' (nil or table expected)"
+  | _ :: _tl ->
+    Lua_stdlib_common.typing_error
+      "bad argument #1 to 'setmetatable' (nil or table expected)"
+  | [] ->
+    Lua_stdlib_common.typing_error
+      "bad argument #1 to 'setmetatable' (nil or table expected)"

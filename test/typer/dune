@@ -1,2 +1,10 @@
 (cram
- (deps bitwise_unop_func.lua bitwise_unop_table.lua table.lua))
+ (deps
+  bitwise_unop_func.lua
+  bitwise_unop_table.lua
+  metatable_1.lua
+  metatable_2.lua
+  metatable_3.lua
+  metatable_4.lua
+  metatable_5.lua
+  table.lua))
