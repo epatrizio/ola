@@ -2,6 +2,18 @@
 
 type location = Lexing.position * Lexing.position
 
+let empty_location () : location =
+  ( { Lexing.pos_fname = ""
+    ; Lexing.pos_lnum = 0
+    ; Lexing.pos_bol = 0
+    ; Lexing.pos_cnum = 0
+    }
+  , { Lexing.pos_fname = ""
+    ; Lexing.pos_lnum = 0
+    ; Lexing.pos_bol = 0
+    ; Lexing.pos_cnum = 0
+    } )
+
 type number_type =
   | Tinteger
   | Tfloat

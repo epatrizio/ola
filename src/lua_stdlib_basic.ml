@@ -9,21 +9,43 @@ let rec tostring_value v =
   | Vnumber (Ninteger i) -> string_of_int i
   | Vnumber (Nfloat f) -> string_of_float f
   | Vstring s -> s
-  | Vtable (i, _) -> "table: " ^ string_of_int (Int32.to_int i)
+  | Vtable (i, tbl) as t -> begin
+    match Table.get_metatable tbl with
+    | Some mt -> begin
+      match Table.get (fun _ -> None) (Vstring "__tostring") mt with
+      | Some (Vfunction (_, _, _) as f) ->
+        let env = Env.empty () in
+        let _, v2, _ =
+          match
+            Interpret.interpret_fct f [ (Ast.empty_location (), Evalue t) ] env
+          with
+          | Error (_, msg) -> Lua_stdlib_common.error msg
+          | Ok v -> v
+        in
+        tostring_value v2
+      | Some _ ->
+        Lua_stdlib_common.typing_error
+          "metatable.__tostring: attempt to call a non function value"
+      | None -> Format.sprintf "table: %i" (Int32.to_int i)
+    end
+    | None -> Format.sprintf "table: %i" (Int32.to_int i)
+  end
   | Vfunction (i, _, _) | VfunctionStdLib (i, _) ->
-    "function: " ^ string_of_int (Int32.to_int i)
+    Format.sprintf "function: %i" (Int32.to_int i)
   | VfunctionReturn vl | Vvariadic vl -> (
     match vl with
     | [] -> ""
     | [ v ] -> tostring_value v
-    | v :: tl -> tostring_value v ^ ", " ^ tostring_value (VfunctionReturn tl) )
+    | v :: tl ->
+      Format.sprintf "%s, %s" (tostring_value v)
+        (tostring_value (VfunctionReturn tl)) )
 
 let asert v =
   begin
     match v with
     | Vnil () :: [ Vstring msg ] | Vboolean false :: [ Vstring msg ] ->
       assert (
-        print_endline ("assert: " ^ msg);
+        print_endline (Format.sprintf "assert: %s" msg);
         false )
     | [ Vnil () ] | [ Vboolean false ] -> assert false
     | _ -> assert true
@@ -124,8 +146,7 @@ let setmetatable v =
     match Table.get_metatable tbl with
     | Some mt -> begin
       match Table.get (fun _ -> None) (Vstring "__metatable") mt with
-      | Some _ ->
-        Lua_stdlib_common.typing_error "cannot change a protected metatable"
+      | Some _ -> Lua_stdlib_common.error "cannot change a protected metatable"
       | None ->
         let tbl = Table.set_metatable meta_tbl tbl in
         [ Vtable (id, tbl) ]
