@@ -628,7 +628,7 @@ and interpret_fct value el env =
     let vall = List.map (fun (_l, v) -> v) vall in
     begin
       try
-        let ret = fct vall in
+        let ret, env = fct vall env in
         Ok (VfunctionStdLib (i, fct), VfunctionReturn ret, env)
       with
       | Lua_stdlib_common.Stdlib_typing_error msg ->

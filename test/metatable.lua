@@ -14,11 +14,12 @@ print(getmetatable(tbl))        -- protected metatable!
 tbl = setmetatable(tbl, nil)
 print(getmetatable(tbl))        -- nil
 
-local mt2 = {["key_mt2"] = "value_mt2"}
+local mt2 = {key_mt2 = "value_mt2"}
 
 tbl = setmetatable(tbl, mt2)
+-- setmetatable(tbl, mt2)       -- BUG: same as tbl = setmetatable(tbl, mt2) (side effect on tbl, but env isn't updated)
 mt = getmetatable(tbl)
-print(mt["key_mt2"])            -- value_mt2
+print(mt["key_mt2"])            -- value_mt2 (memo: ~ mt.key_mt2)
 
 local mt3 = {
   __tostring = function(arr)
@@ -34,7 +35,7 @@ local mt3 = {
     end
   }
 
-tbl = {11, 22, 33, ["key"] = "val"}
+tbl = {11, 22, 33, key = "val"}
 
 tbl = setmetatable(tbl, mt3)
 print(tbl)

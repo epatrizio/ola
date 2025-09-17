@@ -1,14 +1,20 @@
 open Ast
 
-let flush _v =
+let flush _v env =
   flush_all ();
-  [ Vnil () ]
+  ([ Vnil () ], env)
 
-let write v =
-  let sl = List.map (fun v -> Lua_stdlib_basic.tostring_value v) v in
+let write v env =
+  let sl =
+    List.map
+      (fun v ->
+        let s, _env = Lua_stdlib_basic.tostring_value v env in
+        s )
+      v
+  in
   List.iter
     (fun s ->
       print_string s;
       Format.print_flush () )
     sl;
-  [ Vnil () ]
+  ([ Vnil () ], env)

@@ -73,7 +73,8 @@ type value =
   | Vvariadic of value list
   | Vfunction of int32 * (parlist * block) * value Env.t
     (* int32 = function unique id *)
-  | VfunctionStdLib of int32 * (value list -> value list)
+  | VfunctionStdLib of
+      int32 * (value list -> value Env.t -> value list * value Env.t)
     (* int32 = stdlib function unique id *)
   | VfunctionReturn of value list
   | Vtable of int32 * (value, value) Table.t (* int32 = table unique id *)
