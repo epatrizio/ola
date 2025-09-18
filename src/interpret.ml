@@ -322,12 +322,40 @@ and interpret_var v env =
     let* v, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
     match v with
-    | Vtable (_i, tbl) -> begin
-      match Table.get get_int_value_opt idx tbl with
-      | None -> Ok (Vnil (), env)
+    | Vtable (_i, t) as tbl -> begin
+      match Table.get get_int_value_opt idx t with
+      | None -> index_metamechanism idx tbl env
       | Some v -> Ok (v, env)
     end
     | _ -> Ok (Vnil (), env) )
+
+and index_metamechanism idx tbl env =
+  match tbl with
+  | Vtable (_i, t) -> begin
+    match Table.get_metatable t with
+    | Some mt -> begin
+      match Table.get (fun _ -> None) (Vstring "__index") mt with
+      | Some v -> begin
+        match v with
+        | Vtable (_i, t) -> begin
+          match Table.get get_int_value_opt idx t with
+          | None -> Ok (Vnil (), env)
+          | Some v -> Ok (v, env)
+        end
+        | Vfunction (_i, _pb, _env) as f ->
+          let arr = (empty_location (), Evalue tbl) in
+          let key = (empty_location (), Evalue idx) in
+          let* _, v, env = interpret_fct f [ arr; key ] _env in
+          Ok (v, env)
+        | _ ->
+          error None
+            "metatable.__index: attempt to index a non table or function value"
+      end
+      | None -> Ok (Vnil (), env)
+    end
+    | None -> Ok (Vnil (), env)
+  end
+  | _ -> assert false
 
 and interpret_field field env =
   match field with
