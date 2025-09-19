@@ -49,6 +49,11 @@ let i_get idx tbl = List.assoc_opt idx tbl.ilist
 
 let k_get key tbl = List.assoc_opt key tbl.klist
 
+let key_exists get_int_key_opt key tbl =
+  match get_int_key_opt key with
+  | Some idx -> Option.is_some (i_get idx tbl)
+  | None -> Option.is_some (k_get key tbl)
+
 let get get_int_key_opt key tbl =
   match get_int_key_opt key with
   | Some idx -> i_get idx tbl

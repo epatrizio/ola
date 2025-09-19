@@ -345,7 +345,7 @@ and index_metamechanism idx tbl env =
         | Vfunction (_i, _pb, _env) as f ->
           let arr = (empty_location (), Evalue tbl) in
           let key = (empty_location (), Evalue idx) in
-          let* _, v, env = interpret_fct f [ arr; key ] _env in
+          let* _, v, _env = interpret_fct f [ arr; key ] _env in
           Ok (v, env)
         | _ ->
           error None
@@ -354,6 +354,39 @@ and index_metamechanism idx tbl env =
       | None -> Ok (Vnil (), env)
     end
     | None -> Ok (Vnil (), env)
+  end
+  | _ -> assert false
+
+and newindex_metamechanism idx value tbl env =
+  let tbl_add i idx value t env =
+    let t = Table.add get_int_value_opt idx value t in
+    Ok (Vtable (i, t), env)
+  in
+  match tbl with
+  | Vtable (i, t) -> begin
+    match Table.get_metatable t with
+    | Some mt -> begin
+      match Table.get (fun _ -> None) (Vstring "__newindex") mt with
+      | Some v -> begin
+        match v with
+        | Vtable (_i, _t) -> assert false (* TODO *)
+        | Vfunction (_i, _pb, _env) as f ->
+          if Table.key_exists get_int_value_opt idx t then
+            tbl_add i idx value t env
+          else
+            let arr = (empty_location (), Evalue tbl) in
+            let key = (empty_location (), Evalue idx) in
+            let value = (empty_location (), Evalue value) in
+            let* _, _v, _env = interpret_fct f [ arr; key; value ] _env in
+            Ok (Vtable (i, t), env)
+        | _ ->
+          error None
+            "metatable.__newindex: attempt to index a non table or function \
+             value"
+      end
+      | None -> tbl_add i idx value t env
+    end
+    | None -> tbl_add i idx value t env
   end
   | _ -> assert false
 
@@ -510,11 +543,10 @@ and set_var v value env =
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
     match t with
-    | Vtable (i, tbl) ->
-      let tbl = Table.add get_int_value_opt idx value tbl in
-      let vtbl = Vtable (i, tbl) in
+    | Vtable (_i, _t) as tbl ->
+      let* tbl, env = newindex_metamechanism idx value tbl env in
       let v = var_of_prefixexp pexp env in
-      set_var v vtbl env
+      set_var v tbl env
     | _ ->
       error None
         (Format.sprintf "Typing error: attempt to index a non table value") )

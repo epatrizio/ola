@@ -9,4 +9,5 @@
   metatable_5.lua
   metatable_6.lua
   metatable_7.lua
+  metatable_8.lua
   table.lua))

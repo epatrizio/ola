@@ -25,3 +25,8 @@ metatables operations:
   33
   __index function result
   __index function result
+  __newindex function - skip assignement, key_new, val_new
+  __newindex function - skip assignement, 4, 44
+  222
+  nil
+  nil

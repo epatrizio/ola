@@ -64,3 +64,19 @@ print(tbl.key_new_2)  -- not exists: fun call
 print(tbl[3])         -- exists: 33
 print(tbl[4])         -- not exists: fun call
 print(tbl[5])         -- not exists: fun call
+
+local mt5 = {
+  __newindex = function(arr, key, value)
+      print("__newindex function - skip assignement", key, value)
+    end
+}
+
+tbl = setmetatable(tbl, mt5)
+
+tbl[2] = 222              -- ok, already exists
+tbl.key_new = "val_new"   -- new index: fun call
+tbl[4] = 44               -- new index: fun call
+
+print(tbl[2])             -- 222
+print(tbl.key_new)
+print(tbl[4])

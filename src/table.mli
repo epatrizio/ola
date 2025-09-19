@@ -14,6 +14,8 @@ val add : ('a -> int option) -> 'a -> 'b -> ('a, 'b) t -> ('a, 'b) t
 
 val remove : ('a -> int option) -> 'a -> ('a, 'b) t -> ('a, 'b) t
 
+val key_exists : ('a -> int option) -> 'a -> ('a, 'b) t -> bool
+
 val get : ('a -> int option) -> 'a -> ('a, 'b) t -> 'b option
 
 val len : ('a, 'b) t -> int
