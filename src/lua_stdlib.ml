@@ -30,6 +30,7 @@ let lib () =
   let lib = LibMap.empty in
   let lib = LibMap.add "math" LibMap.empty lib in
   let lib = add_func "math" "abs" Lua_stdlib_math.abs lib in
+  let lib = add_func "math" "floor" Lua_stdlib_math.floor lib in
   let lib = add_func "math" "cos" Lua_stdlib_math.cos lib in
   let lib = add_func "math" "sin" Lua_stdlib_math.sin lib in
   let lib = add_func "math" "tan" Lua_stdlib_math.tan lib in

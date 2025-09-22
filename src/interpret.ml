@@ -272,7 +272,8 @@ and interpret_rel_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env
     | Bneq -> Ok (Vboolean true, env)
     | _ -> assert false (* typing error *)
   end
-  | _ -> assert false (* todo: to be implemented *)
+  | _ -> assert false
+(* todo: to be implemented (Ex. VfunctionReturn. Check Array.lua example) *)
 
 and interpret_str_binop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
   let* v1, env = interpret_expr expr1 env in

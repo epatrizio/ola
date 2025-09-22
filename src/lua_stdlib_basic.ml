@@ -124,8 +124,12 @@ let typ v env =
   | [ Vnil () ] -> ([ Vstring "nil" ], env)
   | [ Vboolean _ ] -> ([ Vstring "boolean" ], env)
   | [ Vnumber _ ] -> ([ Vstring "number" ], env)
+  | [ Vstring _ ] -> ([ Vstring "string" ], env)
   | [ Vtable _ ] -> ([ Vstring "table" ], env)
   | [ Vfunction _ ] | [ VfunctionStdLib _ ] -> ([ Vstring "function" ], env)
+  | [ v ] ->
+    Ast.print_value Format.err_formatter v;
+    assert false
   | _ -> assert false
 
 let tostring v env =

@@ -11,6 +11,19 @@ let abs v env =
     Lua_stdlib_common.typing_error
       "bad argument #1 to math.abs function (number expected)"
 
+let floor v env =
+  match v with
+  | [ Vnumber (Ninteger i) ] ->
+    let f = float_of_int i in
+    ([ Vnumber (Nfloat (floor f)) ], env)
+  | [ Vnumber (Nfloat f) ] -> ([ Vnumber (Nfloat (floor f)) ], env)
+  | [ Vstring s ] ->
+    let f = Lua_stdlib_common.float_of_string s in
+    ([ Vnumber (Nfloat (floor f)) ], env)
+  | _ ->
+    Lua_stdlib_common.typing_error
+      "bad argument #1 to math.floor function (number expected)"
+
 (* todo: specification not fully met *)
 let random v env =
   match v with
