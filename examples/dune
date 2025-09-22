@@ -1,2 +1,9 @@
 (cram
- (deps even_odd.lua factorial.lua fibonacci.lua hanoi.lua oop.lua table.lua))
+ (deps
+  even_odd.lua
+  factorial.lua
+  fibonacci.lua
+  hanoi.lua
+  metatable_cst.lua
+  oop.lua
+  table.lua))
