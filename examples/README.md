@@ -27,4 +27,15 @@ implementation of classic functions *table_map*, *table_filter*, *table_fold_lef
 *table_iter*, *table_iteri* and *table_find*:
 `dune exec ola -- ./examples/table.lua`
 
+- [Metatables and Metamethods](https://www.lua.org/pil/13.html):
+how to make a table read-only `dune exec ola -- ./examples/metatable_cst.lua`
+
+- [Data structures](https://www.lua.org/pil/11.html):
+*Tables in Lua are not a data structure; they are THE data structure!*\
+With Lua Tables (associated with meta-mechanisms), it's possible to easly implement all data structures.
+For example, [Sets end Bags](https://www.lua.org/pil/11.5.html) are explained in the official documentation.
+Here are some custom implemented examples (experimental, incomplete, but informative - I hope so :-):
+  - Array: `dune exec ola -- ./examples/data_structures/array.lua`
+  - Linked list: `dune exec ola -- ./examples/data_structures/linked_list.lua`
+
 *Nb. Examples are part of the cram test suite*

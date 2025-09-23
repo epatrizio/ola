@@ -2,6 +2,18 @@
 
 type location = Lexing.position * Lexing.position
 
+let empty_location () : location =
+  ( { Lexing.pos_fname = ""
+    ; Lexing.pos_lnum = 0
+    ; Lexing.pos_bol = 0
+    ; Lexing.pos_cnum = 0
+    }
+  , { Lexing.pos_fname = ""
+    ; Lexing.pos_lnum = 0
+    ; Lexing.pos_bol = 0
+    ; Lexing.pos_cnum = 0
+    } )
+
 type number_type =
   | Tinteger
   | Tfloat
@@ -61,7 +73,8 @@ type value =
   | Vvariadic of value list
   | Vfunction of int32 * (parlist * block) * value Env.t
     (* int32 = function unique id *)
-  | VfunctionStdLib of int32 * (value list -> value list)
+  | VfunctionStdLib of
+      int32 * (value list -> value Env.t -> value list * value Env.t)
     (* int32 = stdlib function unique id *)
   | VfunctionReturn of value list
   | Vtable of int32 * (value, value) Table.t (* int32 = table unique id *)
