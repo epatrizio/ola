@@ -1,6 +1,6 @@
 print(1)
 print(2)
-a = 7
+local a = 7
 goto l1
 print(3)
 ::l2::

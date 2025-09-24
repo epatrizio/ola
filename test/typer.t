@@ -22,4 +22,4 @@ typer checks:
   while_42
   repeat
   42
-  File "typer.lua", line 110, char 10: Typing error: attempt to perform arithmetic on a boolean value
+  File "typer.lua", line 112, char 12: Typing error: attempt to perform arithmetic on a boolean value

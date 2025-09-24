@@ -10,9 +10,9 @@ do
 end
 
 while 1 > 2
-  do
-    print(4)
-  end
+do
+  print(4)
+end
 
 repeat
   print(4)
@@ -21,42 +21,48 @@ repeat
 until 1 < 2
 
 -- init, max/min value, incr (1:default)
-for i = 4+1.0,10    -- i in local scope
-  do
-    print(i)
-    if i > 6 then break end
-  end
-print(i)  -- i new in global scope
+for i = 4 + 1.0, 10 -- i in local scope
+do
+  print(i)
+  if i > 6 then break end
+end
+print(i) -- i new in global scope
 
-for i = 41+1.0,10,"-1"..".5"
-  do
-    print(i)
-  end
+for i = 41 + 1.0, 10, "-1" .. ".5"
+do
+  print(i)
+end
 print(i)
 
 for i = 0, 10, 2 do
-  print(i)            -- scd iteration i=2 NOT i=3 (1+2)
-  i = i + 1           -- this local control variable assignment don't modify the iteration
-  print(i)            -- fst iteration i=1
+  print(i)  -- scd iteration i=2 NOT i=3 (1+2)
+  i = i + 1 -- this local control variable assignment don't modify the iteration
+  print(i)  -- fst iteration i=1
 end
 
 local cnt = 0
 while cnt < 2
+do
+  for i = "20.5", "10" .. ".5", "-2" .. ".1"
   do
-    for i = "20.5","10"..".5","-2"..".1"
-      do
-        print(i)
-        if i < 15 then break end
-      end
-    cnt = cnt + 1
+    print(i)
+    if i < 15 then break end
   end
+  cnt = cnt + 1
+end
 
 if true then print(42) end
 if false then print(24) else print(42) end
 
-if false then print(241)
-elseif false then print(242) elseif true then print(42)
-else print(243) end
+if false then
+  print(241)
+elseif false then
+  print(242)
+elseif true then
+  print(42)
+else
+  print(243)
+end
 
 -- warning, todo: full return semantic implem'
 do
@@ -68,7 +74,7 @@ do
   --return tmp, tmp+1;
 end
 
-if true then return end   -- useful for stoping a script during the flow
+if true then return end -- useful for stoping a script during the flow
 
 -- doc §3.4.4 https://www.lua.org/manual/5.4/manual.html#3.3.4
 -- return           -- ok with lua interpreter. Syntax error with ola

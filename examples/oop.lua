@@ -20,7 +20,7 @@ function AbstractGeometric.new(name)
     end
 
     self.toString = function()
-        return "AbstractGeometric:"..name
+        return "AbstractGeometric:" .. name
     end
 
     self.perimeter = function()
@@ -44,7 +44,7 @@ function Point.new(name, x, y)
     end
 
     self.toString = function()
-        return "Point:"..self.getName()..";x:"..x..";y:"..y
+        return "Point:" .. self.getName() .. ";x:" .. x .. ";y:" .. y
     end
 
     return self
@@ -60,7 +60,7 @@ function Circle.new(name, x, y, r)
     local center = Point.new("Center", x, y)
 
     self.toString = function()
-        return "Circle:"..self.getName()..";"..center.toString()..";radius:"..r
+        return "Circle:" .. self.getName() .. ";" .. center.toString() .. ";radius:" .. r
     end
 
     self.perimeter = function()
@@ -156,13 +156,13 @@ local function div_o(a, b)
     if b == 0 then
         return Option.None()
     else
-        return Option.Some(a/b)
+        return Option.Some(a / b)
     end
 end
 
-local d = div_o(84,2)
+local d = div_o(84, 2)
 if d.isSome() then print(d.getValue()) else print("error: div by zero") end
-d = div_o(42,0)
+d = div_o(42, 0)
 if d.isSome() then print(d.getValue()) else print("error: div by zero") end
 
 -- An oop implementation of classic functional programming Result type
@@ -222,11 +222,11 @@ local function div_r(a, b)
     if b == 0 then
         return Result.Error("error: div by zero")
     else
-        return Result.Ok(a/b)
+        return Result.Ok(a / b)
     end
 end
 
-d = div_r(84,2)
+d = div_r(84, 2)
 if d.isOk() then print(d.getValue()) else print(d.getError()) end
-d = div_r(42,0)
+d = div_r(42, 0)
 if d.isOk() then print(d.getValue()) else print(d.getError()) end

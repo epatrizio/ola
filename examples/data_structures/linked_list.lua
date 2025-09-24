@@ -1,16 +1,16 @@
---[[ 
+--[[
 Linked list data structure
   https://www.lua.org/pil/11.3.html
   https://www.tutorialspoint.com/lua/lua_lists.htm
 --]]
 
-node = {}
+local node = {}
 
 function node.create(value)
-  return {value = value, next = {}}
+  return { value = value, next = {} }
 end
 
-linked_list = {}
+local linked_list = {}
 
 function linked_list.create()
   return nil
@@ -45,7 +45,7 @@ end
 
 -- basic usage
 
-ll = linked_list.create()
+local ll = linked_list.create()
 ll = linked_list.add(21, ll)
 ll = linked_list.add(42, ll)
 ll = linked_list.add(84, ll)
@@ -54,7 +54,7 @@ linked_list.print(ll)
 
 -- classic application 1: stack (LIFO)
 
-stack = {}
+local stack = {}
 
 function stack.create()
   return linked_list.create()
@@ -92,7 +92,7 @@ function stack.pop(st)
   end
 end
 
-st = stack.create()
+local st = stack.create()
 st = stack.push(21, st)
 st = stack.push(42, st)
 st = stack.push(84, st)

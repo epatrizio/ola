@@ -3,9 +3,9 @@
 -- Stateless iterators
 
 local function square(iteratorMaxCount, currentNumber)
-  if currentNumber<iteratorMaxCount then
+  if currentNumber < iteratorMaxCount then
     currentNumber = currentNumber + 1
-    return currentNumber, currentNumber*currentNumber
+    return currentNumber, currentNumber * currentNumber
   end
 end
 
@@ -22,11 +22,11 @@ for i, n in squares(5) do
 end
 
 local function mul23(iteratorMaxCount, currentNumber)
-  if currentNumber<iteratorMaxCount then
+  if currentNumber < iteratorMaxCount then
     currentNumber = currentNumber + 1
     -- iterator function should return a list of values
     -- first one is always the control variable
-    return currentNumber, currentNumber*2, currentNumber*3
+    return currentNumber, currentNumber * 2, currentNumber * 3
   end
 end
 
@@ -36,13 +36,13 @@ end
 
 -- Stateful iterators
 
-local array = {"elt1", "elt2", "elt3"}
+local array = { "elt1", "elt2", "elt3" }
 
 local function iterator(collection)
   local index = 0
   local count = #collection
   -- The closure function is returned
-  return function ()
+  return function()
     index = index + 1
     if index <= count then
       -- return the current element(s) of the iterator

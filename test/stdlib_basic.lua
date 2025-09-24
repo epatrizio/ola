@@ -4,13 +4,13 @@ print(type(nil))
 print(type(true))
 print(type(4 < 2))
 print(type(42))
-print(type(41.0+1))
-print(type({1,2,3}))
+print(type(41.0 + 1))
+print(type({ 1, 2, 3 }))
 
 print(tostring(nil))
 print(tostring(true))
 print(tostring(42))
-print(tostring(41.0+1))
+print(tostring(41.0 + 1))
 -- print(tostring({1,2,3}))
 
 -- table next
@@ -19,7 +19,7 @@ print(tostring(41.0+1))
 
 local tbl = {}
 print(next(tbl))
-tbl = {1, 2, 3}
+tbl = { 1, 2, 3 }
 print(next(tbl))
 print(next(tbl, 1))
 print(next(tbl, 2))
@@ -42,11 +42,11 @@ print(next(table, 42))
 print(next(table, true))
 print(next(table, "key"))
 
-for k, v in ipairs(table) do    -- nothing to display: no index 1 (int)
+for k, v in ipairs(table) do -- nothing to display: no index 1 (int)
   print(k, v)
 end
 
-local tbl = {1, 2, 3}
+local tbl = { 1, 2, 3 }
 tbl["key1"] = "val1"
 tbl["key2"] = "val2"
 tbl[42] = 42.0
@@ -66,4 +66,4 @@ assert("42")
 assert({}, "message")
 -- assert(nil)              -- ok, stop
 -- assert(false)            -- ok, stop
-assert(4 < 2, "message")    -- ok, stop
+assert(4 < 2, "message") -- ok, stop

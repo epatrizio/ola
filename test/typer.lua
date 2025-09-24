@@ -40,10 +40,10 @@ print(not nil)  -- ok
 -- print(true > false)  -- ko
 -- print("str" >= 42.42)-- ko
 
-print(10 and 20)    -- ok
-print(20 and 10)    -- ok
-print(10 or 20)     -- ok
-print(20 or 10)     -- ok
+print(10 and 20) -- ok
+print(20 and 10) -- ok
+print(10 or 20)  -- ok
+print(20 or 10)  -- ok
 
 -- print(#nil)    -- ko
 -- print(#42)     -- ko
@@ -51,19 +51,19 @@ print(20 or 10)     -- ok
 -- print(#true)   -- ko
 -- print(#false)  -- ko
 
-print(1 .. "str")       -- ok 1str
-print(1.1 .. "str")     -- ok 1.1str
+print(1 .. "str")   -- ok 1str
+print(1.1 .. "str") -- ok 1.1str
 -- print(nil .. "str")  -- ko
 -- print(true .. "str") -- ko
 
-function void()
+local function void()
 end
-t = {1}
+local t = { 1 }
 -- print(void .. "str") -- ko
 -- print(t .. "str")    -- ko
 
-print(t[1])       -- 1
-print(t[2])       -- nil
+print(t[1]) -- 1
+print(t[2]) -- nil
 -- print(tt[1])   -- ko (tt isn't a table)
 
 print(void())
@@ -79,7 +79,7 @@ print(void())
 -- print(#void)   -- ko
 
 -- Doc: The condition expression _e of a control structure can return any value
-while nil do  -- idem false
+while nil do -- idem false
   print("while")
   break
 end
@@ -100,15 +100,19 @@ repeat
 until void
 --
 
-if false then print(0)
-elseif false then print(0)
+if false then
+  print(0)
+elseif false then
+  print(0)
 elseif true then
-  a = 2
-  b = 40
-  print(a+b)
+  local a = 2
+  local b = 40
+  print(a + b)
   b = false
-  print(a+b)
-else print(0) end
+  print(a + b)
+else
+  print(0)
+end
 
 -- for i = nil,"not_float",true do      -- ko
 --   print(i)

@@ -1,4 +1,4 @@
---[[ 
+--[[
 Only with "naked" Lua and the Stdlib.next function,
 it's possible to implement the standard ipairs and pairs iterators.
 Then, thanks to them, it becomes possible to implement some classic table processing functions
@@ -24,9 +24,9 @@ local function ipairs_impl(table)
 end
 
 local tbl = {}
-tbl[1] = "elt1"         -- Nb. without an index 1, iteration returns nothing
+tbl[1] = "elt1" -- Nb. without an index 1, iteration returns nothing
 tbl[2] = "elt2"
-tbl[3] = "elt3"         -- ipairs: last element
+tbl[3] = "elt3" -- ipairs: last element
 tbl[5] = "elt5"
 tbl[-42] = -42.0
 tbl["key1"] = "val1"
@@ -62,7 +62,7 @@ local function table_map(fun_map, table)
   return table_res
 end
 
-local tbl_names = {"john", "mike", "marlon"}
+local tbl_names = { "john", "mike", "marlon" }
 tbl_names["name1"] = "steven"
 tbl_names["name2"] = "world;)"
 
@@ -89,7 +89,7 @@ local function table_filter(fun_filter, table)
   return table_res
 end
 
-local tbl_nums = {0, -1, 42, -0.5, 17, 99.99, -42}
+local tbl_nums = { 0, -1, 42, -0.5, 17, 99.99, -42 }
 
 -- filtering function must return a boolean
 -- (= the filter condition; here, positive number)

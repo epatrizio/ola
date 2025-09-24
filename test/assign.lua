@@ -3,24 +3,24 @@ local a = 0
 a = 0
 a = 1
 print(a)
-print(b)    -- nil, not an error
+print(b) -- nil, not an error
 
-a1, a2, a3 = 40, 41, 40+2
+a1, a2, a3 = 40, 41, 40 + 2
 print(a1)
 print(a2)
 print(a3)
 
-a1, a2, a3 = 44-1, 88/2
+a1, a2, a3 = 44 - 1, 88 / 2
 print(a1)
 print(a2)
 print(a3)
 
-a1, a2 = 45.5, #"assign"+40, false
+a1, a2 = 45.5, #"assign" + 40, false
 print(a1)
 print(a2)
 print(a3)
 
-print(a4)   -- nil, not an error
+print(a4) -- nil, not an error
 a4 = "a4"
 print(a4)
 
@@ -29,12 +29,12 @@ print(a4)
 do
   local a4, b = 0, 0
   local a4, b = 11
-  a4 = 22     -- local scope
-  c = 1       -- global var
+  a4 = 22                 -- local scope
+  c = 1                   -- global var
   local d <const> = 2
-  local e <close> = false     -- nil or false or __close metamethod
+  local e <close> = false -- nil or false or __close metamethod
   print(a)
-  print(a4)   -- 22, local block scope, not the same var!
+  print(a4)               -- 22, local block scope, not the same var!
   print(b)
   print(c)
   print(d)
@@ -42,31 +42,35 @@ do
   print(e)
 end
 
-print(a4)       -- "a4"
+print(a4) -- "a4"
 print(b)
 print(c)
 
 b = 2
-print(b+c)
+print(b + c)
 
 -- if
 
-if false then print(a1)
-elseif false then print(a2)
+if false then
+  print(a1)
+elseif false then
+  print(a2)
 elseif true then
   local a5 <const> = true
   print(a5)
-else print(a3) end
+else
+  print(a3)
+end
 print(a5)
 
 -- while
 
 cnt = 0
 while cnt < 5
-  do
-    print(cnt)
-    cnt = cnt + 1
-  end
+do
+  print(cnt)
+  cnt = cnt + 1
+end
 
 -- repeat
 
@@ -79,25 +83,25 @@ until cnt >= 5
 
 -- for
 
-for i = 0,4
-  do
-    print(i)
-  end
+for i = 0, 4
+do
+  print(i)
+end
 --print(i)
 
 -- doc §3.5 https://www.lua.org/manual/5.4/manual.html#3.5
-x = 10                -- global variable
-do                    -- new block
-  local x = x         -- new 'x', with value 10
-  print(x)            --> 10
-  x = x+1
-  do                  -- another block
-    local x = x+1     -- another 'x'
-    print(x)          --> 12
+x = 10            -- global variable
+do                -- new block
+  local x = x     -- new 'x', with value 10
+  print(x)        --> 10
+  x = x + 1
+  do              -- another block
+    local x = x + 1 -- another 'x'
+    print(x)      --> 12
   end
-  print(x)            --> 11
+  print(x)        --> 11
 end
-print(x)              --> 10  (the global one)
+print(x)          --> 10  (the global one)
 
 -- function
 
@@ -106,16 +110,16 @@ function f()
 end
 
 a, b, c = 1, 2
-print(a)  -- 1
-print(b)  -- 2
-print(c)  -- nil
+print(a) -- 1
+print(b) -- 2
+print(c) -- nil
 
 a, b, c = 0, f()
-print(a)  -- 0
-print(b)  -- 1
-print(c)  -- 2
+print(a) -- 0
+print(b) -- 1
+print(c) -- 2
 
 local a, b, c = f(), 0
-print(a)  -- 1
-print(b)  -- 0
-print(c)  -- nil
+print(a) -- 1
+print(b) -- 0
+print(c) -- nil

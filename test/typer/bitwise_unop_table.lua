@@ -1,3 +1,3 @@
-a = {42}
+local a = { 42 }
 
 print(~a)

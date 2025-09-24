@@ -11,7 +11,7 @@ written in [OCaml](https://ocaml.org) with the [Dune](https://dune.build) build 
 <!-- $MDX file=examples/hello.lua -->
 ```lua
 local function hello(msg)
-  print("Hello, "..msg.."!")
+  print("Hello, " .. msg .. "!")
 end
 
 hello("world")

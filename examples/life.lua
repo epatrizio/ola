@@ -1,11 +1,11 @@
---[[ 
+--[[
 classic example : Conway's Game of Life
 --]]
 
-h, w = 35, 25
-life_screen = {}
+local h, w = 35, 25
+local life_screen = {}
 
-function life_screen_init()
+local function life_screen_init()
   local rand_val = function(bound)
     local r = math.random(bound)
     return r == 1
@@ -16,7 +16,7 @@ function life_screen_init()
     matrix[i] = {}
     for j = 1, w do
       -- matrix[i][j] = false
-      matrix[i][j] = rand_val(6)   -- automatic (random) init
+      matrix[i][j] = rand_val(6) -- automatic (random) init
     end
   end
   -- active cells - manual init
@@ -27,11 +27,11 @@ function life_screen_init()
   return matrix
 end
 
-function is_alive(x, y)
+local function is_alive(x, y)
   return life_screen[x][y]
 end
 
-function life_screen_print()
+local function life_screen_print()
   local print_cell = function(cell_content)
     if cell_content then io.write("| X ") else io.write("|   ") end
   end
@@ -42,13 +42,13 @@ function life_screen_print()
     io.write("\n")
   end
   -- io.write("\027[2J")  -- This clear screen impl doesn't work: https://github.com/epatrizio/ola/issues/26
-  os.execute("clear")     -- Workaround: equivalent to io.write("\027[2J")
+  os.execute("clear") -- Workaround: equivalent to io.write("\027[2J")
   for i = 1, h do
     print_line(life_screen[i])
   end
 end
 
-function count_alive(x, y)
+local function count_alive(x, y)
   local nb_alive = 0
   local cell_process = function(x, y)
     if (x < 1) or (x >= h) or (y < 1) or (y >= w) then
@@ -59,18 +59,18 @@ function count_alive(x, y)
       return
     end
   end
-  cell_process(x-1, y-1)
-  cell_process(x-1, y)
-  cell_process(x-1, y+1)
-  cell_process(x, y-1)
-  cell_process(x, y+1)
-  cell_process(x+1, y-1)
-  cell_process(x+1, y)
-  cell_process(x+1, y+1)
+  cell_process(x - 1, y - 1)
+  cell_process(x - 1, y)
+  cell_process(x - 1, y + 1)
+  cell_process(x, y - 1)
+  cell_process(x, y + 1)
+  cell_process(x + 1, y - 1)
+  cell_process(x + 1, y)
+  cell_process(x + 1, y + 1)
   return nb_alive
 end
 
-function life_screen_step()
+local function life_screen_step()
   local matrix_count_alive = {}
   local matrix_count_alive_init = function()
     local matrix = {}
@@ -104,7 +104,7 @@ end
 
 life_screen = life_screen_init()
 
-loop = 1
+local loop = 1
 while loop <= 100 do
   life_screen_print()
   os.execute("sleep 0.2")
