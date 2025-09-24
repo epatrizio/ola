@@ -10,4 +10,5 @@
   metatable_6.lua
   metatable_7.lua
   metatable_8.lua
-  table.lua))
+  table.lua
+  typer.lua))
