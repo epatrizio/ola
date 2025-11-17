@@ -1,16 +1,20 @@
 -- classic meta-mechanism application: table of constants
 
 -- 1. table created once at the beginning and it is impossible to add new constants after
+--    from: https://www.lua.org/pil/13.4.5.html
 
 print("1. -----")
 
 function To_constants(tbl)
-  return setmetatable({}, {
+  local proxy = {}
+  local mt = { -- create metatable
     __index = tbl,
     __newindex = function(t, key, value)
       print("attempt to change constants", key, value)
     end
-  })
+  }
+  proxy = setmetatable(proxy, mt)
+  return proxy
 end
 
 CST = { 11, 22, my_cst = "my_cst_value" } -- constants init
