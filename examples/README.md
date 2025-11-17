@@ -38,5 +38,6 @@ Here are some custom implemented examples (experimental, incomplete, but informa
   - Array: `dune exec ola -- ./examples/data_structures/array.lua`
   - Linked list and Stack (as linked list application example): `dune exec ola -- ./examples/data_structures/linked_list.lua`
   - Queue: `lua ./examples/data_structures/queue.lua`
+  - Set: `dune exec ola -- ./examples/data_structures/set.lua`
 
 *Nb. Examples are part of the cram test suite instead of Queue (Table stdlib not fully implemented)*

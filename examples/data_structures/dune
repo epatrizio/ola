@@ -1,2 +1,2 @@
 (cram
- (deps array.lua linked_list.lua))
+ (deps array.lua linked_list.lua set.lua))
