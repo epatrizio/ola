@@ -106,3 +106,4 @@ stack.print(st)
 -- classic application 2: queue (LILO)
 -- only difference: pop implementation >> last element must be pop, not first!
 -- (the entire structure must be scanned, another approach might be more effective)
+--    See queue.lua (for an another implementation approach)
