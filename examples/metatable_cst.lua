@@ -17,8 +17,9 @@ function To_constants(tbl)
   return proxy
 end
 
-CST = { 11, 22, my_cst = "my_cst_value" } -- constants init
-CST = To_constants(CST)
+CST = To_constants { 11, 22, my_cst = "my_cst_value" } -- constants init
+-- syntactic sugar: To_constants { ... } = To_constants({ ... }) (function call)
+-- CST = To_constants(CST)
 
 print(CST[1])                -- 11
 print(CST[2])                -- 22

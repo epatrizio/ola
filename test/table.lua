@@ -137,3 +137,11 @@ print(tbl5[2]) -- nil
 local tbl6 = { g(), 0 }
 print(tbl6[1]) -- nil
 print(tbl6[2]) -- 0
+
+-- syntactic sugar: nothing { 42 } = nothing({ 42 }) function call
+
+local function nothing(tbl)
+  print("nothing")
+end
+
+nothing { 42 }

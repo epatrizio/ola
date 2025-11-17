@@ -59,3 +59,4 @@ len operations:
   nil
   nil
   0
+  nothing

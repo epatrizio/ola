@@ -141,7 +141,11 @@ let functioncall :=
 
 let args :=
   | ~ = delimited(LPAREN, loption(explist), RPAREN); <Aexpl>
-  | ~ = tableconstructor; <Atable>
+  | fl = tableconstructor; {
+    Aexpl [ (($startpos, $endpos), Etableconstructor fl) ]
+  }
+  // | ~ = tableconstructor; <Atable>
+  // f{fields} is syntactic sugar for f({fields})
   | v = VALUE; {
       Aexpl [ (($startpos, $endpos), Evalue v) ]
     }
