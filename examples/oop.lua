@@ -2,9 +2,7 @@
 Oriented object programming in Lua, a basic example
 
 Thanks to the power of tables and closures, Lua offers a simple approach to the OOP paradigm.
-For more detailed information and examples: (which requires the use of metatable)
-https://www.lua.org/pil/16.html
-https://www.tutorialspoint.com/lua/lua_object_oriented.htm
+For an advanced example, see: oop_advanced.lua
 --]]
 
 AbstractGeometric = {}
