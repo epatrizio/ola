@@ -17,10 +17,13 @@ to manipulate the `ola` interpreter in more advanced contexts than test suite.
 - [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life):
 `dune exec ola -- ./examples/life.lua`
 
-- [Oriented object programming](https://www.lua.org/pil/16.html), basics!
-(A beautiful application of tables and closures.
-By the way, classic functional programming Option and Result types could be implement by OOP!):
-`dune exec ola -- ./examples/oop.lua`
+- [Oriented object programming](https://www.lua.org/pil/16.html), a beautiful application of tables and closures:
+  - Basic example (and an application: classic functional programming Option and Result types):
+    `dune exec ola -- ./examples/oop.lua`
+  - Advanced example 1 (Class definition, new instance and inheritance):
+    `dune exec ola -- ./examples/oop_advanced_1.lua`
+  - Advanced example 2 (Same 1 with privacy elements - attributes and functions):
+    `dune exec ola -- ./examples/oop_advanced_2.lua`
 
 - Custom implementation of *iparis* and *pairs* stdlib iterators. As an application,
 implementation of classic functions *table_map*, *table_filter*, *table_fold_left*,
@@ -40,4 +43,5 @@ Here are some custom implemented examples (experimental, incomplete, but informa
   - Queue: `lua ./examples/data_structures/queue.lua`
   - Set: `dune exec ola -- ./examples/data_structures/set.lua`
 
-*Nb. Examples are part of the cram test suite instead of Queue (Table stdlib not fully implemented)*
+*Nb. Examples are part of the cram test suite except for OOP advanced 1 (syntactic sugar 'Table:func()' not implemented)
+and Queue (Table stdlib not fully implemented)*
