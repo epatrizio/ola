@@ -8,6 +8,7 @@ https://www.tutorialspoint.com/lua/lua_object_oriented.htm
 --]]
 
 -- Class
+
 CheckingAccount = { balance = 0 }
 
 -- memo: syntactic suger = CheckingAccount.new(self, initial_amount)
@@ -38,6 +39,7 @@ function CheckingAccount:withdraw(amount)
   self.balance = self.balance - amount
 end
 
+-- Object: Class instance
 local ca = CheckingAccount:new(nil, 100)
 ca:deposite(50)
 ca:withdraw(60)
