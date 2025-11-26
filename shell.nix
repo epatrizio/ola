@@ -9,6 +9,10 @@ pkgs.mkShell {
   nativeBuildInputs = with pkgs.ocamlPackages; [
     dune_3
     findlib
+    bisect_ppx
+    mdx
+    merlin
+    sedlex
     menhir
     ocaml
     ocamlformat
