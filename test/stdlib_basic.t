@@ -22,7 +22,6 @@ basic stdlib:
   3, 3
   nil
   3, true
-  4, nil
   10, 10.1
   42, 42
   true, false

@@ -29,14 +29,14 @@ print(next(tbl, 3))
 
 local table = {}
 table[3] = true
-table[4] = nil
+table[4] = nil              -- nil: no 4th field
 table[42] = "42"
 table[10] = 10.10
 table[true] = false
 table["key"] = "val"
 print(next(table))
 print(next(table, 3))
-print(next(table, 4))
+-- print(next(table, 4))    -- previous comment: no 4th field 
 print(next(table, 10))
 print(next(table, 42))
 print(next(table, true))

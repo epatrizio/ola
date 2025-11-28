@@ -7,7 +7,6 @@
   false
   true
   true
-  true
+  false
   word_1
   word_2
-  word_3

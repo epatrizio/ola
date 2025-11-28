@@ -544,10 +544,15 @@ and set_var v value env =
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
     match t with
-    | Vtable (_i, _t) as tbl ->
-      let* tbl, env = newindex_metamechanism idx value tbl env in
-      let v = var_of_prefixexp pexp env in
-      set_var v tbl env
+    | Vtable (i, t) as tbl ->
+      if value = Vnil () then
+        let t = Table.remove get_int_value_opt idx t in
+        let v = var_of_prefixexp pexp env in
+        set_var v (Vtable (i, t)) env
+      else
+        let* tbl, env = newindex_metamechanism idx value tbl env in
+        let v = var_of_prefixexp pexp env in
+        set_var v tbl env
     | _ ->
       error None
         (Format.sprintf "Typing error: attempt to index a non table value") )

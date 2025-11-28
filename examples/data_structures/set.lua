@@ -30,14 +30,14 @@ end
 local s = set.create()
 s = set.add("word_1", s)
 s = set.add("word_2", s)
-s = set.add("word_2", s)        -- same value
+s = set.add("word_2", s)      -- same value
 s = set.add("word_3", s)
--- s = set.remove("word_3", s)  -- TODO: BUG (when = nil, entry must be removed from the Table)
+s = set.remove("word_3", s)
 
-print(set.has("ko", s))     -- false
-print(set.has("word_1", s)) -- true
-print(set.has("word_2", s)) -- true
-print(set.has("word_3", s)) -- false
+print(set.has("ko", s))       -- false
+print(set.has("word_1", s))   -- true
+print(set.has("word_2", s))   -- true
+print(set.has("word_3", s))   -- false
 
 for k, _v in pairs(s) do
   print(k)

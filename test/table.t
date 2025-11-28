@@ -60,3 +60,4 @@ len operations:
   nil
   0
   nothing
+  key_2
