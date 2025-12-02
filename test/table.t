@@ -61,3 +61,5 @@ len operations:
   0
   nothing
   key_2
+  42.42
+  42.42

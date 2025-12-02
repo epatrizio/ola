@@ -154,3 +154,13 @@ tbl7["key_1"] = nil
 for k, _v in pairs(tbl7) do
   print(k)
 end
+
+-- int_of_float key
+
+local tbl8 = {}
+
+tbl8[42] = 42
+tbl8[42.0] = 42.42    -- int_of_float(42.0) = 42
+
+print(tbl8[42])       -- 42.42
+print(tbl8[42.0])     -- 42.42 (same table field)

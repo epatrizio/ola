@@ -64,12 +64,12 @@ arr["5"] = "incorrect"
 arr["ko"] = "incorrect"
 arr[true] = "incorrect"
 arr[1.1] = "incorrect"
-arr[1.0] = 21 -- 1.0: correct (1)
+arr[1.0] = 21
 arr[9] = "hello, world!"
 arr[10] = false
 
-print(arr) -- __tostrng: {20, nil, 42, nil, nil, nil, nil, nil, hello, world!, false, }
+print(arr) -- __tostrng: {21, nil, 42, nil, nil, nil, nil, nil, hello, world!, false, }
 
--- BUG: https://github.com/epatrizio/ola/issues/34
-print(arr[1])   -- KO: 20 instead of 21
-print(arr[1.0]) -- 21 (must be the same field!)
+-- BUG FIX: https://github.com/epatrizio/ola/issues/34
+print(arr[1])   -- 21
+print(arr[1.0]) -- 21 (same field!)

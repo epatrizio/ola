@@ -49,8 +49,14 @@ let number_of_string loc str =
       error loc (Format.sprintf "attempt to perform on a string (%s) value" str)
     )
 
-let get_int_value_opt v =
-  match v with Vnumber (Ninteger i) when i > 0 -> Some i | _ -> None
+let get_int_value_opt = function
+  | Vnumber (Ninteger i) when i > 0 -> Some i
+  | _ -> None
+
+let vint_of_vfloat = function
+  | Vnumber (Nfloat f) as v ->
+    if Float.is_integer f then Vnumber (Ninteger (int_of_float f)) else v
+  | v -> v
 
 let rec interpret_bbinop_expr binop expr1 expr2 env =
   let* v1, env = interpret_expr expr1 env in
@@ -322,6 +328,7 @@ and interpret_var v env =
     let* _ = typecheck_var (VarTableField (pexp, exp)) env in
     let* v, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
+    let idx = vint_of_vfloat idx in
     match v with
     | Vtable (_i, t) as tbl -> begin
       match Table.get get_int_value_opt idx t with
@@ -543,6 +550,7 @@ and set_var v value env =
     let* _ = typecheck_var (VarTableField (pexp, exp)) env in
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
+    let idx = vint_of_vfloat idx in
     match t with
     | Vtable (i, t) as tbl ->
       if value = Vnil () then
@@ -721,6 +729,7 @@ and interpret_functioncall fc env =
   | FCpreargs (PEvar (VarTableField (pexp, exp)), Aexpl el) ->
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
+    let idx = vint_of_vfloat idx in
     begin
       match t with
       | Vtable (_i, tbl) -> begin

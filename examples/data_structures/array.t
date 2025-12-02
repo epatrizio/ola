@@ -9,6 +9,6 @@
   attempt to perform an incorrect key for an array, ko
   attempt to perform an incorrect key for an array, true
   attempt to perform an incorrect key for an array, 1.1
-  {20, nil, 42, nil, nil, nil, nil, nil, hello, world!, false, }
-  20
+  {21, nil, 42, nil, nil, nil, nil, nil, hello, world!, false, }
+  21
   21
