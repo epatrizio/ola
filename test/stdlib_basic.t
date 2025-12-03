@@ -37,5 +37,5 @@ basic stdlib:
   key1, val1
   key2, val2
   assert: message
-  Fatal error: exception Assert_failure("src/lua_stdlib_basic.ml", 47, 6)
+  Fatal error: exception Assert_failure("src/lua_stdlib_basic.ml", 46, 4)
   [2]

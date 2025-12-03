@@ -41,14 +41,13 @@ let rec tostring_value v env =
       (Format.sprintf "%s, %s" s1 s2, env) )
 
 let asert v env =
-  begin
-    match v with
-    | Vnil () :: [ Vstring msg ] | Vboolean false :: [ Vstring msg ] ->
-      assert (
-        print_endline (Format.sprintf "assert: %s" msg);
-        false )
-    | [ Vnil () ] | [ Vboolean false ] -> assert false
-    | _ -> assert true
+  begin match v with
+  | Vnil () :: [ Vstring msg ] | Vboolean false :: [ Vstring msg ] ->
+    assert (
+      print_endline (Format.sprintf "assert: %s" msg);
+      false )
+  | [ Vnil () ] | [ Vboolean false ] -> assert false
+  | _ -> assert true
   end;
   ([ Vnil () ], env)
 

@@ -35,10 +35,9 @@ let mk_string _buf s =
           incr i;
           if !i >= String.length s then error "illegal escape in string";
           let str = Format.sprintf "0x%c%c" h s.[!i] in
-          begin
-            match int_of_string_opt str with
-            | None -> error "illegal escape in string"
-            | Some n -> Char.chr n
+          begin match int_of_string_opt str with
+          | None -> error "illegal escape in string"
+          | Some n -> Char.chr n
           end
     in
     Buffer.add_char b c;

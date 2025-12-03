@@ -236,8 +236,7 @@ and typecheck_stmt stmt env =
           typecheck_block b env )
         (Ok ()) ebl
     in
-    begin
-      match ob with None -> Ok () | Some b -> typecheck_block b env
+    begin match ob with None -> Ok () | Some b -> typecheck_block b env
     end
   | Sfor (_n, e1, e2, oe, _b) ->
     let typecheck_init ((loc, _e) as expr) env =
@@ -250,8 +249,7 @@ and typecheck_stmt stmt env =
     in
     let* () = typecheck_init e1 env in
     let* () = typecheck_init e2 env in
-    begin
-      match oe with Some e -> typecheck_init e env | None -> Ok ()
+    begin match oe with Some e -> typecheck_init e env | None -> Ok ()
     end
   | Siterator (_nl, el, _b) ->
     let typecheck_e ((loc, _e) as expr) env =
@@ -267,11 +265,10 @@ and typecheck_stmt stmt env =
       end
       | _ -> error (Some loc) "bad 'for iterator' (iterator function, expected)"
     in
-    begin
-      match el with
-      | [ e ] -> typecheck_e e env
-      | e :: _el -> typecheck_e e env
-      | [] -> assert false (* syntax error *)
+    begin match el with
+    | [ e ] -> typecheck_e e env
+    | e :: _el -> typecheck_e e env
+    | [] -> assert false (* syntax error *)
     end
   | SfunctionCall fc ->
     let* (_ : Ast.typ) = typecheck_functioncall fc env in
