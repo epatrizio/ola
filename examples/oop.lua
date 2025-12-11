@@ -8,7 +8,6 @@ For an advanced example, see: oop_advanced.lua
 AbstractGeometric = {}
 
 -- AbstractGeometric.new = function (name)
--- function AbstractGeometric:new(name)
 function AbstractGeometric.new(name)
     local self = {}
     local name = name
@@ -31,7 +30,6 @@ end
 Point = {}
 
 -- Point.new = function (name, x, y)
--- function Point:new(name, x, y)
 function Point.new(name, x, y)
     local self = AbstractGeometric.new(name)
     local x = x
@@ -51,7 +49,6 @@ end
 Circle = {}
 
 -- Circle.new = function (name, x, y, r)
--- function Circle:new(name, x, y, r)
 function Circle.new(name, x, y, r)
     local self = Point.new(name, x, y)
     local radius = r
@@ -91,11 +88,13 @@ print(circle2.toString())
 print(circle2.perimeter())
 
 -- Minimal example with ':' colon syntax
+-- syntactic sugar:
+--  Class:new(name) is syntactic sugar for Class.new(self, name)
+--  v:name(args) call is syntactic sugar for v.name(v,args)
 
 Class = {}
 
 function Class:new(name)
-    local self = {}
     self.name = name
     return self
 end

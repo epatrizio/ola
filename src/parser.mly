@@ -52,9 +52,9 @@ let stat ==
   | IF; ~ = exp; THEN; ~ = block; ~ = list(elseif); ~ = option(preceded(ELSE, block)); END; <Sif>
   | FOR; ~ = NAME; EQ; e1 = exp; COMMA; e2 = exp; ~ = option(preceded(COMMA, exp)); DO; ~ = block; END; <Sfor>
   | FOR; ~ = namelist; IN; ~ = explist; DO; ~ = block; END; <Siterator>
-  | FUNCTION; ~ = funcname; ~ = funcbody; {
+  | FUNCTION; names = separated_nonempty_list(DOT, NAME); colon_name = option(preceded(COLON, NAME)) ; ~ = funcbody; {
     (* Sfunction syntactic sugar *)
-    let fl = match funcname with
+    let to_var_list = function
       | [] -> assert false
       | [ name ] -> [ VarName name ]
       | name :: tl ->
@@ -62,7 +62,17 @@ let stat ==
             PEvar (VarName name),
             (($startpos, $endpos), Evalue (Vstring (String.concat "." tl)))) ]
     in
-    Sassign (fl, [ ($startpos, $endpos), (Efunctiondef funcbody) ])
+    match colon_name with
+    | None ->
+      let vl = to_var_list names in
+      Sassign (vl, [ ($startpos, $endpos), (Efunctiondef funcbody) ])
+    | Some cname -> 
+      let vl = to_var_list (names @ [ cname ]) in
+      let pl, body = funcbody in
+      let pl = match pl with
+      | PLlist (str_list, is_variadic) -> PLlist ("self" :: str_list, is_variadic)
+      | PLvariadic -> pl
+      in Sassign (vl, [ ($startpos, $endpos), (Efunctiondef (pl, body)) ])
   }
   | LOCAL; FUNCTION; name = NAME; ~ = funcbody; {
     (* SfunctionLocal syntactic sugar *)
@@ -91,13 +101,6 @@ let retstat :=
 
 let label :=
   | DCOLON; ~ = NAME; DCOLON; <>
-
-let funcname :=
-  | names = separated_nonempty_list(DOT, NAME); last_name = option(preceded(COLON, NAME)); {
-    match last_name with
-    | None -> names
-    | Some lname -> names @ [ lname ]
-  }
 
 let varlist :=
   | ~ = separated_nonempty_list(COMMA, var); <>

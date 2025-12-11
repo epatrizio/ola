@@ -742,6 +742,9 @@ and interpret_functioncall fc env =
       match Table.get get_int_value_opt (Vstring name) tbl with
       | None -> assert false
       | Some value ->
+        (* colon(:) syntactic sugar: self (first arg) *)
+        let self = (empty_location (), Eprefix (PEvar (VarName v))) in
+        let el = self :: el in
         let* _closure, return, env = interpret_fct value el env in
         Ok (return, env)
     end

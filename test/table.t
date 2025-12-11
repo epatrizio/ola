@@ -63,3 +63,4 @@ len operations:
   key_2
   42.42
   42.42
+  42
