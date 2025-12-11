@@ -735,19 +735,21 @@ and interpret_functioncall fc env =
     let* value, env = interpret_functioncall fc env in
     let* _closure, return, env = interpret_fct value el env in
     Ok (return, env)
-  | FCprename (PEvar (VarName v), name, Aexpl el) ->
+  | FCprename ((PEvar (VarName v) as var), name, Aexpl el) ->
     let* value = env_result_check (Env.get_value v env) in
     begin match value with
-    | Vtable (_i, tbl) -> begin
-      match Table.get get_int_value_opt (Vstring name) tbl with
-      | None -> assert false
-      | Some value ->
-        (* colon(:) syntactic sugar: self (first arg) *)
-        let self = (empty_location (), Eprefix (PEvar (VarName v))) in
-        let el = self :: el in
-        let* _closure, return, env = interpret_fct value el env in
-        Ok (return, env)
-    end
+    | Vtable (_i, t) as tbl ->
+      let name = Vstring name in
+      let* value, env =
+        match Table.get get_int_value_opt name t with
+        | None -> index_metamechanism name tbl env
+        | Some value -> Ok (value, env)
+      in
+      (* colon(:) syntactic sugar: self (first arg) *)
+      let self = (empty_location (), Eprefix var) in
+      let el = self :: el in
+      let* _closure, return, env = interpret_fct value el env in
+      Ok (return, env)
     | _ -> error None "Typing error: attempt to access a non table field"
     end
   | _ -> assert false (* TODO: pattern matching non exhaustive *)

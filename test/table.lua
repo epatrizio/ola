@@ -171,7 +171,7 @@ local tbl9 = { key = 0 }
 
 function tbl9:add(val)          -- (val) -> (self, val)
     self.key = self.key + val   -- call context: self = tbl9 current state
-    return self                 -- return stmt is not useful (bug: https://github.com/epatrizio/ola/issues/35)
+    return self                 -- unnecessary return stmt (bug: https://github.com/epatrizio/ola/issues/35)
 end
 
 -- tbl9:add(42)                 -- same bug

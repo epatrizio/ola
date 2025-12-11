@@ -5,6 +5,7 @@
   fibonacci.lua
   hanoi.lua
   metatable_cst.lua
+  oop_advanced_1.lua
   oop_advanced_2.lua
   oop.lua
   table.lua))

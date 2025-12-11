@@ -43,5 +43,4 @@ Here are some custom implemented examples (experimental, incomplete, but informa
   - Queue: `lua ./examples/data_structures/queue.lua`
   - Set: `dune exec ola -- ./examples/data_structures/set.lua`
 
-*Nb. Examples are part of the cram test suite except for OOP advanced 1 (syntactic sugar 'Table:func()' not implemented)
-and Queue (Table stdlib not fully implemented)*
+*Nb. Examples are part of the cram test suite except for Queue (Table stdlib not fully implemented)*
