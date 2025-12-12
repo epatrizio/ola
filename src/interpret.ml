@@ -343,9 +343,9 @@ and index_metamechanism idx tbl env =
       match Table.get (fun _ -> None) (Vstring "__index") mt with
       | Some v -> begin
         match v with
-        | Vtable (_i, t) -> begin
+        | Vtable (_i, t) as tbl -> begin
           match Table.get get_int_value_opt idx t with
-          | None -> Ok (Vnil (), env)
+          | None -> index_metamechanism idx tbl env
           | Some v -> Ok (v, env)
         end
         | Vfunction (_i, _pb, _env) as f ->

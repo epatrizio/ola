@@ -4,6 +4,23 @@
   stdlib loading ...
   scope analysis ...
   interprete ...
+  1
+  2
+  nil
+  nil
+  1
+  22
+  33
+  nil
+  1
+  22
+  333
+  444
+  nil
+  2222
+  333
+  444
+  5555
   My point 1
   Point:My point 1;x:0;y:1
   0

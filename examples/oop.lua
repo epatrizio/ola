@@ -2,8 +2,46 @@
 Oriented object programming in Lua, a basic example
 
 Thanks to the power of tables and closures, Lua offers a simple approach to the OOP paradigm.
-For an advanced example, see: oop_advanced.lua
+For an advanced example, see: oop_advanced_*.lua
 --]]
+
+-- OOP by prototype (~ Javascript) https://en.wikipedia.org/wiki/Prototype-based_programming
+--  https://www.lua.org/pil/16.1.html
+
+A = { key1 = 1, key2 = 2 }
+B = { key2 = 22, key3 = 33 }
+C = { key3 = 333, key4 = 444 }
+D = { key2 = 2222, key5 = 5555 }
+
+-- A is a prototype for B (= B extends A)
+B = setmetatable(B, { __index = A })
+-- B is a prototype for C (= C extends B extends A)
+C = setmetatable(C, { __index = B })
+
+print(A.key1)   -- 1
+print(A.key2)   -- 2
+print(A.key3)   -- nil
+print(A.key4)   -- nil
+
+print(B.key1)   -- 1
+print(B.key2)   -- 22
+print(B.key3)   -- 33
+print(B.key4)   -- nil
+
+print(C.key1)   -- 1
+print(C.key2)   -- 22
+print(C.key3)   -- 333
+print(C.key4)   -- 444
+
+-- Lua is dynamic, the type can change, the prototype can change!
+-- D is now the prototype for C (= C extends D)
+C = setmetatable(C, { __index = D })
+
+print(C.key1)   -- nil
+print(C.key2)   -- 2222
+print(C.key3)   -- 333
+print(C.key4)   -- 444
+print(C.key5)   -- 5555
 
 AbstractGeometric = {}
 
