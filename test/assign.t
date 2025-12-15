@@ -58,3 +58,6 @@ assignment operations:
   1
   0
   nil
+  4
+  20
+  nil

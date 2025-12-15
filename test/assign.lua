@@ -123,3 +123,15 @@ local a, b, c = f(), 0
 print(a) -- 1
 print(b) -- 0
 print(c) -- nil
+
+-- https://www.lua.org/manual/5.4/manual.html#3.3.3
+-- If a variable is both assigned and read inside a multiple assignment,
+-- Lua ensures that all reads get the value of the variable before the assignment.
+
+a = {}
+i = 3
+i, a[i] = i+1, 20
+
+print(i)     -- 4
+print(a[3])  -- 20
+print(a[4])  -- nil

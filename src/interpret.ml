@@ -534,9 +534,7 @@ and set_var v value env =
     (* WIP *)
   in
   match v with
-  | VarName n ->
-    let* () = env_result_check (Env.update_value n value env) in
-    Ok env
+  | VarName n -> env_result_check (Env.update_value n value env)
   | VarTableField (pexp, exp) -> (
     let* _ = typecheck_var (VarTableField (pexp, exp)) env in
     let* t, env = interpret_prefixexp pexp env in
@@ -567,38 +565,38 @@ and to_vall el env =
 
 and lists_assign vl vall env =
   begin match (vl, vall) with
-  | [], [] | [], _ -> Ok env
+  | [], [] | [], _ -> Ok ()
   | vl, [] ->
     List.fold_left
       (fun acc v ->
-        let e = Result.get_ok acc in
-        set_var v (Vnil ()) e )
-      (Ok env) vl
+        let () = Result.get_ok acc in
+        set_var v (Vnil ()) env )
+      (Ok ()) vl
   | v :: vl, [ (l, va) ] -> (
     match va with
     | VfunctionReturn vall | Vvariadic vall -> begin
       match vall with
       | [] -> set_var v (Vnil ()) env
       | va :: vall ->
-        let* env = set_var v va env in
         let vall = List.map (fun v -> (l, v)) vall in
-        lists_assign vl vall env
+        let* () = lists_assign vl vall env in
+        set_var v va env
     end
     | va ->
-      let* env = set_var v va env in
-      lists_assign vl [] env )
+      let* () = lists_assign vl [] env in
+      set_var v va env )
   | v :: vl, (_l, va) :: tl -> (
     match va with
     | VfunctionReturn vall | Vvariadic vall -> begin
       match vall with
       | [] -> set_var v (Vnil ()) env
       | va :: _vall ->
-        let* env = set_var v va env in
-        lists_assign vl tl env
+        let* () = lists_assign vl tl env in
+        set_var v va env
     end
     | va ->
-      let* env = set_var v va env in
-      lists_assign vl tl env )
+      let* () = lists_assign vl tl env in
+      set_var v va env )
   end
 
 and lists_lassign nal vall env =
@@ -759,7 +757,8 @@ and interpret_stmt stmt env : _ result =
   | Sempty -> Ok env
   | Sassign (vl, el) ->
     let* vall, env = to_vall el env in
-    lists_assign vl vall env
+    let* () = lists_assign vl vall env in
+    Ok env
   | SassignLocal (nal, el) ->
     let* vall, env = to_vall el env in
     lists_lassign nal vall env
