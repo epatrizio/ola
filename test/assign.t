@@ -61,3 +61,4 @@ assignment operations:
   4
   20
   nil
+  Interpretation error: Typing error: table index is nil

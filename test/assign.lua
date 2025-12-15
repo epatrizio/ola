@@ -135,3 +135,6 @@ i, a[i] = i+1, 20
 print(i)     -- 4
 print(a[3])  -- 20
 print(a[4])  -- nil
+
+-- a[nil] = 42
+a[idx] = 42    -- error: table index is nil
