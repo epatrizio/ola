@@ -38,3 +38,22 @@ table[10] = 10
 table[5] = 5  -- +1
 table[-5] = -5
 print(#table) -- 5
+
+-- border advanced
+
+table = { 1, 2, 3, nil, 5 }
+table[-1] = -1
+print(#table) -- 3
+for k, v in ipairs(table) do
+    print(k, v)
+end
+
+table = {}
+table[-2] = -2
+table[-1] = -1
+table[2] = 2
+table[3] = 3
+print(#table) -- 0
+for k, v in ipairs(table) do
+    print(k, v)
+end

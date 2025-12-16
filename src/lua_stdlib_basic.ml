@@ -86,12 +86,12 @@ let pairs v env =
 let inext v env =
   match v with
   | [ Vtable (_, tbl) ] | [ Vtable (_, tbl); Vnil () ] -> begin
-    match Table.inext 0 tbl with
+    match Table.inext (fun v -> v = Vnil ()) 0 tbl with
     | Some (i, v) -> ([ Vnumber (Ninteger i); v ], env)
     | None -> ([ Vnil () ], env)
   end
   | [ Vtable (_, tbl); Vnumber (Ninteger i) ] when i > 0 -> begin
-    match Table.inext i tbl with
+    match Table.inext (fun v -> v = Vnil ()) i tbl with
     | Some (i, v) -> ([ Vnumber (Ninteger i); v ], env)
     | None -> ([ Vnil () ], env)
   end

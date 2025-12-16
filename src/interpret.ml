@@ -491,8 +491,7 @@ and interpret_expr (loc, expr) env =
     begin match v with
     | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
     | Vtable (_i, t) ->
-      Ok (Vnumber (Ninteger (Table.len t)), env)
-      (* todo: not correct: Table.len isn't exactly Table.border *)
+      Ok (Vnumber (Ninteger (Table.border (fun v -> v = Vnil ()) t)), env)
     | _ -> assert false (* typing error *)
     end
   | Eunop (Ulnot, ((l, _) as e)) ->

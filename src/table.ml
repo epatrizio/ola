@@ -59,15 +59,13 @@ let get get_int_key_opt key tbl =
   | Some idx -> i_get idx tbl
   | None -> k_get key tbl
 
-(* len: "border" concept https://www.lua.org/manual/5.4/manual.html#3.4.7
-    Here: number of contiguous elements from 1
-    this is not the exact specification
-*)
-let len tbl =
+(* "border" (~len) concept https://www.lua.org/manual/5.4/manual.html#3.4.7 *)
+let border fun_border_up tbl =
   let rec cpt idx itbl acc_len =
-    match List.mem_assoc idx itbl with
-    | false -> acc_len
-    | true -> cpt (idx + 1) itbl (acc_len + 1)
+    match List.assoc_opt idx itbl with
+    | None -> acc_len
+    | Some v ->
+      if fun_border_up v then acc_len else cpt (idx + 1) itbl (acc_len + 1)
   in
   cpt 1 tbl.ilist 0
 
@@ -129,12 +127,11 @@ let next key tbl =
     end
     | None -> first_elt tbl )
 
-let inext idx tbl =
-  match List.length tbl.ilist > 0 with
-  | true -> begin
+let inext fun_border_up idx tbl =
+  let border = border fun_border_up tbl in
+  if idx < border then
     match i_get (idx + 1) tbl with Some v -> Some (idx + 1, v) | None -> None
-  end
-  | false -> None
+  else None
 
 let get_metatable tbl = tbl.metatable
 
