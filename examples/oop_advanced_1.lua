@@ -54,7 +54,14 @@ print(ca)           -- Balance checking_account: 90 (100+50-60)
 
 -- Inheritance
 
-BlockAccount = { limit = 10000 }
+BlockAccount = { limit = 0 }
+
+function BlockAccount:new(initial_amount, initial_limit)
+  local ba = CheckingAccount:new(self, initial_amount)
+  self.limit = initial_limit
+  ba.limit = initial_limit                -- same issue (unnecessary)
+  return ba
+end
 
 function BlockAccount:toString()
   return "Balance block_account: " .. self.balance .. " - limit: " .. self.limit
@@ -67,11 +74,11 @@ function BlockAccount:deposite(amount)
 end
 
 function BlockAccount:withdraw(amount)
-  print("Impossible withdrawal!")
+  print("Error block_account: impossible withdrawal!")
   return self                             -- same issue (unnecessary return stmt)
 end
 
-local ba = CheckingAccount:new(BlockAccount, 1000)
+local ba = BlockAccount:new(1000, 10000)
 ba = ba:deposite(5000)
 ba = ba:withdraw(42)     -- Impossible withdrawal!
-print(ba)           -- Balance block_account: 6000 (1000+5000 (-42 KO)) - limit: 10000
+print(ba)                -- Balance block_account: 6000 (1000+5000 (-42 KO)) - limit: 10000

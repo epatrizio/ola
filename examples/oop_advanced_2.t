@@ -6,6 +6,6 @@
   interprete ...
   Balance checking_account: 90
   nil
-  Impossible withdrawal!
+  Error block_account: impossible withdrawal!
   Balance block_account: 6000 - limit: 10000
   nil

@@ -40,7 +40,7 @@ function NewCheckingAccount(initial_amount)
 
   setBalance(initial_amount)
 
-  -- Nb. self and setBalance functions are private because they are not part of the return table below
+  -- Nb. self and setBalance function are private because they are not part of the return table below
   return setmetatable({
       getBalance = getBalance,
       deposite = deposite,
@@ -56,9 +56,14 @@ print(ca_p.balance)     -- nil!
 
 -- Inheritance
 
-function NewBlockAccount(initial_amount)
-  local self = { limit = 10000 }
+function NewBlockAccount(initial_amount, initial_limit)
+  local self = { limit = 0 }
   local check_acc = NewCheckingAccount(initial_amount)    -- BlockAccount extends CheckingAccount
+
+  local function setLimit(limit)
+    assert(limit > 0)
+    self.limit = limit
+  end
 
   local function toString()
     return "Balance block_account: " .. check_acc.getBalance() .. " - limit: " .. self.limit
@@ -70,8 +75,10 @@ function NewBlockAccount(initial_amount)
   end
 
   local function withdraw(amount)
-    print("Impossible withdrawal!")
+    print("Error block_account: impossible withdrawal!")
   end
+
+  setLimit(initial_limit)
 
   return setmetatable({
       getBalance = check_acc.getBalance,
@@ -80,7 +87,7 @@ function NewBlockAccount(initial_amount)
     }, { __tostring = toString })
 end
 
-local ba_p = NewBlockAccount(1000)
+local ba_p = NewBlockAccount(1000, 10000)
 ba_p.deposite(5000)
 ba_p.withdraw(42)     -- Impossible withdrawal!
 print(ba_p)           -- Balance block_account: 6000 (1000+5000 (-42 KO)) - limit: 10000
