@@ -12,6 +12,8 @@ basic stdlib:
   number
   number
   table
+  true
+  is a table
   nil
   true
   42

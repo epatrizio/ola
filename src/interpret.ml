@@ -691,7 +691,11 @@ and interpret_fct value el env =
     let vall = List.map (fun (_l, v) -> v) vall in
     begin try
       let ret, env = fct vall env in
-      Ok (VfunctionStdLib (i, fct), VfunctionReturn ret, env)
+      match ret with
+      | [ v ] ->
+        (* shortcut: directly consider it's a value *)
+        Ok (VfunctionStdLib (i, fct), v, env)
+      | _ -> Ok (VfunctionStdLib (i, fct), VfunctionReturn ret, env)
     with
     | Lua_stdlib_common.Stdlib_typing_error msg ->
       error None (Format.sprintf "Typing error: %s" msg)

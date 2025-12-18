@@ -23,8 +23,7 @@ function array.create(size)
     __newindex = function(arr, key, value)
       -- TODO: refacto, naive implementation
       local floor
-      local type = type(key)
-      if type == "number" and key > 0 then
+      if type(key) == "number" and key > 0 then
         floor = math.floor(key)
         if key == floor then
           array_proxy[key] = value

@@ -7,6 +7,11 @@ print(type(42))
 print(type(41.0 + 1))
 print(type({ 1, 2, 3 }))
 
+-- return stdlib function operation
+local arr = {}
+print(type(arr) == "table")
+print("is a " .. type(arr))
+
 print(tostring(nil))
 print(tostring(true))
 print(tostring(42))
@@ -66,4 +71,4 @@ assert("42")
 assert({}, "message")
 -- assert(nil)              -- ok, stop
 -- assert(false)            -- ok, stop
-assert(4 < 2, "message") -- ok, stop
+assert(4 < 2, "message")    -- ok, stop

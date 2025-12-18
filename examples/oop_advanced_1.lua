@@ -18,10 +18,7 @@ function CheckingAccount:new(obj, initial_amount)
   -- setmetatable(account, self)                      -- bug: https://github.com/epatrizio/ola/issues/35
   self.balance = initial_amount
   self.__index = self
-  -- if obj and type(obj.toString) == "function" then -- same issue
-  local typ = "no_type"
-  if obj ~= nil then typ = type(obj.toString) end
-  if obj and typ == "function" then
+  if obj and type(obj.toString) == "function" then -- same issue
     self.__tostring = obj.toString
   else
     self.__tostring =
