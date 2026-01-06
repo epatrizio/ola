@@ -101,9 +101,9 @@ and var =
 (* | VarTableFieldName of prefixexp * string *)
 (* syntactic sugar: transform VarTableField in parser *)
 
-and args =
-  | Aexpl of expr list
-  | Atable of field list
+and args = Aexpl of expr list
+(* | Atable of field list *)
+(* syntactic sugar: transform Atable in parser *)
 (* | Astr of string *)
 (* syntactic sugar: transform Aexpl in parser *)
 
@@ -240,7 +240,7 @@ and print_prefixexp fmt prexp =
 and print_args fmt args =
   match args with
   | Aexpl el -> fprintf fmt {|(%a)|} (pp_print_list ~pp_sep print_expr) el
-  | Atable fl -> print_fieldlist fmt fl
+(* | Atable fl -> print_fieldlist fmt fl *)
 (* | Astr s -> pp_print_string fmt s *)
 
 and print_functioncall fmt fc =

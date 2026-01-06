@@ -70,14 +70,9 @@ and analyse_funcbody ((pl, b) as _fb) env =
   let env = Env.with_locals env_loc locals in
   ((pl, b), env)
 
-and analyse_args args env =
-  match args with
-  | Aexpl el ->
-    let el, env = analyse_list el analyse_expr env in
-    (Aexpl el, env)
-  | Atable fl ->
-    let fl, env = analyse_fieldlist fl env in
-    (Atable fl, env)
+and analyse_args (Aexpl el) env =
+  let el, env = analyse_list el analyse_expr env in
+  (Aexpl el, env)
 
 and analyse_prefixexp pexp env =
   match pexp with
