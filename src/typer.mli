@@ -4,6 +4,7 @@ val check_value_type :
      Ast.location option
   -> Ast.value
   -> Ast.typ
+  -> Ast.value Env.t
   -> (unit, Ast.location option * string) result
 
 val typecheck_var :

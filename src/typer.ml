@@ -12,21 +12,29 @@ exception Typing_error of Ast.location option * string
 
 let error loc_opt message = raise (Typing_error (loc_opt, message))
 
-let rec typecheck_value value =
+let rec typecheck_value value env =
   match value with
-  | Vnil () -> Tnil
-  | Vboolean _ -> Tboolean
-  | Vnumber (Ninteger _) -> Tnumber Tinteger
-  | Vnumber (Nfloat _) -> Tnumber Tfloat
-  | Vstring _ -> Tstring
-  | Vvariadic vl -> Tvariadic (List.map typecheck_value vl)
-  | Vfunction _ -> Tfunction
-  | VfunctionReturn vl -> TfunctionReturn (List.map typecheck_value vl)
-  | VfunctionStdLib _ -> TfunctionStdLib
-  | Vtable _ -> Ttable
+  | Vnil () -> Ok Tnil
+  | Vboolean _ -> Ok Tboolean
+  | Vnumber (Ninteger _) -> Ok (Tnumber Tinteger)
+  | Vnumber (Nfloat _) -> Ok (Tnumber Tfloat)
+  | Vstring _ -> Ok Tstring
+  | Vvariadic vl ->
+    Ok (Tvariadic (List.map (fun v -> Result.get_ok (typecheck_value v env)) vl))
+  | Vfunction _ -> Ok Tfunction
+  | VfunctionReturn vl ->
+    Ok
+      (TfunctionReturn
+         (List.map (fun v -> Result.get_ok (typecheck_value v env)) vl) )
+  | VfunctionStdLib _ -> Ok TfunctionStdLib
+  | Vtable _ -> Ok Ttable
+  | Vref v ->
+    let* typ = typecheck_var v env in
+    Ok (Tref typ)
 
-let check_value_type loc_opt value typ =
-  match (typecheck_value value, typ) with
+and check_value_type loc_opt value typ env =
+  let* typ_value = typecheck_value value env in
+  match (typ_value, typ) with
   | Tnumber _, Tnumber _
   | Tvariadic _, Tvariadic _
   | TfunctionReturn _, TfunctionReturn _ ->
@@ -34,7 +42,7 @@ let check_value_type loc_opt value typ =
   | typ1, typ2 when typ1 = typ2 -> Ok ()
   | _, _ -> error loc_opt "the value does not have the expected type"
 
-let rec typecheck_arith_unop ((loc, _e) as expr) env =
+and typecheck_arith_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
   match t with
   | Tnumber Tinteger -> Ok (Tnumber Tinteger)
@@ -150,13 +158,14 @@ and typecheck_var var env =
   match var with
   | VarName n -> begin
     match Env.get_value n env with
-    | Ok v -> Ok (typecheck_value v)
+    | Ok v -> typecheck_value v env
     | Error msg -> error None ("Env error: " ^ msg)
   end
   | VarTableField (pexp, ((l, _e) as _exp)) -> (
     let* t = typecheck_prefixexp pexp env in
     match t with
     | Ttable -> Ok Ttable (* col table type check during interpretation *)
+    | Tref Ttable -> Ok (Tref Ttable)
     | Tfunction ->
       Ok Tfunction (* function call type check during interpretation *)
     | _ -> error (Some l) "attempt to access a non table value" )
@@ -169,7 +178,7 @@ and typecheck_prefixexp pexp env =
 
 and typecheck_expr expr env =
   match snd expr with
-  | Evalue v -> Ok (typecheck_value v)
+  | Evalue v -> typecheck_value v env
   | Eunop (Unot, _) -> Ok Tboolean
   | Eunop (Uminus, e) -> typecheck_arith_unop e env
   | Eunop (Usharp, e) -> typecheck_sharp_unop e env
