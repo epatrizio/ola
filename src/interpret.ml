@@ -180,7 +180,9 @@ and interpret_expr (loc, expr) env =
       ( ( Vnil ()
         | Vboolean _ | Vnumber _ | Vstring _ | Vvariadic _ | Vfunction _
         | VfunctionStdLib _ | VfunctionReturn _ | Vtable _ ) as v ) ->
+    (* WIP: | Vref _ ? *)
     Ok (v, env)
+  | Evalue (Vref v) -> interpret_var v env
   | Eunop (unop, e) ->
     let* v, env = interpret_expr e env in
     eval_unop unop (loc, v) env
@@ -191,7 +193,7 @@ and interpret_expr (loc, expr) env =
     eval_binop binop (loc, v1) (loc, v2) env
   | Evariadic ->
     let* v = Env.get_value "vararg" env in
-    let* _ = typecheck_variadic v in
+    let* _ = typecheck_variadic v env in
     Ok (v, env)
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
@@ -232,14 +234,34 @@ and set_var v value env =
         let* tbl, env = newindex_metamechanism idx value tbl env in
         let v = var_of_prefixexp pexp env in
         set_var v tbl env
+    | Vref (VarName v) ->
+      let* vr = Env.get_value v env in
+      begin match vr with
+      | Vtable _ ->
+        set_var
+          (VarTableField (PEvar (VarName v), (empty_location (), Evalue idx)))
+          value env
+      | _ -> assert false
+      end
+    (* | Vref (VarTableField _) -> assert false WIP: TODO ? *)
     | _ -> assert false (* typing error *) )
 
-and to_vall el env =
+and to_vall ?(ref = false) el env =
   List.fold_left
     (fun acc ((l, _e) as exp) ->
       let vl, e = Result.get_ok acc in
-      let* v, e = interpret_expr exp e in
-      Ok (vl @ [ (l, v) ], e) )
+      let interpret () =
+        let* v, e = interpret_expr exp e in
+        Ok (vl @ [ (l, v) ], e)
+      in
+      if ref then
+        let _, exp' = exp in
+        match exp' with
+        | Eprefix (PEvar v) ->
+          let* t = typecheck_var v env in
+          if t = Ttable then Ok (vl @ [ (l, Vref v) ], e) else interpret ()
+        | _ -> interpret ()
+      else interpret () )
     (Ok ([], env))
     el
 
@@ -322,6 +344,7 @@ and interpret_fct value el env =
   | Vfunction (i, (pl, b), cl_env) as closure -> begin
     try
       let* vall, env = to_vall el env in
+      (* WIP: let* vall, env = to_vall ~ref:true el env in *)
       let* cl_env = lists_args pl vall cl_env in
       let* cl_env = interpret_block b cl_env in
       let closure = Vfunction (i, (pl, b), cl_env) in
@@ -343,6 +366,7 @@ and interpret_fct value el env =
       end
   end
   | VfunctionStdLib (i, fct) ->
+    (* WIP: ~ref:true ? *)
     let* vall, env = to_vall el env in
     let vall = List.map (fun (_l, v) -> v) vall in
     begin try

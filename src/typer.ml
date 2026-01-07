@@ -16,20 +16,25 @@ exception Typing_error of Ast.location option * string
 
 let error loc_opt message = raise (Typing_error (loc_opt, message))
 
-let rec typecheck_value value =
+let rec typecheck_value value env =
   match value with
   | Vnil () -> Tnil
   | Vboolean _ -> Tboolean
   | Vnumber (Ninteger _) -> Tnumber Tinteger
   | Vnumber (Nfloat _) -> Tnumber Tfloat
   | Vstring _ -> Tstring
-  | Vvariadic vl -> Tvariadic (List.map typecheck_value vl)
+  | Vvariadic vl -> Tvariadic (List.map (fun v -> typecheck_value v env) vl)
   | Vfunction _ -> Tfunction
-  | VfunctionReturn vl -> TfunctionReturn (List.map typecheck_value vl)
+  | VfunctionReturn vl ->
+    TfunctionReturn (List.map (fun v -> typecheck_value v env) vl)
   | VfunctionStdLib _ -> TfunctionStdLib
   | Vtable _ -> Ttable
+  | Vref v -> (
+    match typecheck_var v env with
+    | Ok typ -> Tref typ
+    | Error (loc_opt, msg) -> error loc_opt msg )
 
-let rec typecheck_function value =
+and typecheck_function value =
   match value with
   | Vfunction _ -> Ok Tfunction
   | VfunctionStdLib _ -> Ok TfunctionStdLib
@@ -38,11 +43,11 @@ let rec typecheck_function value =
   | Vnil _ -> error None "attempt to call a nil value"
   | _ -> error None "attempt to call a non function value"
 
-let typecheck_variadic value =
-  let typ = typecheck_value value in
+and typecheck_variadic value env =
+  let typ = typecheck_value value env in
   match typ with Tvariadic _ -> Ok typ | _ -> assert false
 
-let rec typecheck_arith_unop ((loc, _e) as expr) env =
+and typecheck_arith_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
   match t with
   | Tnumber Tinteger -> Ok (Tnumber Tinteger)
@@ -149,13 +154,14 @@ and typecheck_var ?(strict = false) var env =
   match var with
   | VarName n ->
     let* v = Env.get_value n env in
-    Ok (typecheck_value v)
+    Ok (typecheck_value v env)
   | VarTableField (pexp, ((l, _) as exp)) -> (
     let* t_pexp = typecheck_prefixexp pexp env in
     let* t_exp = typecheck_expr exp env in
     match t_pexp with
     | Ttable ->
       if t_exp = Tnil then error (Some l) "table index is nil" else Ok Ttable
+    | Tref Ttable -> Ok (Tref Ttable)
     | TfunctionReturn (Ttable :: _) as tfr -> Ok tfr
     | TfunctionReturn _ -> error (Some l) "attempt to index a non table value"
     | t ->
@@ -171,7 +177,7 @@ and typecheck_prefixexp pexp env =
 
 and typecheck_expr expr env =
   match snd expr with
-  | Evalue v -> Ok (typecheck_value v)
+  | Evalue v -> Ok (typecheck_value v env)
   | Eunop (Unot, _) -> Ok Tboolean
   | Eunop (Uminus, e) -> typecheck_arith_unop e env
   | Eunop (Usharp, e) -> typecheck_sharp_unop e env

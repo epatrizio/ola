@@ -40,6 +40,12 @@ let rec tostring_value v env =
       let s1, env = tostring_value v env in
       let s2, env = tostring_value (VfunctionReturn tl) env in
       (Format.sprintf "%s, %s" s1 s2, env) )
+  | Vref (VarName v) -> begin
+    match Env.get_value v env with
+    | Ok v -> tostring_value v env
+    | Error (_, msg) -> Lua_stdlib_common.error msg
+  end
+  | Vref (VarTableField (_, _)) -> assert false (* TODO *)
 
 let asert v env =
   begin match v with
