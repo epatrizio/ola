@@ -153,12 +153,14 @@ and typecheck_var var env =
     | Ok v -> Ok (typecheck_value v)
     | Error msg -> error None ("Env error: " ^ msg)
   end
-  | VarTableField (pexp, ((l, _e) as _exp)) -> (
+  | VarTableField (pexp, (l, _e)) -> (
     let* t = typecheck_prefixexp pexp env in
     match t with
     | Ttable -> Ok Ttable (* col table type check during interpretation *)
-    | Tfunction ->
-      Ok Tfunction (* function call type check during interpretation *)
+    | TfunctionReturn _ ->
+      (* WIP *)
+      Ok (TfunctionReturn [])
+      (* function call return type check during interpretation *)
     | _ -> error (Some l) "attempt to access a non table value" )
 
 and typecheck_prefixexp pexp env =
@@ -193,7 +195,7 @@ and typecheck_expr expr env =
 and typecheck_functioncall fc env =
   let typ_check t =
     match t with
-    | Ok Tfunction -> Ok Tfunction
+    | Ok Tfunction -> Ok (TfunctionReturn []) (* WIP *)
     | Ok TfunctionStdLib -> Ok TfunctionStdLib
     | Ok Ttable -> Ok Ttable (* col table type check during interpretation *)
     | Error (l, mes) -> error l mes
@@ -201,7 +203,6 @@ and typecheck_functioncall fc env =
   in
   match fc with
   | FCpreargs (PEvar v, _) ->
-    (* -- *)
     let t = typecheck_var v env in
     typ_check t
   | FCpreargs (PEfunctioncall fc, _) -> typecheck_functioncall fc env
@@ -218,7 +219,7 @@ and typecheck_stmt stmt env =
   | Sassign _ -> Ok ()
   | SassignLocal _ -> Ok ()
   | Sbreak -> Ok ()
-  | Sreturn _ -> Ok ()
+  | Sreturn _ -> Ok () (* WIP: return type list ? *)
   | Slabel _ -> Ok ()
   | Sgoto _ -> Ok ()
   | Sblock b -> typecheck_block b env
@@ -258,12 +259,13 @@ and typecheck_stmt stmt env =
       | Tfunction | TfunctionStdLib -> Ok ()
       | TfunctionReturn tl -> begin
         match tl with
+        | [] -> Ok () (* WIP: OK ? *)
         | [ Tfunction ] | [ TfunctionStdLib ] -> Ok ()
         | Tfunction :: _el | TfunctionStdLib :: _el -> Ok ()
         | _ ->
-          error (Some loc) "bad 'for iterator' (iterator function, expected)"
+          error (Some loc) "bad 'for iterator' (iterator function expected)"
       end
-      | _ -> error (Some loc) "bad 'for iterator' (iterator function, expected)"
+      | _ -> error (Some loc) "bad 'for iterator' (iterator function expected)"
     in
     begin match el with
     | [ e ] -> typecheck_e e env
