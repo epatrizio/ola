@@ -61,9 +61,7 @@ and typecheck_sharp_unop ((loc, _e) as expr) env =
 and typecheck_bitwise_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
   match t with
-  | Tnumber Tinteger | Tnumber Tfloat ->
-    Ok (Tnumber Tinteger)
-    (* must have an integer representation (ex: 42.0) : check during interpretation *)
+  | Tnumber Tinteger -> Ok (Tnumber Tinteger)
   | Tnil ->
     error (Some loc) "attempt to perform bitwise operation on a nil value"
   | Tboolean ->

@@ -39,6 +39,11 @@ let get_int f loc =
     error (Some loc)
       ("number has no integer representation: " ^ string_of_float f)
 
+let get_int_from_value loc value =
+  match value with
+  | Vnumber (Nfloat f) -> Vnumber (Ninteger (get_int f loc))
+  | _ -> value
+
 let number_of_string loc value =
   match value with
   | Vstring str -> begin
@@ -490,10 +495,10 @@ and interpret_expr (loc, expr) env =
     end
   | Eunop (Ulnot, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
+    let v = get_int_from_value l v in
     let* _ = typecheck_expr (loc, Eunop (Ulnot, (l, Evalue v))) env in
     begin match v with
     | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (lnot i)), env)
-    | Vnumber (Nfloat f) -> Ok (Vnumber (Ninteger (lnot (get_int f loc))), env)
     | _ -> assert false (* typing error *)
     end
   | Ebinop (e1, ((Band | Bor) as op), e2) -> interpret_bbinop_expr op e1 e2 env
