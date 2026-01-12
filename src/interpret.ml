@@ -39,15 +39,19 @@ let get_int f loc =
     error (Some loc)
       ("number has no integer representation: " ^ string_of_float f)
 
-let number_of_string loc str =
-  match int_of_string_opt str with
-  | Some i -> Vnumber (Ninteger i)
-  | None -> (
-    match float_of_string_opt str with
-    | Some f -> Vnumber (Nfloat f)
-    | None ->
-      error loc (Format.sprintf "attempt to perform on a string (%s) value" str)
-    )
+let number_of_string loc value =
+  match value with
+  | Vstring str -> begin
+    match int_of_string_opt str with
+    | Some i -> Vnumber (Ninteger i)
+    | None -> (
+      match float_of_string_opt str with
+      | Some f -> Vnumber (Nfloat f)
+      | None ->
+        error loc
+          (Format.sprintf "attempt to perform on a string (%s) value" str) )
+  end
+  | _ -> value
 
 let get_int_value_opt = function
   | Vnumber (Ninteger i) when i > 0 -> Some i
@@ -77,16 +81,12 @@ and interpret_arith_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   env =
   let* v1, env = interpret_expr expr1 env in
   let* v2, env = interpret_expr expr2 env in
+  let v1 = number_of_string (Some loc1) v1 in
+  let v2 = number_of_string (Some loc2) v2 in
   let* _ =
     typecheck_expr
       (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
       env
-  in
-  let v1 =
-    match v1 with Vstring s -> number_of_string (Some loc1) s | v -> v
-  in
-  let v2 =
-    match v2 with Vstring s -> number_of_string (Some loc2) s | v -> v
   in
   match (v1, v2) with
   | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
@@ -472,17 +472,11 @@ and interpret_expr (loc, expr) env =
     end
   | Eunop (Uminus, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
+    let v = number_of_string (Some l) v in
     let* _ = typecheck_expr (loc, Eunop (Uminus, (l, Evalue v))) env in
     begin match v with
     | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (-i)), env)
     | Vnumber (Nfloat f) -> Ok (Vnumber (Nfloat (-.f)), env)
-    | Vstring s ->
-      let v = number_of_string (Some l) s in
-      begin match v with
-      | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (-i)), env)
-      | Vnumber (Nfloat f) -> Ok (Vnumber (Nfloat (-.f)), env)
-      | _ -> assert false (* call error *)
-      end
     | _ -> assert false (* typing error *)
     end
   | Eunop (Usharp, ((l, _) as e)) ->

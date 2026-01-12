@@ -39,7 +39,6 @@ let rec typecheck_arith_unop ((loc, _e) as expr) env =
   match t with
   | Tnumber Tinteger -> Ok (Tnumber Tinteger)
   | Tnumber Tfloat -> Ok (Tnumber Tfloat)
-  | Tstring -> Ok TnumberUndefined (* cast & check during interpretation *)
   | Tnil -> error (Some loc) "attempt to perform arithmetic on a nil value"
   | Tboolean ->
     error (Some loc) "attempt to perform arithmetic on a boolean value"
@@ -86,12 +85,6 @@ and typecheck_arith_binop binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2)
     Ok
       (if binop = Bdiv || binop = Bexp then Tnumber Tfloat else Tnumber Tinteger)
   | Tnumber _, Tnumber _ -> Ok (Tnumber Tfloat)
-  | Tstring, Tnumber _ ->
-    Ok TnumberUndefined (* cast & check during interpretation *)
-  | Tnumber _, Tstring ->
-    Ok TnumberUndefined (* cast & check during interpretation *)
-  | Tstring, Tstring ->
-    Ok TnumberUndefined (* cast & check during interpretation *)
   | Tnil, _ -> error (Some loc1) "attempt to perform arithmetic on a nil value"
   | _, Tnil -> error (Some loc2) "attempt to perform arithmetic on a nil value"
   | Tboolean, _ ->
