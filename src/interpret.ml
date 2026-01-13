@@ -33,17 +33,6 @@ let rec block_from_pointer pt stmt_list =
   | Label l, Slabel n :: tl when l = n -> tl
   | Label l, _stmt :: tl -> block_from_pointer (Label l) tl
 
-let get_int f loc =
-  if Float.is_integer f then int_of_float f
-  else
-    error (Some loc)
-      ("number has no integer representation: " ^ string_of_float f)
-
-let get_int_from_value loc value =
-  match value with
-  | Vnumber (Nfloat f) -> Vnumber (Ninteger (get_int f loc))
-  | _ -> value
-
 let number_of_string loc value =
   match value with
   | Vstring str -> begin
@@ -56,6 +45,15 @@ let number_of_string loc value =
         error loc
           (Format.sprintf "attempt to perform on a string (%s) value" str) )
   end
+  | _ -> value
+
+let get_int_from_value loc value =
+  match value with
+  | Vnumber (Nfloat f) ->
+    if Float.is_integer f then Vnumber (Ninteger (int_of_float f))
+    else
+      error (Some loc)
+        ("number has no integer representation: " ^ string_of_float f)
   | _ -> value
 
 let get_int_value_opt = function
@@ -159,6 +157,8 @@ and interpret_bitwise_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   env =
   let* v1, env = interpret_expr expr1 env in
   let* v2, env = interpret_expr expr2 env in
+  let v1 = get_int_from_value loc1 v1 in
+  let v2 = get_int_from_value loc1 v2 in
   let* _ =
     typecheck_expr
       (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
@@ -172,35 +172,6 @@ and interpret_bitwise_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
     | Blxor -> Ok (Vnumber (Ninteger (i1 lxor i2)), env)
     | Blsl -> Ok (Vnumber (Ninteger (i1 lsl i2)), env)
     | Blsr -> Ok (Vnumber (Ninteger (i1 lsr i2)), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f), Vnumber (Ninteger i) -> begin
-    match binop with
-    | Bland -> Ok (Vnumber (Ninteger (get_int f loc1 land i)), env)
-    | Blor -> Ok (Vnumber (Ninteger (get_int f loc1 lor i)), env)
-    | Blxor -> Ok (Vnumber (Ninteger (get_int f loc1 lxor i)), env)
-    | Blsl -> Ok (Vnumber (Ninteger (get_int f loc1 lsl i)), env)
-    | Blsr -> Ok (Vnumber (Ninteger (get_int f loc1 lsr i)), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Ninteger i), Vnumber (Nfloat f) -> begin
-    match binop with
-    | Bland -> Ok (Vnumber (Ninteger (i land get_int f loc2)), env)
-    | Blor -> Ok (Vnumber (Ninteger (i lor get_int f loc2)), env)
-    | Blxor -> Ok (Vnumber (Ninteger (i lxor get_int f loc2)), env)
-    | Blsl -> Ok (Vnumber (Ninteger (i lsl get_int f loc2)), env)
-    | Blsr -> Ok (Vnumber (Ninteger (i lsr get_int f loc2)), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) -> begin
-    match binop with
-    | Bland ->
-      Ok (Vnumber (Ninteger (get_int f1 loc1 land get_int f2 loc2)), env)
-    | Blor -> Ok (Vnumber (Ninteger (get_int f1 loc1 lor get_int f2 loc2)), env)
-    | Blxor ->
-      Ok (Vnumber (Ninteger (get_int f1 loc1 lxor get_int f2 loc2)), env)
-    | Blsl -> Ok (Vnumber (Ninteger (get_int f1 loc1 lsl get_int f2 loc2)), env)
-    | Blsr -> Ok (Vnumber (Ninteger (get_int f1 loc1 lsr get_int f2 loc2)), env)
     | _ -> assert false (* call error *)
   end
   | _ -> assert false (* typing error *)

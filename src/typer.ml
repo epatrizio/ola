@@ -95,7 +95,7 @@ and typecheck_bitwise_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   let* typ1 = typecheck_expr expr1 env in
   let* typ2 = typecheck_expr expr2 env in
   match (typ1, typ2) with
-  | Tnumber _, Tnumber _ -> Ok (Tnumber Tinteger)
+  | Tnumber Tinteger, Tnumber Tinteger -> Ok (Tnumber Tinteger)
   | Tnil, _ ->
     error (Some loc1) "attempt to perform bitwise operation on a nil value"
   | _, Tnil ->
