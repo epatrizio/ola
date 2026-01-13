@@ -167,6 +167,16 @@ end
 
 var3(11, 22, 33, 44, 55)
 
+local function var4(a, ...)
+  local args = { ... }
+  print(a)
+  for i, v in ipairs(args) do
+    print(i, v)
+  end
+end
+
+var4(11, 22, 33, 44, 55)
+
 -- 3.4.10 - Function Calls - results adjusted to 1
 
 local function f_res_adj()

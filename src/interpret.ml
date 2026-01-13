@@ -483,7 +483,6 @@ and interpret_expr (loc, expr) env =
     interpret_rel_binop_expr op e1 e2 env
   | Evariadic ->
     let* v = env_result_check (Env.get_value "vararg" env) in
-    let* () = check_value_type (Some loc) v (Tvariadic []) in
     Ok (v, env)
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
   | Eprefix pexp -> interpret_prefixexp pexp env

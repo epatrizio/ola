@@ -25,15 +25,6 @@ let rec typecheck_value value =
   | VfunctionStdLib _ -> TfunctionStdLib
   | Vtable _ -> Ttable
 
-let check_value_type loc_opt value typ =
-  match (typecheck_value value, typ) with
-  | Tnumber _, Tnumber _
-  | Tvariadic _, Tvariadic _
-  | TfunctionReturn _, TfunctionReturn _ ->
-    Ok ()
-  | typ1, typ2 when typ1 = typ2 -> Ok ()
-  | _, _ -> error loc_opt "the value does not have the expected type"
-
 let rec typecheck_arith_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
   match t with

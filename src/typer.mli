@@ -1,11 +1,5 @@
 exception Typing_error of Ast.location option * string
 
-val check_value_type :
-     Ast.location option
-  -> Ast.value
-  -> Ast.typ
-  -> (unit, Ast.location option * string) result
-
 val typecheck_var :
   Ast.var -> Ast.value Env.t -> (Ast.typ, Ast.location option * string) result
 
