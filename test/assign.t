@@ -61,4 +61,4 @@ assignment operations:
   4
   20
   nil
-  Interpretation error: Typing error: table index is nil
+  File "assign.lua", line 140, char 2: Typing error: table index is nil

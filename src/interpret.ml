@@ -298,12 +298,14 @@ and interpret_var v env =
   | VarName n ->
     let* v = env_result_check (Env.get_value n env) in
     Ok (v, env)
-  | VarTableField (pexp, exp) -> (
-    let* _ = typecheck_var (VarTableField (pexp, exp)) env in
-    let* v, env = interpret_prefixexp pexp env in
+  | VarTableField (pexp, ((l, _) as exp)) -> (
+    let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
+    let* _ =
+      typecheck_var (VarTableField (PEexp (l, Evalue t), (l, Evalue idx))) env
+    in
     let idx = vint_of_vfloat idx in
-    match v with
+    match t with
     | Vtable (_i, t) as tbl -> begin
       match Table.get get_int_value_opt idx t with
       | None -> index_metamechanism idx tbl env
@@ -503,28 +505,26 @@ and set_var v value env =
   in
   match v with
   | VarName n -> env_result_check (Env.update_value n value env)
-  | VarTableField (pexp, exp) -> (
-    let* _ = typecheck_var (VarTableField (pexp, exp)) env in
+  | VarTableField (pexp, ((l, _) as exp)) -> (
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
-    match idx with
-    | Vnil () -> error None (Format.sprintf "Typing error: table index is nil")
-    | _ -> (
-      let idx = vint_of_vfloat idx in
-      match t with
-      | Vtable (i, t) as tbl ->
-        if value = Vnil () then
-          let t = Table.remove get_int_value_opt idx t in
-          let v = var_of_prefixexp pexp env in
-          set_var v (Vtable (i, t)) env
-        else
-          let* tbl, env = newindex_metamechanism idx value tbl env in
-          let v = var_of_prefixexp pexp env in
-          set_var v tbl env
-      | _ ->
-        error None
-          (Format.sprintf "Typing error: attempt to index a non table value") )
-    )
+    let* _ =
+      typecheck_var ~strict:true
+        (VarTableField (PEexp (l, Evalue t), (l, Evalue idx)))
+        env
+    in
+    let idx = vint_of_vfloat idx in
+    match t with
+    | Vtable (i, t) as tbl ->
+      if value = Vnil () then
+        let t = Table.remove get_int_value_opt idx t in
+        let v = var_of_prefixexp pexp env in
+        set_var v (Vtable (i, t)) env
+      else
+        let* tbl, env = newindex_metamechanism idx value tbl env in
+        let v = var_of_prefixexp pexp env in
+        set_var v tbl env
+    | _ -> assert false (* typing error *) )
 
 and to_vall el env =
   List.fold_left

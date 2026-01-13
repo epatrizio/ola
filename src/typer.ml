@@ -128,22 +128,26 @@ and typecheck_str_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
   | _, Ttable -> error (Some loc2) "attempt to concatenate a table value"
   | _ -> assert false (* call error *)
 
-and typecheck_var var env =
+and typecheck_var ?(strict = false) var env =
   match var with
   | VarName n -> begin
     match Env.get_value n env with
     | Ok v -> Ok (typecheck_value v)
     | Error msg -> error None ("Env error: " ^ msg)
   end
-  | VarTableField (pexp, (l, _e)) -> (
-    let* t = typecheck_prefixexp pexp env in
-    match t with
-    | Ttable -> Ok Ttable (* col table type check during interpretation *)
+  | VarTableField (pexp, ((l, _) as exp)) -> (
+    let* t_pexp = typecheck_prefixexp pexp env in
+    let* t_exp = typecheck_expr exp env in
+    match t_pexp with
+    | Ttable ->
+      if t_exp = Tnil then error (Some l) "table index is nil" else Ok Ttable
     | TfunctionReturn _ ->
       (* WIP *)
       Ok (TfunctionReturn [])
       (* function call return type check during interpretation *)
-    | _ -> error (Some l) "attempt to access a non table value" )
+    | t ->
+      if strict then error (Some l) "attempt to index a non table value"
+      else Ok t )
 
 and typecheck_prefixexp pexp env =
   match pexp with
