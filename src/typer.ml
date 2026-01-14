@@ -25,6 +25,15 @@ let rec typecheck_value value =
   | VfunctionStdLib _ -> TfunctionStdLib
   | Vtable _ -> Ttable
 
+let rec typecheck_function value =
+  match value with
+  | Vfunction _ -> Ok Tfunction
+  | VfunctionStdLib _ -> Ok TfunctionStdLib
+  | VfunctionReturn [] -> error None "attempt to call a nil value"
+  | VfunctionReturn (v :: _) -> typecheck_function v
+  | Vnil _ -> error None "attempt to call a nil value"
+  | _ -> error None "attempt to call a non function value"
+
 let rec typecheck_arith_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
   match t with
@@ -152,7 +161,8 @@ and typecheck_var ?(strict = false) var env =
 and typecheck_prefixexp pexp env =
   match pexp with
   | PEvar v -> typecheck_var v env
-  | PEfunctioncall fc -> typecheck_functioncall fc env
+  | PEfunctioncall (FCpreargs (pexp, _)) -> typecheck_prefixexp pexp env
+  | PEfunctioncall (FCprename (pexp, _, _)) -> typecheck_prefixexp pexp env
   | PEexp e -> typecheck_expr e env
 
 and typecheck_expr expr env =
@@ -177,27 +187,6 @@ and typecheck_expr expr env =
   | Efunctiondef _ -> Ok Tfunction
   | Eprefix pexp -> typecheck_prefixexp pexp env
   | Etableconstructor _ -> Ok Ttable
-
-and typecheck_functioncall fc env =
-  let typ_check t =
-    match t with
-    | Ok Tfunction -> Ok (TfunctionReturn []) (* WIP *)
-    | Ok TfunctionStdLib -> Ok TfunctionStdLib
-    | Ok Ttable -> Ok Ttable (* col table type check during interpretation *)
-    | Error (l, mes) -> error l mes
-    | _ -> error None "attempt to call a non function value"
-  in
-  match fc with
-  | FCpreargs (PEvar v, _) ->
-    let t = typecheck_var v env in
-    typ_check t
-  | FCpreargs (PEfunctioncall fc, _) -> typecheck_functioncall fc env
-  | FCpreargs (PEexp e, _) ->
-    let t = typecheck_expr e env in
-    typ_check t
-  | FCprename (pe, _, _) ->
-    let t = typecheck_prefixexp pe env in
-    typ_check t
 
 and typecheck_stmt stmt env =
   match stmt with
@@ -258,9 +247,7 @@ and typecheck_stmt stmt env =
     | e :: _el -> typecheck_e e env
     | [] -> assert false (* syntax error *)
     end
-  | SfunctionCall fc ->
-    let* (_ : Ast.typ) = typecheck_functioncall fc env in
-    Ok ()
+  | SfunctionCall _ -> Ok ()
 
 and typecheck_block b env =
   List.fold_left

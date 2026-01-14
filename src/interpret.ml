@@ -632,6 +632,7 @@ and lists_args pl vall env =
     lists_lassign vl vall env
 
 and interpret_fct value el env =
+  let* _ = typecheck_function value in
   match value with
   | Vfunction (i, (pl, b), cl_env) as closure -> begin
     try
@@ -672,15 +673,12 @@ and interpret_fct value el env =
     end
   | VfunctionReturn vl -> begin
     match vl with
-    | [] -> error None "Typing error: attempt to call a nil value"
-    | [ v ] -> interpret_fct v el env
-    | v :: _vl -> interpret_fct v el env
+    | v :: _ -> interpret_fct v el env
+    | _ -> assert false (* typing error *)
   end
-  | Vnil _ -> error None "Typing error: attempt to call a nil value"
   | _ -> assert false
 
 and interpret_functioncall fc env =
-  let* _ = typecheck_functioncall fc env in
   match fc with
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
     let* value = env_result_check (Env.get_value v env) in
