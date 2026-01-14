@@ -646,8 +646,9 @@ and interpret_fct value el env =
       | [] -> Ok (closure, VfunctionReturn [], env)
       | [ e ] ->
         let* v, cl_env = interpret_expr e cl_env in
-        (* shortcut: directly consider it's a value *)
         let closure = Vfunction (i, (pl, b), cl_env) in
+        (* shortcut: directly consider it's a value instead of VfunctionReturn [ v ] *)
+        (* Nb. VfunctionReturn [] != Vnil () *)
         Ok (closure, v, env)
       | el ->
         let* vll, cl_env = to_vall el cl_env in

@@ -127,6 +127,21 @@ do
 end
 -- p("local function")  -- p function undefined
 
+local function void1()
+end
+
+local function void2()
+  return
+end
+
+local function void3()
+  return nil
+end
+
+print(void1())    -- ""
+print(void2())    -- ""
+print(void3())    -- "nil"
+
 -- variadic functions
 
 --function var1(..., a)  -- memo: must be incorrect (ok - direct in parser.mly)
