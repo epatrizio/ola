@@ -150,10 +150,8 @@ and typecheck_var ?(strict = false) var env =
     match t_pexp with
     | Ttable ->
       if t_exp = Tnil then error (Some l) "table index is nil" else Ok Ttable
-    | TfunctionReturn _ ->
-      (* WIP *)
-      Ok (TfunctionReturn [])
-      (* function call return type check during interpretation *)
+    | TfunctionReturn (Ttable :: _) as tfr -> Ok tfr
+    | TfunctionReturn _ -> error (Some l) "attempt to index a non table value"
     | t ->
       if strict then error (Some l) "attempt to index a non table value"
       else Ok t )

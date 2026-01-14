@@ -306,9 +306,9 @@ and interpret_var v env =
     in
     let idx = vint_of_vfloat idx in
     match t with
-    | Vtable (_i, t) as tbl -> begin
+    | VfunctionReturn (Vtable (_i, t) :: _) | Vtable (_i, t) -> begin
       match Table.get get_int_value_opt idx t with
-      | None -> index_metamechanism idx tbl env
+      | None -> index_metamechanism idx (Vtable (_i, t)) env
       | Some v -> Ok (v, env)
     end
     | _ -> Ok (Vnil (), env) )

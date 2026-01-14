@@ -199,3 +199,17 @@ local function f_res_adj()
 end
 
 print((f_res_adj())) -- 42
+
+-- 
+
+local function f()
+    return { 11, 22, 33 }
+end
+
+print(f()[1])
+
+local function f()
+    return { 11, 22, 33 }, 2, true, nil
+end
+
+print(f()[1])

@@ -6,6 +6,7 @@
   bitwise_unop_table.lua
   functioncall_1.lua
   functioncall_2.lua
+  functioncall_3.lua
   metatable_1.lua
   metatable_2.lua
   metatable_3.lua
