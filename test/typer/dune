@@ -7,6 +7,8 @@
   functioncall_1.lua
   functioncall_2.lua
   functioncall_3.lua
+  loop_1.lua
+  loop_2.lua
   metatable_1.lua
   metatable_2.lua
   metatable_3.lua

@@ -191,13 +191,19 @@ and typecheck_expr expr env =
   | Eprefix pexp -> typecheck_prefixexp pexp env
   | Etableconstructor _ -> Ok Ttable
 
+and typecheck_for_ctrl_expr ((loc, _e) as expr) env =
+  let* t = typecheck_expr expr env in
+  match t with
+  | Tnumber _ -> Ok t
+  | _ -> error (Some loc) "bad 'for' initial, limit, step (number expected)"
+
 and typecheck_stmt stmt env =
   match stmt with
   | Sempty -> Ok ()
   | Sassign _ -> Ok ()
   | SassignLocal _ -> Ok ()
   | Sbreak -> Ok ()
-  | Sreturn _ -> Ok () (* WIP: return type list ? *)
+  | Sreturn _ -> Ok ()
   | Slabel _ -> Ok ()
   | Sgoto _ -> Ok ()
   | Sblock b -> typecheck_block b env

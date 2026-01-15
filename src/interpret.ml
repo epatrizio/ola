@@ -790,23 +790,11 @@ and interpret_stmt stmt env : _ result =
     | _ -> interpret_block b env
     end
   | Sfor (n, e1, e2, oe, b) ->
-    let* () = typecheck_stmt (Sfor (n, e1, e2, oe, b)) env in
     let init_val ((l, _e) as expr) env =
       let* v, env = interpret_expr expr env in
-      match v with
-      | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger i), env)
-      | Vnumber (Nfloat f) -> Ok (Vnumber (Nfloat f), env)
-      | Vstring s -> begin
-        match float_of_string_opt s with
-        | Some f -> Ok (Vnumber (Nfloat f), env)
-        | None ->
-          error (Some l)
-            (Format.sprintf
-               "Typing error: bad 'for' limit (number expected, got string \
-                '%s' without float representation)"
-               s )
-      end
-      | _ -> assert false (* typing error *)
+      let v = number_of_string (Some l) v in
+      let* _ = typecheck_for_ctrl_expr (l, Evalue v) env in
+      Ok (v, env)
     in
     let cond_expr loc ival limit step =
       let op =
