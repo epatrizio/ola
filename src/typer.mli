@@ -3,6 +3,9 @@ exception Typing_error of Ast.location option * string
 val typecheck_function :
   Ast.value -> (Ast.typ, Ast.location option * string) result
 
+val typecheck_variadic :
+  Ast.value -> (Ast.typ, Ast.location option * string) result
+
 val typecheck_var :
      ?strict:bool
   -> Ast.var

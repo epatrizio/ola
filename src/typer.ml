@@ -34,6 +34,10 @@ let rec typecheck_function value =
   | Vnil _ -> error None "attempt to call a nil value"
   | _ -> error None "attempt to call a non function value"
 
+let typecheck_variadic value =
+  let typ = typecheck_value value in
+  match typ with Tvariadic _ -> Ok typ | _ -> assert false
+
 let rec typecheck_arith_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
   match t with
@@ -181,7 +185,8 @@ and typecheck_expr expr env =
     typecheck_rel_binop op e1 e2 env
   | Ebinop (e1, Bddot, e2) -> typecheck_str_binop e1 e2 env
   | Evariadic ->
-    Ok (Tvariadic []) (* type check explicit during interpretation *)
+    Ok (Tvariadic [])
+    (* wip: Tvariadic [] not fully correct > improve Evariadic & parlist types ? *)
   | Efunctiondef _ -> Ok Tfunction
   | Eprefix pexp -> typecheck_prefixexp pexp env
   | Etableconstructor _ -> Ok Ttable
