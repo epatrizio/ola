@@ -197,7 +197,24 @@ and typecheck_for_ctrl_expr ((loc, _e) as expr) env =
   | Tnumber _ -> Ok t
   | _ -> error (Some loc) "bad 'for' initial, limit, step (number expected)"
 
-and typecheck_stmt stmt env =
+and typecheck_iterator_ctrl_el el env =
+  match el with
+  | e :: _ ->
+    let l, _ = e in
+    let* t = typecheck_expr e env in
+    begin match t with
+    | Tfunction | TfunctionStdLib -> Ok [ t ]
+    | _ ->
+      error (Some l)
+        "attempt to call a non function value (for iterator 'for iterator')"
+    end
+  | [] -> (* Syntax error *) assert false
+
+(*
+typecheck_stmt should be removed.
+See typecheck_for_ctrl_expr & typecheck_iterator_ctrl_el for Sfor et Siterator stmts
+*)
+(* and typecheck_stmt stmt env =
   match stmt with
   | Sempty -> Ok ()
   | Sassign _ -> Ok ()
@@ -252,7 +269,6 @@ and typecheck_stmt stmt env =
       | _ -> error (Some loc) "bad 'for iterator' (iterator function expected)"
     in
     begin match el with
-    | [ e ] -> typecheck_e e env
     | e :: _el -> typecheck_e e env
     | [] -> assert false (* syntax error *)
     end
@@ -263,4 +279,4 @@ and typecheck_block b env =
     (fun acc s ->
       let* () = acc in
       typecheck_stmt s env )
-    (Ok ()) b
+    (Ok ()) b *)

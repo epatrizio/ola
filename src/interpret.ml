@@ -833,7 +833,6 @@ and interpret_stmt stmt env : _ result =
       with Break_catch env -> Ok env )
     end
   | Siterator (nl, el, b) ->
-    let* () = typecheck_stmt (Siterator (nl, el, b)) env in
     let loc, _e = List.nth el 0 in
     let* vl, env =
       List.fold_left
@@ -846,8 +845,10 @@ and interpret_stmt stmt env : _ result =
         (Ok ([], env))
         el
     in
-    begin match List.length vl with
-    | 1 ->
+    let evl = List.map (fun v -> (loc, Evalue v)) vl in
+    let* _ = typecheck_iterator_ctrl_el evl env in
+    begin match vl with
+    | [ ctrl_value ] ->
       (* Stateful iterator *)
       let iter cl env =
         try
@@ -855,7 +856,6 @@ and interpret_stmt stmt env : _ result =
           interpret_stmt (Siterator (nl, [ (loc, Evalue cl) ], b)) env
         with Break_catch env -> Ok env
       in
-      let ctrl_value = List.nth vl 0 in
       begin match ctrl_value with
       | Vfunction (_i, (_pl, _bl), cl_env) as closure -> (
         let* closure, v, _cl_env = interpret_fct closure [] cl_env in
@@ -882,21 +882,10 @@ and interpret_stmt stmt env : _ result =
         | v ->
           let* env = Env.add_value (List.nth nl 0) v env in
           iter closure env )
-      | _ ->
-        error None
-          "Typing error: bad 'for iterator' stateful construction (iterator \
-           function in 'in' argument does not return a closure)"
+      | _ -> assert false (* typing error *)
       end
-    | n when n < 3 ->
-      error None
-        "Typing error: bad 'for iterator' stateless construction (bad element \
-         number in 'in' argument)"
-    | _ ->
+    | iterator_func :: state :: ctrl_var :: _ ->
       (* Stateless iterator *)
-      (* 4 values: iterator function, state, an initial value for the control variable, and a closing value. *)
-      let iterator_func = List.nth vl 0 in
-      let state = List.nth vl 1 in
-      let ctrl_var = List.nth vl 2 in
       begin match ctrl_var with
       | ctrl_var -> (
         let iterator_func_param =
@@ -945,6 +934,7 @@ and interpret_stmt stmt env : _ result =
               env
           with Break_catch env -> Ok env ) )
       end
+    | _ -> assert false
     end
   (* | Sfunction (_n, _fb) -> env *)
   (* | SfunctionLocal (_n, _fb) -> env *)

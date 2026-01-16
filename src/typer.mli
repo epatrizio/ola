@@ -18,5 +18,7 @@ val typecheck_expr :
 val typecheck_for_ctrl_expr :
   Ast.expr -> Ast.value Env.t -> (Ast.typ, Ast.location option * string) result
 
-val typecheck_stmt :
-  Ast.stmt -> Ast.value Env.t -> (unit, Ast.location option * string) result
+val typecheck_iterator_ctrl_el :
+     Ast.expr list
+  -> Ast.value Env.t
+  -> (Ast.typ list, Ast.location option * string) result
