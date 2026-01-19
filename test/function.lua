@@ -127,6 +127,21 @@ do
 end
 -- p("local function")  -- p function undefined
 
+local function void1()
+end
+
+local function void2()
+  return
+end
+
+local function void3()
+  return nil
+end
+
+print(void1())    -- ""
+print(void2())    -- ""
+print(void3())    -- "nil"
+
 -- variadic functions
 
 --function var1(..., a)  -- memo: must be incorrect (ok - direct in parser.mly)
@@ -167,6 +182,16 @@ end
 
 var3(11, 22, 33, 44, 55)
 
+local function var4(a, ...)
+  local args = { ... }
+  print(a)
+  for i, v in ipairs(args) do
+    print(i, v)
+  end
+end
+
+var4(11, 22, 33, 44, 55)
+
 -- 3.4.10 - Function Calls - results adjusted to 1
 
 local function f_res_adj()
@@ -174,3 +199,17 @@ local function f_res_adj()
 end
 
 print((f_res_adj())) -- 42
+
+-- 
+
+local function f()
+    return { 11, 22, 33 }
+end
+
+print(f()[1])
+
+local function f()
+    return { 11, 22, 33 }, 2, true, nil
+end
+
+print(f()[1])

@@ -21,7 +21,6 @@ type number_type =
 type typ =
   | Tnil
   | Tboolean
-  | TnumberUndefined
   | Tnumber of number_type
   | Tstring
   | Tvariadic of typ list

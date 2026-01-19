@@ -33,21 +33,28 @@ let rec block_from_pointer pt stmt_list =
   | Label l, Slabel n :: tl when l = n -> tl
   | Label l, _stmt :: tl -> block_from_pointer (Label l) tl
 
-let get_int f loc =
-  if Float.is_integer f then int_of_float f
-  else
-    error (Some loc)
-      ("number has no integer representation: " ^ string_of_float f)
+let number_of_string loc value =
+  match value with
+  | Vstring str -> begin
+    match int_of_string_opt str with
+    | Some i -> Vnumber (Ninteger i)
+    | None -> (
+      match float_of_string_opt str with
+      | Some f -> Vnumber (Nfloat f)
+      | None ->
+        error loc
+          (Format.sprintf "attempt to perform on a string (%s) value" str) )
+  end
+  | _ -> value
 
-let number_of_string loc str =
-  match int_of_string_opt str with
-  | Some i -> Vnumber (Ninteger i)
-  | None -> (
-    match float_of_string_opt str with
-    | Some f -> Vnumber (Nfloat f)
-    | None ->
-      error loc (Format.sprintf "attempt to perform on a string (%s) value" str)
-    )
+let get_int_from_value loc value =
+  match value with
+  | Vnumber (Nfloat f) ->
+    if Float.is_integer f then Vnumber (Ninteger (int_of_float f))
+    else
+      error (Some loc)
+        ("number has no integer representation: " ^ string_of_float f)
+  | _ -> value
 
 let get_int_value_opt = function
   | Vnumber (Ninteger i) when i > 0 -> Some i
@@ -77,16 +84,12 @@ and interpret_arith_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   env =
   let* v1, env = interpret_expr expr1 env in
   let* v2, env = interpret_expr expr2 env in
+  let v1 = number_of_string (Some loc1) v1 in
+  let v2 = number_of_string (Some loc2) v2 in
   let* _ =
     typecheck_expr
       (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
       env
-  in
-  let v1 =
-    match v1 with Vstring s -> number_of_string (Some loc1) s | v -> v
-  in
-  let v2 =
-    match v2 with Vstring s -> number_of_string (Some loc2) s | v -> v
   in
   match (v1, v2) with
   | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
@@ -154,6 +157,8 @@ and interpret_bitwise_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
   env =
   let* v1, env = interpret_expr expr1 env in
   let* v2, env = interpret_expr expr2 env in
+  let v1 = get_int_from_value loc1 v1 in
+  let v2 = get_int_from_value loc1 v2 in
   let* _ =
     typecheck_expr
       (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
@@ -167,35 +172,6 @@ and interpret_bitwise_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
     | Blxor -> Ok (Vnumber (Ninteger (i1 lxor i2)), env)
     | Blsl -> Ok (Vnumber (Ninteger (i1 lsl i2)), env)
     | Blsr -> Ok (Vnumber (Ninteger (i1 lsr i2)), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f), Vnumber (Ninteger i) -> begin
-    match binop with
-    | Bland -> Ok (Vnumber (Ninteger (get_int f loc1 land i)), env)
-    | Blor -> Ok (Vnumber (Ninteger (get_int f loc1 lor i)), env)
-    | Blxor -> Ok (Vnumber (Ninteger (get_int f loc1 lxor i)), env)
-    | Blsl -> Ok (Vnumber (Ninteger (get_int f loc1 lsl i)), env)
-    | Blsr -> Ok (Vnumber (Ninteger (get_int f loc1 lsr i)), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Ninteger i), Vnumber (Nfloat f) -> begin
-    match binop with
-    | Bland -> Ok (Vnumber (Ninteger (i land get_int f loc2)), env)
-    | Blor -> Ok (Vnumber (Ninteger (i lor get_int f loc2)), env)
-    | Blxor -> Ok (Vnumber (Ninteger (i lxor get_int f loc2)), env)
-    | Blsl -> Ok (Vnumber (Ninteger (i lsl get_int f loc2)), env)
-    | Blsr -> Ok (Vnumber (Ninteger (i lsr get_int f loc2)), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) -> begin
-    match binop with
-    | Bland ->
-      Ok (Vnumber (Ninteger (get_int f1 loc1 land get_int f2 loc2)), env)
-    | Blor -> Ok (Vnumber (Ninteger (get_int f1 loc1 lor get_int f2 loc2)), env)
-    | Blxor ->
-      Ok (Vnumber (Ninteger (get_int f1 loc1 lxor get_int f2 loc2)), env)
-    | Blsl -> Ok (Vnumber (Ninteger (get_int f1 loc1 lsl get_int f2 loc2)), env)
-    | Blsr -> Ok (Vnumber (Ninteger (get_int f1 loc1 lsr get_int f2 loc2)), env)
     | _ -> assert false (* call error *)
   end
   | _ -> assert false (* typing error *)
@@ -322,15 +298,17 @@ and interpret_var v env =
   | VarName n ->
     let* v = env_result_check (Env.get_value n env) in
     Ok (v, env)
-  | VarTableField (pexp, exp) -> (
-    let* _ = typecheck_var (VarTableField (pexp, exp)) env in
-    let* v, env = interpret_prefixexp pexp env in
+  | VarTableField (pexp, ((l, _) as exp)) -> (
+    let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
+    let* _ =
+      typecheck_var (VarTableField (PEexp (l, Evalue t), (l, Evalue idx))) env
+    in
     let idx = vint_of_vfloat idx in
-    match v with
-    | Vtable (_i, t) as tbl -> begin
+    match t with
+    | VfunctionReturn (Vtable (_i, t) :: _) | Vtable (_i, t) -> begin
       match Table.get get_int_value_opt idx t with
-      | None -> index_metamechanism idx tbl env
+      | None -> index_metamechanism idx (Vtable (_i, t)) env
       | Some v -> Ok (v, env)
     end
     | _ -> Ok (Vnil (), env) )
@@ -472,17 +450,11 @@ and interpret_expr (loc, expr) env =
     end
   | Eunop (Uminus, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
+    let v = number_of_string (Some l) v in
     let* _ = typecheck_expr (loc, Eunop (Uminus, (l, Evalue v))) env in
     begin match v with
     | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (-i)), env)
     | Vnumber (Nfloat f) -> Ok (Vnumber (Nfloat (-.f)), env)
-    | Vstring s ->
-      let v = number_of_string (Some l) s in
-      begin match v with
-      | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (-i)), env)
-      | Vnumber (Nfloat f) -> Ok (Vnumber (Nfloat (-.f)), env)
-      | _ -> assert false (* call error *)
-      end
     | _ -> assert false (* typing error *)
     end
   | Eunop (Usharp, ((l, _) as e)) ->
@@ -496,10 +468,10 @@ and interpret_expr (loc, expr) env =
     end
   | Eunop (Ulnot, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
+    let v = get_int_from_value l v in
     let* _ = typecheck_expr (loc, Eunop (Ulnot, (l, Evalue v))) env in
     begin match v with
     | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (lnot i)), env)
-    | Vnumber (Nfloat f) -> Ok (Vnumber (Ninteger (lnot (get_int f loc))), env)
     | _ -> assert false (* typing error *)
     end
   | Ebinop (e1, ((Band | Bor) as op), e2) -> interpret_bbinop_expr op e1 e2 env
@@ -513,7 +485,7 @@ and interpret_expr (loc, expr) env =
     interpret_rel_binop_expr op e1 e2 env
   | Evariadic ->
     let* v = env_result_check (Env.get_value "vararg" env) in
-    let* () = check_value_type (Some loc) v (Tvariadic []) in
+    let* _ = typecheck_variadic v in
     Ok (v, env)
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
@@ -534,28 +506,26 @@ and set_var v value env =
   in
   match v with
   | VarName n -> env_result_check (Env.update_value n value env)
-  | VarTableField (pexp, exp) -> (
-    let* _ = typecheck_var (VarTableField (pexp, exp)) env in
+  | VarTableField (pexp, ((l, _) as exp)) -> (
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
-    match idx with
-    | Vnil () -> error None (Format.sprintf "Typing error: table index is nil")
-    | _ -> (
-      let idx = vint_of_vfloat idx in
-      match t with
-      | Vtable (i, t) as tbl ->
-        if value = Vnil () then
-          let t = Table.remove get_int_value_opt idx t in
-          let v = var_of_prefixexp pexp env in
-          set_var v (Vtable (i, t)) env
-        else
-          let* tbl, env = newindex_metamechanism idx value tbl env in
-          let v = var_of_prefixexp pexp env in
-          set_var v tbl env
-      | _ ->
-        error None
-          (Format.sprintf "Typing error: attempt to index a non table value") )
-    )
+    let* _ =
+      typecheck_var ~strict:true
+        (VarTableField (PEexp (l, Evalue t), (l, Evalue idx)))
+        env
+    in
+    let idx = vint_of_vfloat idx in
+    match t with
+    | Vtable (i, t) as tbl ->
+      if value = Vnil () then
+        let t = Table.remove get_int_value_opt idx t in
+        let v = var_of_prefixexp pexp env in
+        set_var v (Vtable (i, t)) env
+      else
+        let* tbl, env = newindex_metamechanism idx value tbl env in
+        let v = var_of_prefixexp pexp env in
+        set_var v tbl env
+    | _ -> assert false (* typing error *) )
 
 and to_vall el env =
   List.fold_left
@@ -663,6 +633,7 @@ and lists_args pl vall env =
     lists_lassign vl vall env
 
 and interpret_fct value el env =
+  let* _ = typecheck_function value in
   match value with
   | Vfunction (i, (pl, b), cl_env) as closure -> begin
     try
@@ -676,8 +647,9 @@ and interpret_fct value el env =
       | [] -> Ok (closure, VfunctionReturn [], env)
       | [ e ] ->
         let* v, cl_env = interpret_expr e cl_env in
-        (* shortcut: directly consider it's a value *)
         let closure = Vfunction (i, (pl, b), cl_env) in
+        (* shortcut: directly consider it's a value instead of VfunctionReturn [ v ] *)
+        (* Nb. VfunctionReturn [] != Vnil () *)
         Ok (closure, v, env)
       | el ->
         let* vll, cl_env = to_vall el cl_env in
@@ -703,15 +675,12 @@ and interpret_fct value el env =
     end
   | VfunctionReturn vl -> begin
     match vl with
-    | [] -> error None "Typing error: attempt to call a nil value"
-    | [ v ] -> interpret_fct v el env
-    | v :: _vl -> interpret_fct v el env
+    | v :: _ -> interpret_fct v el env
+    | _ -> assert false (* typing error *)
   end
-  | Vnil _ -> error None "Typing error: attempt to call a nil value"
   | _ -> assert false
 
 and interpret_functioncall fc env =
-  let* _ = typecheck_functioncall fc env in
   match fc with
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
     let* value = env_result_check (Env.get_value v env) in
@@ -821,23 +790,11 @@ and interpret_stmt stmt env : _ result =
     | _ -> interpret_block b env
     end
   | Sfor (n, e1, e2, oe, b) ->
-    let* () = typecheck_stmt (Sfor (n, e1, e2, oe, b)) env in
     let init_val ((l, _e) as expr) env =
       let* v, env = interpret_expr expr env in
-      match v with
-      | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger i), env)
-      | Vnumber (Nfloat f) -> Ok (Vnumber (Nfloat f), env)
-      | Vstring s -> begin
-        match float_of_string_opt s with
-        | Some f -> Ok (Vnumber (Nfloat f), env)
-        | None ->
-          error (Some l)
-            (Format.sprintf
-               "Typing error: bad 'for' limit (number expected, got string \
-                '%s' without float representation)"
-               s )
-      end
-      | _ -> assert false (* typing error *)
+      let v = number_of_string (Some l) v in
+      let* _ = typecheck_for_ctrl_expr (l, Evalue v) env in
+      Ok (v, env)
     in
     let cond_expr loc ival limit step =
       let op =
@@ -876,7 +833,6 @@ and interpret_stmt stmt env : _ result =
       with Break_catch env -> Ok env )
     end
   | Siterator (nl, el, b) ->
-    let* () = typecheck_stmt (Siterator (nl, el, b)) env in
     let loc, _e = List.nth el 0 in
     let* vl, env =
       List.fold_left
@@ -889,8 +845,10 @@ and interpret_stmt stmt env : _ result =
         (Ok ([], env))
         el
     in
-    begin match List.length vl with
-    | 1 ->
+    let evl = List.map (fun v -> (loc, Evalue v)) vl in
+    let* _ = typecheck_iterator_ctrl_el evl env in
+    begin match vl with
+    | [ ctrl_value ] ->
       (* Stateful iterator *)
       let iter cl env =
         try
@@ -898,7 +856,6 @@ and interpret_stmt stmt env : _ result =
           interpret_stmt (Siterator (nl, [ (loc, Evalue cl) ], b)) env
         with Break_catch env -> Ok env
       in
-      let ctrl_value = List.nth vl 0 in
       begin match ctrl_value with
       | Vfunction (_i, (_pl, _bl), cl_env) as closure -> (
         let* closure, v, _cl_env = interpret_fct closure [] cl_env in
@@ -925,21 +882,10 @@ and interpret_stmt stmt env : _ result =
         | v ->
           let* env = Env.add_value (List.nth nl 0) v env in
           iter closure env )
-      | _ ->
-        error None
-          "Typing error: bad 'for iterator' stateful construction (iterator \
-           function in 'in' argument does not return a closure)"
+      | _ -> assert false (* typing error *)
       end
-    | n when n < 3 ->
-      error None
-        "Typing error: bad 'for iterator' stateless construction (bad element \
-         number in 'in' argument)"
-    | _ ->
+    | iterator_func :: state :: ctrl_var :: _ ->
       (* Stateless iterator *)
-      (* 4 values: iterator function, state, an initial value for the control variable, and a closing value. *)
-      let iterator_func = List.nth vl 0 in
-      let state = List.nth vl 1 in
-      let ctrl_var = List.nth vl 2 in
       begin match ctrl_var with
       | ctrl_var -> (
         let iterator_func_param =
@@ -988,6 +934,7 @@ and interpret_stmt stmt env : _ result =
               env
           with Break_catch env -> Ok env ) )
       end
+    | _ -> assert false
     end
   (* | Sfunction (_n, _fb) -> env *)
   (* | SfunctionLocal (_n, _fb) -> env *)

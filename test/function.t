@@ -44,6 +44,9 @@ basics functions:
   print::
   42
   local function
+  
+  
+  nil
   nil, nil
   42, nil, nil
   24, nil, nil
@@ -75,4 +78,11 @@ basics functions:
   3, 33
   4, 44
   5, 55
+  11
+  1, 22
+  2, 33
+  3, 44
+  4, 55
   42
+  11
+  11
