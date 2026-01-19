@@ -3,6 +3,9 @@
 (* Note :
    Now typecheck is performed during interpretation on each expressions.
    So, statement typecheck is no longer used, except Sfor for init values.
+   See PR https://github.com/epatrizio/ola/pull/44
+   - typecheck_stmt and typecheck_block functions removal
+   - typecheck_for_ctrl_expr and typecheck_iterator_ctrl_el new functions for Sfor et Siterator old stmts
 *)
 
 open Ast
@@ -209,74 +212,3 @@ and typecheck_iterator_ctrl_el el env =
         "attempt to call a non function value (for iterator 'for iterator')"
     end
   | [] -> (* Syntax error *) assert false
-
-(*
-typecheck_stmt should be removed.
-See typecheck_for_ctrl_expr & typecheck_iterator_ctrl_el for Sfor et Siterator stmts
-*)
-(* and typecheck_stmt stmt env =
-  match stmt with
-  | Sempty -> Ok ()
-  | Sassign _ -> Ok ()
-  | SassignLocal _ -> Ok ()
-  | Sbreak -> Ok ()
-  | Sreturn _ -> Ok ()
-  | Slabel _ -> Ok ()
-  | Sgoto _ -> Ok ()
-  | Sblock b -> typecheck_block b env
-  | Swhile (_e, b) ->
-    typecheck_block b env
-    (* Doc: The condition expression _e of a control structure can return any value *)
-  | Srepeat (b, _e) -> typecheck_block b env (* Memo: Same Swhile *)
-  | Sif (_e, b, ebl, ob) ->
-    (* Memo: Same Swhile *)
-    let* () = typecheck_block b env in
-    let* () =
-      List.fold_left
-        (fun acc (_e, b) ->
-          let* () = acc in
-          typecheck_block b env )
-        (Ok ()) ebl
-    in
-    begin match ob with None -> Ok () | Some b -> typecheck_block b env
-    end
-  | Sfor (_n, e1, e2, oe, _b) ->
-    let typecheck_init ((loc, _e) as expr) env =
-      let* t = typecheck_expr expr env in
-      match t with
-      | Tnumber Tinteger | Tnumber Tfloat | Tstring ->
-        (* string will be cast in float value during interpretation *)
-        Ok ()
-      | _ -> error (Some loc) "bad 'for' initial, limit, step (number expected)"
-    in
-    let* () = typecheck_init e1 env in
-    let* () = typecheck_init e2 env in
-    begin match oe with Some e -> typecheck_init e env | None -> Ok ()
-    end
-  | Siterator (_nl, el, _b) ->
-    let typecheck_e ((loc, _e) as expr) env =
-      let* t = typecheck_expr expr env in
-      match t with
-      | Tfunction | TfunctionStdLib -> Ok ()
-      | TfunctionReturn tl -> begin
-        match tl with
-        | [] -> Ok () (* WIP: OK ? *)
-        | [ Tfunction ] | [ TfunctionStdLib ] -> Ok ()
-        | Tfunction :: _el | TfunctionStdLib :: _el -> Ok ()
-        | _ ->
-          error (Some loc) "bad 'for iterator' (iterator function expected)"
-      end
-      | _ -> error (Some loc) "bad 'for iterator' (iterator function expected)"
-    in
-    begin match el with
-    | e :: _el -> typecheck_e e env
-    | [] -> assert false (* syntax error *)
-    end
-  | SfunctionCall _ -> Ok ()
-
-and typecheck_block b env =
-  List.fold_left
-    (fun acc s ->
-      let* () = acc in
-      typecheck_stmt s env )
-    (Ok ()) b *)
