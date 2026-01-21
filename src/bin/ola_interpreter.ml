@@ -60,6 +60,9 @@ let process source_code_file debug =
   | Typer.Typing_error (loc, message) ->
     let message = sprintf "Typing error: %s" message in
     Error (loc, message)
+  | Evaluator.Evaluation_error (loc, message) ->
+    let message = sprintf "Evaluation error: %s" message in
+    Error (loc, message)
   | Interpret.Interpretation_error (loc, message) ->
     let message = sprintf "Interpretation error: %s" message in
     Error (loc, message)
