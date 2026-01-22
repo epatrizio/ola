@@ -29,38 +29,6 @@ let rec block_from_pointer pt stmt_list =
   | Label l, Slabel n :: tl when l = n -> tl
   | Label l, _stmt :: tl -> block_from_pointer (Label l) tl
 
-let number_of_string loc value =
-  match value with
-  | Vstring str -> begin
-    match int_of_string_opt str with
-    | Some i -> Vnumber (Ninteger i)
-    | None -> (
-      match float_of_string_opt str with
-      | Some f -> Vnumber (Nfloat f)
-      | None ->
-        error loc
-          (Format.sprintf "attempt to perform on a string (%s) value" str) )
-  end
-  | _ -> value
-
-let get_int_from_value loc value =
-  match value with
-  | Vnumber (Nfloat f) ->
-    if Float.is_integer f then Vnumber (Ninteger (int_of_float f))
-    else
-      error (Some loc)
-        ("number has no integer representation: " ^ string_of_float f)
-  | _ -> value
-
-let get_int_value_opt = function
-  | Vnumber (Ninteger i) when i > 0 -> Some i
-  | _ -> None
-
-let vint_of_vfloat = function
-  | Vnumber (Nfloat f) as v ->
-    if Float.is_integer f then Vnumber (Ninteger (int_of_float f)) else v
-  | v -> v
-
 let rec interpret_bbinop_expr binop expr1 expr2 env =
   let* v1, env = interpret_expr expr1 env in
   (* let* v2, env = interpret_expr expr2 env in
@@ -128,10 +96,10 @@ and interpret_var v env =
     let* _ =
       typecheck_var (VarTableField (PEexp (l, Evalue t), (l, Evalue idx))) env
     in
-    let idx = vint_of_vfloat idx in
+    let idx = Eval_utils.integer_of_float_value idx in
     match t with
     | VfunctionReturn (Vtable (_i, t) :: _) | Vtable (_i, t) -> begin
-      match Table.get get_int_value_opt idx t with
+      match Table.get Eval_utils.int_of_value_opt idx t with
       | None -> index_metamechanism idx (Vtable (_i, t)) env
       | Some v -> Ok (v, env)
     end
@@ -146,7 +114,7 @@ and index_metamechanism idx tbl env =
       | Some v -> begin
         match v with
         | Vtable (_i, t) as tbl -> begin
-          match Table.get get_int_value_opt idx t with
+          match Table.get Eval_utils.int_of_value_opt idx t with
           | None -> index_metamechanism idx tbl env
           | Some v -> Ok (v, env)
         end
@@ -167,7 +135,7 @@ and index_metamechanism idx tbl env =
 
 and newindex_metamechanism idx value tbl env =
   let tbl_add i idx value t env =
-    let t = Table.add get_int_value_opt idx value t in
+    let t = Table.add Eval_utils.int_of_value_opt idx value t in
     Ok (Vtable (i, t), env)
   in
   match tbl with
@@ -179,7 +147,7 @@ and newindex_metamechanism idx value tbl env =
         match v with
         | Vtable (_i, _t) -> assert false (* TODO *)
         | Vfunction (_i, _pb, _env) as f ->
-          if Table.key_exists get_int_value_opt idx t then
+          if Table.key_exists Eval_utils.int_of_value_opt idx t then
             tbl_add i idx value t env
           else
             let arr = (empty_location (), Evalue tbl) in
@@ -215,10 +183,12 @@ and tableconstructor tbl idx fl env =
   let tbl_add_rec id v tbl idx fl env =
     match id with
     | Vnil () ->
-      let t = Table.add get_int_value_opt (Vnumber (Ninteger idx)) v tbl in
+      let t =
+        Table.add Eval_utils.int_of_value_opt (Vnumber (Ninteger idx)) v tbl
+      in
       tableconstructor t (idx + 1) fl env
     | v_idx ->
-      let t = Table.add get_int_value_opt v_idx v tbl in
+      let t = Table.add Eval_utils.int_of_value_opt v_idx v tbl in
       tableconstructor t idx fl env
   in
   match fl with
@@ -232,18 +202,20 @@ and tableconstructor tbl idx fl env =
           (fun (t, id, ev) v ->
             match v_idx with
             | Vnil () ->
-              ( Table.add get_int_value_opt (Vnumber (Ninteger id)) v t
+              ( Table.add Eval_utils.int_of_value_opt (Vnumber (Ninteger id)) v t
               , id + 1
               , ev )
-            | v_idx -> (Table.add get_int_value_opt v_idx v t, id, ev) )
+            | v_idx -> (Table.add Eval_utils.int_of_value_opt v_idx v t, id, ev) )
           (tbl, idx, env) vl
       in
       Ok (tbl, env)
     | v -> begin
       match v_idx with
       | Vnil () ->
-        Ok (Table.add get_int_value_opt (Vnumber (Ninteger idx)) v tbl, env)
-      | v_idx -> Ok (Table.add get_int_value_opt v_idx v tbl, env)
+        Ok
+          ( Table.add Eval_utils.int_of_value_opt (Vnumber (Ninteger idx)) v tbl
+          , env )
+      | v_idx -> Ok (Table.add Eval_utils.int_of_value_opt v_idx v tbl, env)
     end
     end
   | f :: fl ->
@@ -274,7 +246,7 @@ and interpret_expr (loc, expr) env =
     end
   | Eunop (Uminus, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
-    let v = number_of_string (Some l) v in
+    let v = Eval_utils.number_of_string (Some l) v in
     let* _ = typecheck_expr (loc, Eunop (Uminus, (l, Evalue v))) env in
     begin match v with
     | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (-i)), env)
@@ -292,7 +264,7 @@ and interpret_expr (loc, expr) env =
     end
   | Eunop (Ulnot, ((l, _) as e)) ->
     let* v, env = interpret_expr e env in
-    let v = get_int_from_value l v in
+    let v = Eval_utils.integer_of_float l v in
     let* _ = typecheck_expr (loc, Eunop (Ulnot, (l, Evalue v))) env in
     begin match v with
     | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (lnot i)), env)
@@ -338,11 +310,11 @@ and set_var v value env =
         (VarTableField (PEexp (l, Evalue t), (l, Evalue idx)))
         env
     in
-    let idx = vint_of_vfloat idx in
+    let idx = Eval_utils.integer_of_float_value idx in
     match t with
     | Vtable (i, t) as tbl ->
       if value = Vnil () then
-        let t = Table.remove get_int_value_opt idx t in
+        let t = Table.remove Eval_utils.int_of_value_opt idx t in
         let v = var_of_prefixexp pexp env in
         set_var v (Vtable (i, t)) env
       else
@@ -514,10 +486,10 @@ and interpret_functioncall fc env =
   | FCpreargs (PEvar (VarTableField (pexp, exp)), Aexpl el) ->
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
-    let idx = vint_of_vfloat idx in
+    let idx = Eval_utils.integer_of_float_value idx in
     begin match t with
     | Vtable (_i, tbl) -> begin
-      match Table.get get_int_value_opt idx tbl with
+      match Table.get Eval_utils.int_of_value_opt idx tbl with
       | None -> assert false
       | Some value ->
         let* _closure, return, env = interpret_fct value el env in
@@ -539,7 +511,7 @@ and interpret_functioncall fc env =
     | Vtable (_i, t) as tbl ->
       let name = Vstring name in
       let* value, env =
-        match Table.get get_int_value_opt name t with
+        match Table.get Eval_utils.int_of_value_opt name t with
         | None -> index_metamechanism name tbl env
         | Some value -> Ok (value, env)
       in
@@ -616,7 +588,7 @@ and interpret_stmt stmt env : _ result =
   | Sfor (n, e1, e2, oe, b) ->
     let init_val ((l, _e) as expr) env =
       let* v, env = interpret_expr expr env in
-      let v = number_of_string (Some l) v in
+      let v = Eval_utils.number_of_string (Some l) v in
       let* _ = typecheck_for_ctrl_expr (l, Evalue v) env in
       Ok (v, env)
     in

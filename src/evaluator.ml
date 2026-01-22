@@ -6,28 +6,49 @@ exception Evaluation_error of location option * string
 
 let error loc_opt message = raise (Evaluation_error (loc_opt, message))
 
-let number_of_string loc value =
-  match value with
-  | Vstring str -> begin
-    match int_of_string_opt str with
-    | Some i -> Vnumber (Ninteger i)
-    | None -> (
-      match float_of_string_opt str with
-      | Some f -> Vnumber (Nfloat f)
-      | None ->
-        error loc
-          (Format.sprintf "attempt to perform on a string (%s) value" str) )
-  end
-  | _ -> value
+module Eval_utils : sig
+  val number_of_string : location option -> value -> value
 
-let get_int_from_value loc value =
-  match value with
-  | Vnumber (Nfloat f) ->
-    if Float.is_integer f then Vnumber (Ninteger (int_of_float f))
-    else
-      error (Some loc)
-        ("number has no integer representation: " ^ string_of_float f)
-  | _ -> value
+  val integer_of_float : location -> value -> value
+
+  val integer_of_float_value : value -> value
+
+  val int_of_value_opt : value -> int option
+end = struct
+  let number_of_string loc value =
+    match value with
+    | Vstring str -> begin
+      match int_of_string_opt str with
+      | Some i -> Vnumber (Ninteger i)
+      | None -> (
+        match float_of_string_opt str with
+        | Some f -> Vnumber (Nfloat f)
+        | None ->
+          error loc
+            (Format.sprintf "attempt to perform on a string (%s) value" str) )
+    end
+    | _ -> value
+
+  let integer_of_float loc value =
+    match value with
+    | Vnumber (Nfloat f) ->
+      if Float.is_integer f then Vnumber (Ninteger (int_of_float f))
+      else
+        error (Some loc)
+          ("number has no integer representation: " ^ string_of_float f)
+    | _ -> value
+
+  let integer_of_float_value = function
+    | Vnumber (Nfloat f) as v ->
+      if Float.is_integer f then Vnumber (Ninteger (int_of_float f)) else v
+    | v -> v
+
+  let int_of_value_opt = function
+    | Vnumber (Ninteger i) when i > 0 -> Some i
+    | _ -> None
+end
+
+open Eval_utils
 
 (* wip
 let eval_bbinop binop v1 v2 =
@@ -115,8 +136,8 @@ let eval_arith_binop binop (loc1, v1) (loc2, v2) env =
   | _ -> assert false (* typing error *)
 
 let eval_bitwise_binop binop (loc1, v1) (loc2, v2) env =
-  let v1 = get_int_from_value loc1 v1 in
-  let v2 = get_int_from_value loc1 v2 in
+  let v1 = integer_of_float loc1 v1 in
+  let v2 = integer_of_float loc1 v2 in
   let* _ =
     typecheck_expr
       (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))

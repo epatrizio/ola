@@ -18,5 +18,6 @@
   metatable_6.lua
   metatable_7.lua
   metatable_8.lua
+  num_of_str.lua
   table.lua
   typer.lua))
