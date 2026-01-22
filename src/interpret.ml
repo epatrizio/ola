@@ -236,40 +236,9 @@ and interpret_expr (loc, expr) env =
         | Vboolean _ | Vnumber _ | Vstring _ | Vvariadic _ | Vfunction _
         | VfunctionStdLib _ | VfunctionReturn _ | Vtable _ ) as v ) ->
     Ok (v, env)
-  | Eunop (Unot, ((l, _) as e)) ->
+  | Eunop (unop, e) ->
     let* v, env = interpret_expr e env in
-    let* _ = typecheck_expr (loc, Eunop (Unot, (l, Evalue v))) env in
-    begin match v with
-    | Vnil () -> Ok (Vboolean true, env)
-    | Vboolean b -> Ok (Vboolean (not b), env)
-    | _ -> Ok (Vboolean false, env)
-    end
-  | Eunop (Uminus, ((l, _) as e)) ->
-    let* v, env = interpret_expr e env in
-    let v = Eval_utils.number_of_string (Some l) v in
-    let* _ = typecheck_expr (loc, Eunop (Uminus, (l, Evalue v))) env in
-    begin match v with
-    | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (-i)), env)
-    | Vnumber (Nfloat f) -> Ok (Vnumber (Nfloat (-.f)), env)
-    | _ -> assert false (* typing error *)
-    end
-  | Eunop (Usharp, ((l, _) as e)) ->
-    let* v, env = interpret_expr e env in
-    let* _ = typecheck_expr (loc, Eunop (Usharp, (l, Evalue v))) env in
-    begin match v with
-    | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
-    | Vtable (_i, t) ->
-      Ok (Vnumber (Ninteger (Table.border (fun v -> v = Vnil ()) t)), env)
-    | _ -> assert false (* typing error *)
-    end
-  | Eunop (Ulnot, ((l, _) as e)) ->
-    let* v, env = interpret_expr e env in
-    let v = Eval_utils.integer_of_float l v in
-    let* _ = typecheck_expr (loc, Eunop (Ulnot, (l, Evalue v))) env in
-    begin match v with
-    | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (lnot i)), env)
-    | _ -> assert false (* typing error *)
-    end
+    eval_unop unop (loc, v) env
   | Ebinop (e1, ((Band | Bor) as op), e2) -> interpret_bbinop_expr op e1 e2 env
   | Ebinop (e1, Bddot, e2) -> interpret_str_binop_expr e1 e2 env
   | Ebinop (e1, ((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e2)

@@ -50,6 +50,39 @@ end
 
 open Eval_utils
 
+let eval_unop unop (loc, v) env =
+  match unop with
+  | Unot ->
+    let* _ = typecheck_expr (loc, Eunop (Unot, (loc, Evalue v))) env in
+    begin match v with
+    | Vnil () -> Ok (Vboolean true, env)
+    | Vboolean b -> Ok (Vboolean (not b), env)
+    | _ -> Ok (Vboolean false, env)
+    end
+  | Uminus ->
+    let v = number_of_string (Some loc) v in
+    let* _ = typecheck_expr (loc, Eunop (Uminus, (loc, Evalue v))) env in
+    begin match v with
+    | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (-i)), env)
+    | Vnumber (Nfloat f) -> Ok (Vnumber (Nfloat (-.f)), env)
+    | _ -> assert false (* typing error *)
+    end
+  | Usharp ->
+    let* _ = typecheck_expr (loc, Eunop (Usharp, (loc, Evalue v))) env in
+    begin match v with
+    | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
+    | Vtable (_i, t) ->
+      Ok (Vnumber (Ninteger (Table.border (fun v -> v = Vnil ()) t)), env)
+    | _ -> assert false (* typing error *)
+    end
+  | Ulnot ->
+    let v = integer_of_float loc v in
+    let* _ = typecheck_expr (loc, Eunop (Ulnot, (loc, Evalue v))) env in
+    begin match v with
+    | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (lnot i)), env)
+    | _ -> assert false (* typing error *)
+    end
+
 (* wip
 let eval_bbinop binop v1 v2 =
   match binop with
