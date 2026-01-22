@@ -20,11 +20,6 @@ exception Interpretation_error of location option * string
 
 let error loc_opt message = raise (Interpretation_error (loc_opt, message))
 
-let env_result_check res =
-  match res with
-  | Ok v -> Ok v
-  | Error message -> error None (Format.sprintf "Env error: %s" message)
-
 let rec block_from_pointer pt stmt_list =
   match (pt, stmt_list) with
   | Begin, _ -> stmt_list
@@ -125,7 +120,7 @@ and interpret_prefixexp pexp env =
 and interpret_var v env =
   match v with
   | VarName n ->
-    let* v = env_result_check (Env.get_value n env) in
+    let* v = Env.get_value n env in
     Ok (v, env)
   | VarTableField (pexp, ((l, _) as exp)) -> (
     let* t, env = interpret_prefixexp pexp env in
@@ -313,7 +308,7 @@ and interpret_expr (loc, expr) env =
   | Ebinop (e1, ((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e2) ->
     interpret_rel_binop_expr op e1 e2 env
   | Evariadic ->
-    let* v = env_result_check (Env.get_value "vararg" env) in
+    let* v = Env.get_value "vararg" env in
     let* _ = typecheck_variadic v in
     Ok (v, env)
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
@@ -334,7 +329,7 @@ and set_var v value env =
     (* WIP *)
   in
   match v with
-  | VarName n -> env_result_check (Env.update_value n value env)
+  | VarName n -> Env.update_value n value env
   | VarTableField (pexp, ((l, _) as exp)) -> (
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
@@ -421,7 +416,7 @@ and lists_lassign nal vall env =
         lists_lassign vl vall env
     end
     | Vfunction (_i, _bl, cl_env) as f ->
-      let* () = env_result_check (Env.update_value n f cl_env) in
+      let* () = Env.update_value n f cl_env in
       lists_lassign vl [] env
     | va ->
       let* env = Env.add_value n va env in
@@ -512,9 +507,9 @@ and interpret_fct value el env =
 and interpret_functioncall fc env =
   match fc with
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
-    let* value = env_result_check (Env.get_value v env) in
+    let* value = Env.get_value v env in
     let* closure, return, env = interpret_fct value el env in
-    let* () = env_result_check (Env.update_value v closure env) in
+    let* () = Env.update_value v closure env in
     Ok (return, env)
   | FCpreargs (PEvar (VarTableField (pexp, exp)), Aexpl el) ->
     let* t, env = interpret_prefixexp pexp env in
@@ -539,7 +534,7 @@ and interpret_functioncall fc env =
     let* _closure, return, env = interpret_fct value el env in
     Ok (return, env)
   | FCprename ((PEvar (VarName v) as var), name, Aexpl el) ->
-    let* value = env_result_check (Env.get_value v env) in
+    let* value = Env.get_value v env in
     begin match value with
     | Vtable (_i, t) as tbl ->
       let name = Vstring name in
