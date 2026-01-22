@@ -47,33 +47,6 @@ let rec interpret_bbinop_expr binop expr1 expr2 env =
   end
   | _ -> assert false (* call error *)
 
-and interpret_arith_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
-  env =
-  let* v1, env = interpret_expr expr1 env in
-  let* v2, env = interpret_expr expr2 env in
-  let* v, env = eval_arith_binop binop (loc1, v1) (loc2, v2) env in
-  Ok (v, env)
-
-and interpret_bitwise_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
-  env =
-  let* v1, env = interpret_expr expr1 env in
-  let* v2, env = interpret_expr expr2 env in
-  let* v, env = eval_bitwise_binop binop (loc1, v1) (loc2, v2) env in
-  Ok (v, env)
-
-and interpret_rel_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env
-    =
-  let* v1, env = interpret_expr expr1 env in
-  let* v2, env = interpret_expr expr2 env in
-  let* v, env = eval_rel_binop binop (loc1, v1) (loc2, v2) env in
-  Ok (v, env)
-
-and interpret_str_binop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
-  let* v1, env = interpret_expr expr1 env in
-  let* v2, env = interpret_expr expr2 env in
-  let* v, env = eval_str_binop (loc1, v1) (loc2, v2) env in
-  Ok (v, env)
-
 and interpret_prefixexp pexp env =
   match pexp with
   | PEvar v -> interpret_var v env
@@ -240,14 +213,10 @@ and interpret_expr (loc, expr) env =
     let* v, env = interpret_expr e env in
     eval_unop unop (loc, v) env
   | Ebinop (e1, ((Band | Bor) as op), e2) -> interpret_bbinop_expr op e1 e2 env
-  | Ebinop (e1, Bddot, e2) -> interpret_str_binop_expr e1 e2 env
-  | Ebinop (e1, ((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e2)
-    ->
-    interpret_arith_binop_expr op e1 e2 env
-  | Ebinop (e1, ((Bland | Blor | Blxor | Blsl | Blsr) as op), e2) ->
-    interpret_bitwise_binop_expr op e1 e2 env
-  | Ebinop (e1, ((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e2) ->
-    interpret_rel_binop_expr op e1 e2 env
+  | Ebinop (e1, binop, e2) ->
+    let* v1, env = interpret_expr e1 env in
+    let* v2, env = interpret_expr e2 env in
+    eval_binop binop (loc, v1) (loc, v2) env
   | Evariadic ->
     let* v = Env.get_value "vararg" env in
     let* _ = typecheck_variadic v in

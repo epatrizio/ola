@@ -83,21 +83,6 @@ let eval_unop unop (loc, v) env =
     | _ -> assert false (* typing error *)
     end
 
-(* wip
-let eval_bbinop binop v1 v2 =
-  match binop with
-  | Band -> begin
-    match v1 with
-    | Vboolean false | Vnil () -> v1
-    | _ -> v2 (* WIP: short-circuit evaluation *)
-  end
-  | Bor -> begin
-    match v1 with
-    | v when v <> Vnil () && v <> Vboolean false -> v1
-    | _ -> v2 (* WIP: short-circuit evaluation *)
-  end
-  | _ -> assert false call error *)
-
 let eval_arith_binop binop (loc1, v1) (loc2, v2) env =
   let v1 = number_of_string (Some loc1) v1 in
   let v2 = number_of_string (Some loc2) v2 in
@@ -288,3 +273,31 @@ let eval_str_binop (loc1, v1) (loc2, v2) env =
     Ok (Vstring (string_of_float f ^ string_of_int i), env)
   | _ -> assert false (* typing error *)
   end
+
+let eval_binop binop (loc1, v1) (loc2, v2) env =
+  match binop with
+  | Bddot -> eval_str_binop (loc1, v1) (loc2, v2) env
+  | Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp ->
+    eval_arith_binop binop (loc1, v1) (loc2, v2) env
+  | Bland | Blor | Blxor | Blsl | Blsr ->
+    eval_bitwise_binop binop (loc1, v1) (loc2, v2) env
+  | Blt | Ble | Bgt | Bge | Beq | Bneq ->
+    eval_rel_binop binop (loc1, v1) (loc2, v2) env
+  | Band | Bor ->
+    (* call error - short-circuit eval in Interpret module *)
+    assert false
+
+(* wip
+let eval_bbinop binop v1 v2 =
+  match binop with
+  | Band -> begin
+    match v1 with
+    | Vboolean false | Vnil () -> v1
+    | _ -> v2 (* WIP: short-circuit evaluation *)
+  end
+  | Bor -> begin
+    match v1 with
+    | v when v <> Vnil () && v <> Vboolean false -> v1
+    | _ -> v2 (* WIP: short-circuit evaluation *)
+  end
+  | _ -> assert false call error *)
