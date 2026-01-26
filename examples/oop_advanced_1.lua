@@ -14,68 +14,70 @@ CheckingAccount = { balance = 0 }
 -- memo: syntactic suger = CheckingAccount.new(self, initial_amount)
 -- CheckingAccount["new"] = function(self, initial_amount) ...body... end
 function CheckingAccount:new(obj, initial_amount)
-  local account = obj or {}
-  -- setmetatable(account, self)                      -- bug: https://github.com/epatrizio/ola/issues/35
-  self.balance = initial_amount
-  self.__index = self
-  if obj and type(obj.toString) == "function" then -- same issue
-    self.__tostring = obj.toString
-  else
-    self.__tostring =
-      function(a)
-        return "Balance checking_account: " .. a.balance
-      end
-  end
-  account = setmetatable(account, self)   -- same issue
-  return account
+    local account = obj or {}
+    account.balance = initial_amount
+    local toString
+    if obj and type(obj.toString) == "function" then
+        toString = obj.toString
+    else
+        toString = function(a)
+            return "Balance checking_account: " .. a.balance
+        end
+    end
+    -- setmetatable(account, self)  -- bug: https://github.com/epatrizio/ola/issues/42
+    account = setmetatable(account, { __index = self, __tostring = toString })
+
+    return account
 end
 
 function CheckingAccount:deposite(amount)
-  assert(amount > 0)
-  self.balance = self.balance + amount
-  return self                             -- same issue (unnecessary return stmt)
+    assert(amount > 0)
+    self.balance = self.balance + amount
+    return self -- same issue (unnecessary return stmt)
 end
 
 function CheckingAccount:withdraw(amount)
-  assert(amount <= self.balance)
-  self.balance = self.balance - amount
-  return self                             -- same issue (unnecessary return stmt)
+    assert(amount <= self.balance)
+    self.balance = self.balance - amount
+    return self -- same issue (unnecessary return stmt)
 end
 
 -- Object: Class instance
-local ca = CheckingAccount:new(nil, 100)
+local ca1 = CheckingAccount:new(nil, 100)
+local ca2 = CheckingAccount:new(nil, 500)
 -- ca:deposite(50)                        -- same issue
-ca = ca:deposite(50)
-ca = ca:withdraw(60)
-print(ca)           -- Balance checking_account: 90 (100+50-60)
+ca1 = ca1:deposite(50)
+ca2 = ca2:deposite(150)
+ca2 = ca2:withdraw(200)
+ca1 = ca1:withdraw(60)
+print(ca1) -- Balance checking_account: 90 (100+50-60)
+print(ca2) -- Balance checking_account: 450 (500+150-200)
 
 -- Inheritance
 
-BlockAccount = { limit = 0 }
-
-function BlockAccount:new(initial_amount, initial_limit)
-  local ba = CheckingAccount:new(self, initial_amount)
-  self.limit = initial_limit
-  ba.limit = initial_limit                -- same issue (unnecessary)
-  return ba
-end
+BlockAccount = CheckingAccount:new(nil, 0)
 
 function BlockAccount:toString()
-  return "Balance block_account: " .. self.balance .. " - limit: " .. self.limit
+    return "Balance block_account: " .. self.balance .. " - limit: " .. self.limit
 end
 
 function BlockAccount:deposite(amount)
-  assert(amount > 0 and self.balance + amount <= self.limit)
-  self.balance = self.balance + amount
-  return self                             -- same issue (unnecessary return stmt)
+    assert(amount > 0 and self.balance + amount <= self.limit)
+    self.balance = self.balance + amount
+    return self -- same issue (unnecessary return stmt)
 end
 
 function BlockAccount:withdraw(amount)
-  print("Error block_account: impossible withdrawal!")
-  return self                             -- same issue (unnecessary return stmt)
+    print("Error block_account: impossible withdrawal!")
+    return self -- same issue (unnecessary return stmt)
 end
 
-local ba = BlockAccount:new(1000, 10000)
-ba = ba:deposite(5000)
-ba = ba:withdraw(42)     -- Impossible withdrawal!
-print(ba)                -- Balance block_account: 6000 (1000+5000 (-42 KO)) - limit: 10000
+local ba1 = BlockAccount:new({ limit = 10000, toString = BlockAccount.toString }, 1000)
+local ba2 = BlockAccount:new({ limit = 5000, toString = BlockAccount.toString }, 1500)
+
+ba2 = ba2:deposite(1250)
+ba1 = ba1:deposite(5000)
+ba1 = ba1:withdraw(42) -- Impossible withdrawal!
+ba2 = ba2:withdraw(42) -- Impossible withdrawal!
+print(ba1)             -- Balance block_account: 6000 (1000+5000 (-42 KO)) - limit: 10000
+print(ba2)             -- Balance block_account: 2750 (1500+1250 (-42 KO)) - limit: 5000

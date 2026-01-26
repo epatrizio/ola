@@ -5,5 +5,8 @@
   scope analysis ...
   interprete ...
   Balance checking_account: 90
+  Balance checking_account: 450
+  Error block_account: impossible withdrawal!
   Error block_account: impossible withdrawal!
   Balance block_account: 6000 - limit: 10000
+  Balance block_account: 2750 - limit: 5000
