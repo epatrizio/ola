@@ -9,7 +9,8 @@ https://www.tutorialspoint.com/lua/lua_object_oriented.htm
 
 -- Class
 
-CheckingAccount = { balance = 0 }
+-- CheckingAccount = { balance = 0 }    -- not required (only default value, init in new function)
+CheckingAccount = {}
 
 -- memo: syntactic suger = CheckingAccount.new(self, initial_amount)
 -- CheckingAccount["new"] = function(self, initial_amount) ...body... end
