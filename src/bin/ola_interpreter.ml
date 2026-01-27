@@ -51,7 +51,7 @@ let process source_code_file debug =
   | Parser.Error ->
     let loc = Sedlexing.lexing_positions lexbuf in
     Error (Some loc, "Syntax error")
-  | Env.Env_error message ->
+  | Env.Env_error (_, message) ->
     let message = sprintf "Env error: %s" message in
     Error (None, message)
   | Static_analysis.Static_analysis_error (loc, message) ->
@@ -59,6 +59,9 @@ let process source_code_file debug =
     Error (loc, message)
   | Typer.Typing_error (loc, message) ->
     let message = sprintf "Typing error: %s" message in
+    Error (loc, message)
+  | Evaluator.Evaluation_error (loc, message) ->
+    let message = sprintf "Evaluation error: %s" message in
     Error (loc, message)
   | Interpret.Interpretation_error (loc, message) ->
     let message = sprintf "Interpretation error: %s" message in

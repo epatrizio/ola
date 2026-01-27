@@ -3,6 +3,7 @@
  (modules
   ast
   env
+  evaluator
   interpret
   lexer
   lua_stdlib

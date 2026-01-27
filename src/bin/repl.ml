@@ -56,6 +56,9 @@ let rec loop (chunk : Ast.block) (env : Ast.value Env.t) =
     | Typer.Typing_error (_loc, message) ->
       print_endline ("Typing error: " ^ message);
       loop chunk env
+    | Evaluator.Evaluation_error (_loc, message) ->
+      print_endline ("Interpretation error: " ^ message);
+      loop chunk env
     | Interpret.Interpretation_error (_loc, message) ->
       print_endline ("Interpretation error: " ^ message);
       loop chunk env )

@@ -10,9 +10,10 @@ type 'a t =
   ; locals : locals
   }
 
-exception Env_error of string
+(* hack: "unit option *" to get the right exception format (Ast.location option * string) *)
+exception Env_error of unit option * string
 
-let error message = raise (Env_error message)
+let error message = raise (Env_error (None, message))
 
 let fresh =
   let count = ref ~-1 in
