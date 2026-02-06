@@ -1,4 +1,5 @@
 open Ast
+open Ast.Value
 open Env
 open Syntax
 module LibMap = Map.Make (String)
@@ -49,7 +50,7 @@ let load env =
     add_global_force func_name vfct env
   in
   let add_empty_lib name env =
-    let vtbl = Vtable (Random.bits32 (), Table.empty) in
+    let vtbl = Vtable (Random.bits32 (), LuaTable.empty) in
     add_global_force name vtbl env
   in
   let add_function_lib lib_name fct_name fct env =
@@ -57,9 +58,7 @@ let load env =
     match v with
     | Vtable (i, tbl) ->
       let tbl =
-        Table.add
-          (fun _ -> None)
-          (Vstring fct_name)
+        LuaTable.add (Vstring fct_name)
           (VfunctionStdLib (Random.bits32 (), fct))
           tbl
       in

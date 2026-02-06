@@ -1,4 +1,5 @@
 open Ast
+open Ast.Value
 open Evaluator
 open Syntax
 open Typer
@@ -10,11 +11,11 @@ type block_pointer =
   | Last
   | Label of string
 
-exception Goto_catch of block_pointer * value Env.t
+exception Goto_catch of block_pointer * Ast.Value.t Env.t
 
-exception Break_catch of value Env.t
+exception Break_catch of Ast.Value.t Env.t
 
-exception Return_catch of expr list * value Env.t
+exception Return_catch of expr list * Ast.Value.t Env.t
 
 exception Interpretation_error of location option * string
 
@@ -72,7 +73,7 @@ and interpret_var v env =
     let idx = Eval_utils.integer_of_float_value idx in
     match t with
     | VfunctionReturn (Vtable (_i, t) :: _) | Vtable (_i, t) -> begin
-      match Table.get Eval_utils.int_of_value_opt idx t with
+      match LuaTable.get idx t with
       | None -> index_metamechanism idx (Vtable (_i, t)) env
       | Some v -> Ok (v, env)
     end
@@ -81,13 +82,13 @@ and interpret_var v env =
 and index_metamechanism idx tbl env =
   match tbl with
   | Vtable (_i, t) -> begin
-    match Table.get_metatable t with
+    match LuaTable.get_metatable t with
     | Some mt -> begin
-      match Table.get (fun _ -> None) (Vstring "__index") mt with
+      match LuaTable.get (Vstring "__index") mt with
       | Some v -> begin
         match v with
         | Vtable (_i, t) as tbl -> begin
-          match Table.get Eval_utils.int_of_value_opt idx t with
+          match LuaTable.get idx t with
           | None -> index_metamechanism idx tbl env
           | Some v -> Ok (v, env)
         end
@@ -108,20 +109,19 @@ and index_metamechanism idx tbl env =
 
 and newindex_metamechanism idx value tbl env =
   let tbl_add i idx value t env =
-    let t = Table.add Eval_utils.int_of_value_opt idx value t in
+    let t = LuaTable.add idx value t in
     Ok (Vtable (i, t), env)
   in
   match tbl with
   | Vtable (i, t) -> begin
-    match Table.get_metatable t with
+    match LuaTable.get_metatable t with
     | Some mt -> begin
-      match Table.get (fun _ -> None) (Vstring "__newindex") mt with
+      match LuaTable.get (Vstring "__newindex") mt with
       | Some v -> begin
         match v with
         | Vtable (_i, _t) -> assert false (* TODO *)
         | Vfunction (_i, _pb, _env) as f ->
-          if Table.key_exists Eval_utils.int_of_value_opt idx t then
-            tbl_add i idx value t env
+          if LuaTable.key_exists idx t then tbl_add i idx value t env
           else
             let arr = (empty_location (), Evalue tbl) in
             let key = (empty_location (), Evalue idx) in
@@ -156,12 +156,10 @@ and tableconstructor tbl idx fl env =
   let tbl_add_rec id v tbl idx fl env =
     match id with
     | Vnil () ->
-      let t =
-        Table.add Eval_utils.int_of_value_opt (Vnumber (Ninteger idx)) v tbl
-      in
+      let t = LuaTable.add (Vnumber (Ninteger idx)) v tbl in
       tableconstructor t (idx + 1) fl env
     | v_idx ->
-      let t = Table.add Eval_utils.int_of_value_opt v_idx v tbl in
+      let t = LuaTable.add v_idx v tbl in
       tableconstructor t idx fl env
   in
   match fl with
@@ -174,21 +172,15 @@ and tableconstructor tbl idx fl env =
         List.fold_left
           (fun (t, id, ev) v ->
             match v_idx with
-            | Vnil () ->
-              ( Table.add Eval_utils.int_of_value_opt (Vnumber (Ninteger id)) v t
-              , id + 1
-              , ev )
-            | v_idx -> (Table.add Eval_utils.int_of_value_opt v_idx v t, id, ev) )
+            | Vnil () -> (LuaTable.add (Vnumber (Ninteger id)) v t, id + 1, ev)
+            | v_idx -> (LuaTable.add v_idx v t, id, ev) )
           (tbl, idx, env) vl
       in
       Ok (tbl, env)
     | v -> begin
       match v_idx with
-      | Vnil () ->
-        Ok
-          ( Table.add Eval_utils.int_of_value_opt (Vnumber (Ninteger idx)) v tbl
-          , env )
-      | v_idx -> Ok (Table.add Eval_utils.int_of_value_opt v_idx v tbl, env)
+      | Vnil () -> Ok (LuaTable.add (Vnumber (Ninteger idx)) v tbl, env)
+      | v_idx -> Ok (LuaTable.add v_idx v tbl, env)
     end
     end
   | f :: fl ->
@@ -224,7 +216,7 @@ and interpret_expr (loc, expr) env =
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
   | Etableconstructor fl ->
-    let* table, env = tableconstructor Table.empty 1 fl env in
+    let* table, env = tableconstructor LuaTable.empty 1 fl env in
     Ok (Vtable (Random.bits32 (), table), env)
 
 and set_var v value env =
@@ -252,7 +244,7 @@ and set_var v value env =
     match t with
     | Vtable (i, t) as tbl ->
       if value = Vnil () then
-        let t = Table.remove Eval_utils.int_of_value_opt idx t in
+        let t = LuaTable.remove idx t in
         let v = var_of_prefixexp pexp env in
         set_var v (Vtable (i, t)) env
       else
@@ -427,7 +419,7 @@ and interpret_functioncall fc env =
     let idx = Eval_utils.integer_of_float_value idx in
     begin match t with
     | Vtable (_i, tbl) -> begin
-      match Table.get Eval_utils.int_of_value_opt idx tbl with
+      match LuaTable.get idx tbl with
       | None -> assert false
       | Some value ->
         let* _closure, return, env = interpret_fct value el env in
@@ -449,7 +441,7 @@ and interpret_functioncall fc env =
     | Vtable (_i, t) as tbl ->
       let name = Vstring name in
       let* value, env =
-        match Table.get Eval_utils.int_of_value_opt name t with
+        match LuaTable.get name t with
         | None -> index_metamechanism name tbl env
         | Some value -> Ok (value, env)
       in

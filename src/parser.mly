@@ -1,7 +1,7 @@
 %token PLUS MINUS MUL DIV FLDIV MOD EXP DOT DDOT TDOT FUNCTION LPAREN RPAREN LBRACKET RBRACKET LBRACES RBRACES COLON DCOLON SEMICOLON COMMA EQ LT LE GT GE EQEQ NEQ NOT SHARP AND OR LAND LOR LSL LSR TILDE DO END BREAK RETURN WHILE REPEAT UNTIL IF THEN ELSE ELSEIF GOTO FOR IN LOCAL EOF
 %token UNARY_OP (* administrative token to distinguish unary minus from subtraction *)
 %token <string> NAME ATTRIB
-%token <Ast.value> VALUE
+%token <Ast.Value.t> VALUE
 
 %left OR
 %left AND
@@ -19,13 +19,14 @@
 %{
 
 open Ast
+open Ast.Value
 
 %}
 
 %start chunk
 
-%type <Ast.block> chunk
-%type <Ast.expr'> exp_bis
+%type <block> chunk
+%type <expr'> exp_bis
 
 %%
 

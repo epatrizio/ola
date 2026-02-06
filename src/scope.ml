@@ -1,6 +1,6 @@
 (* Scope analysis *)
 
-open Ast
+open Ast.Value
 open Utils
 
 let rec analyse_expr expr env =

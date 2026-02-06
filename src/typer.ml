@@ -9,6 +9,7 @@
 *)
 
 open Ast
+open Ast.Value
 open Syntax
 
 exception Typing_error of Ast.location option * string

@@ -29,7 +29,7 @@ let help () =
   print_endline "Ctrl+D: end of file, repl cleanly exit";
   print_endline "Ctrl+C: repl forced exit"
 
-let rec loop (chunk : Ast.block) (env : Ast.value Env.t) =
+let rec loop (chunk : Ast.Value.block) (env : Ast.Value.t Env.t) =
   match prompt () with
   | Phelp ->
     help ();

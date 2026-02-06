@@ -1,6 +1,6 @@
 (* Static analysis *)
 
-open Ast
+open Ast.Value
 open Utils
 
 exception Static_analysis_error of Ast.location option * string
@@ -12,7 +12,7 @@ let error loc_opt message = raise (Static_analysis_error (loc_opt, message))
     If so, check if the use of Evariadic expression is permitted in the function body
   *)
 module Variadic_func : sig
-  val analyze : Ast.block -> (unit, 'a) result
+  val analyze : Ast.Value.block -> (unit, 'a) result
 end = struct
   let is_variadic_function parlist =
     match parlist with
@@ -88,7 +88,7 @@ end
 (* Nb. <close> attribute isn't support (other concept).
     https://www.lua.org/manual/5.4/manual.html#3.3.8 (To-be-closed Variables) *)
 module Const_var : sig
-  val analyze : Ast.block -> (unit, 'a) result
+  val analyze : Ast.Value.block -> (unit, 'a) result
 end = struct
   module SMap = Map.Make (String)
 

@@ -1,4 +1,5 @@
 open Ast
+open Ast.Value
 open Syntax
 open Typer
 
@@ -7,13 +8,11 @@ exception Evaluation_error of location option * string
 let error loc_opt message = raise (Evaluation_error (loc_opt, message))
 
 module Eval_utils : sig
-  val number_of_string : location option -> value -> value
+  val number_of_string : location option -> Ast.Value.t -> Ast.Value.t
 
-  val integer_of_float : location -> value -> value
+  val integer_of_float : location -> Ast.Value.t -> Ast.Value.t
 
-  val integer_of_float_value : value -> value
-
-  val int_of_value_opt : value -> int option
+  val integer_of_float_value : Ast.Value.t -> Ast.Value.t
 end = struct
   let number_of_string loc value =
     match value with
@@ -42,10 +41,6 @@ end = struct
     | Vnumber (Nfloat f) as v ->
       if Float.is_integer f then Vnumber (Ninteger (int_of_float f)) else v
     | v -> v
-
-  let int_of_value_opt = function
-    | Vnumber (Ninteger i) when i > 0 -> Some i
-    | _ -> None
 end
 
 open Eval_utils
@@ -72,7 +67,7 @@ let eval_unop unop (loc, v) env =
     begin match v with
     | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
     | Vtable (_i, t) ->
-      Ok (Vnumber (Ninteger (Table.border (fun v -> v = Vnil ()) t)), env)
+      Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
     | _ -> assert false (* typing error *)
     end
   | Ulnot ->
