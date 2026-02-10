@@ -2,6 +2,10 @@ module type KeyType = sig
   type t
 
   val int_key_opt : t -> int option
+
+  val key_of_string : string -> t
+
+  val string_of_val : t -> string option
 end
 
 module type S = sig
@@ -42,6 +46,8 @@ module type S = sig
   val set_metatable : t -> t -> t
 
   val remove_metatable : t -> t
+
+  val to_string : t -> string
 end
 
 module Make : functor (Key : KeyType) -> sig
@@ -82,4 +88,6 @@ module Make : functor (Key : KeyType) -> sig
   val set_metatable : t -> t -> t
 
   val remove_metatable : t -> t
+
+  val to_string : t -> string
 end

@@ -50,19 +50,19 @@ let load env =
     add_global_force func_name vfct env
   in
   let add_empty_lib name env =
-    let vtbl = Vtable (Random.bits32 (), LuaTable.empty) in
+    let vtbl = Vtable LuaTable.empty in
     add_global_force name vtbl env
   in
   let add_function_lib lib_name fct_name fct env =
     let* v = get_value lib_name env in
     match v with
-    | Vtable (i, tbl) ->
+    | Vtable tbl ->
       let tbl =
         LuaTable.add (Vstring fct_name)
           (VfunctionStdLib (Random.bits32 (), fct))
           tbl
       in
-      add_value lib_name (Vtable (i, tbl)) env
+      add_value lib_name (Vtable tbl) env
     | _ -> assert false
   in
   let env =

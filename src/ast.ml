@@ -76,7 +76,7 @@ module rec Value : sig
     | VfunctionStdLib of int32 * (t list -> t Env.t -> t list * t Env.t)
       (* int32 = stdlib function unique id *)
     | VfunctionReturn of t list
-    | Vtable of int32 * LuaTable.t (* int32 = table unique id *)
+    | Vtable of LuaTable.t
 
   and expr = location * expr'
 
@@ -142,6 +142,10 @@ module rec Value : sig
   and block = stmt list
 
   val int_key_opt : t -> int option
+
+  val key_of_string : string -> t
+
+  val string_of_val : t -> string option
 end = struct
   type t =
     | Vnil of unit
@@ -152,7 +156,7 @@ end = struct
     | Vfunction of int32 * (parlist * block) * t Env.t
     | VfunctionStdLib of int32 * (t list -> t Env.t -> t list * t Env.t)
     | VfunctionReturn of t list
-    | Vtable of int32 * LuaTable.t
+    | Vtable of LuaTable.t
 
   and expr = location * expr'
 
@@ -210,6 +214,10 @@ end = struct
   let int_key_opt = function
     | Vnumber (Ninteger i) when i > 0 -> Some i
     | _ -> None
+
+  let key_of_string str = Vstring str
+
+  let string_of_val = function Vstring str -> Some str | _ -> None
 end
 
 and LuaTable : (Table.S with type kv = Value.t) = Table.Make (Value)
@@ -273,7 +281,7 @@ let rec print_value fmt value =
     fprintf fmt {|function: %a|} pp_print_int (Int32.to_int i)
   | VfunctionReturn vl | Vvariadic vl ->
     (pp_print_list ~pp_sep print_value) fmt vl
-  | Vtable (i, _flo) -> fprintf fmt {|table: %a|} pp_print_int (Int32.to_int i)
+  | Vtable tbl -> fprintf fmt {|%s|} (LuaTable.to_string tbl)
 
 let rec print_parlist fmt pl =
   match pl with

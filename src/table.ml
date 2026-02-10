@@ -2,10 +2,16 @@
    All functions ignore non-numeric keys in the tables given as arguments.
 *)
 
+let () = Random.self_init ()
+
 module type KeyType = sig
   type t
 
   val int_key_opt : t -> int option
+
+  val key_of_string : string -> t
+
+  val string_of_val : t -> string option
 end
 
 module type S = sig
@@ -47,6 +53,8 @@ module type S = sig
   val set_metatable : t -> t -> t
 
   val remove_metatable : t -> t
+
+  val to_string : t -> string
 end
 
 module Make (Key : KeyType) : S with type kv = Key.t = struct
@@ -64,9 +72,11 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
     { ilist : (int * kv) list (* ordered list on key *)
     ; klist : (kv * kv) list
     ; metatable : t option
+    ; uid : int32
     }
 
-  let empty = { ilist = []; klist = []; metatable = None }
+  let empty =
+    { ilist = []; klist = []; metatable = None; uid = Random.bits32 () }
 
   let rec k_add key value ktbl =
     match ktbl with
@@ -192,4 +202,18 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
   let set_metatable meta_tbl tbl = { tbl with metatable = Some meta_tbl }
 
   let remove_metatable tbl = { tbl with metatable = None }
+
+  let to_string tbl =
+    let str_prefix =
+      match get_metatable tbl with
+      | Some mt -> begin
+        match get (Key.key_of_string "__name") mt with
+        | Some k -> begin
+          match Key.string_of_val k with Some s -> s | None -> "table"
+        end
+        | None -> "table"
+      end
+      | None -> "table"
+    in
+    Format.sprintf "%s: %i" str_prefix (Int32.to_int tbl.uid)
 end

@@ -66,7 +66,7 @@ let eval_unop unop (loc, v) env =
     let* _ = typecheck_expr (loc, Eunop (Usharp, (loc, Evalue v))) env in
     begin match v with
     | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
-    | Vtable (_i, t) ->
+    | Vtable t ->
       Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
     | _ -> assert false (* typing error *)
     end

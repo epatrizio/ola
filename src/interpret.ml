@@ -72,22 +72,22 @@ and interpret_var v env =
     in
     let idx = Eval_utils.integer_of_float_value idx in
     match t with
-    | VfunctionReturn (Vtable (_i, t) :: _) | Vtable (_i, t) -> begin
+    | VfunctionReturn (Vtable t :: _) | Vtable t -> begin
       match LuaTable.get idx t with
-      | None -> index_metamechanism idx (Vtable (_i, t)) env
+      | None -> index_metamechanism idx (Vtable t) env
       | Some v -> Ok (v, env)
     end
     | _ -> Ok (Vnil (), env) )
 
 and index_metamechanism idx tbl env =
   match tbl with
-  | Vtable (_i, t) -> begin
+  | Vtable t -> begin
     match LuaTable.get_metatable t with
     | Some mt -> begin
       match LuaTable.get (Vstring "__index") mt with
       | Some v -> begin
         match v with
-        | Vtable (_i, t) as tbl -> begin
+        | Vtable t as tbl -> begin
           match LuaTable.get idx t with
           | None -> index_metamechanism idx tbl env
           | Some v -> Ok (v, env)
@@ -108,34 +108,34 @@ and index_metamechanism idx tbl env =
   | _ -> assert false
 
 and newindex_metamechanism idx value tbl env =
-  let tbl_add i idx value t env =
+  let tbl_add idx value t env =
     let t = LuaTable.add idx value t in
-    Ok (Vtable (i, t), env)
+    Ok (Vtable t, env)
   in
   match tbl with
-  | Vtable (i, t) -> begin
+  | Vtable t -> begin
     match LuaTable.get_metatable t with
     | Some mt -> begin
       match LuaTable.get (Vstring "__newindex") mt with
       | Some v -> begin
         match v with
-        | Vtable (_i, _t) -> assert false (* TODO *)
+        | Vtable _ -> assert false (* TODO *)
         | Vfunction (_i, _pb, _env) as f ->
-          if LuaTable.key_exists idx t then tbl_add i idx value t env
+          if LuaTable.key_exists idx t then tbl_add idx value t env
           else
             let arr = (empty_location (), Evalue tbl) in
             let key = (empty_location (), Evalue idx) in
             let value = (empty_location (), Evalue value) in
             let* _, _v, _env = interpret_fct f [ arr; key; value ] _env in
-            Ok (Vtable (i, t), env)
+            Ok (Vtable t, env)
         | _ ->
           error None
             "metatable.__newindex: attempt to index a non table or function \
              value"
       end
-      | None -> tbl_add i idx value t env
+      | None -> tbl_add idx value t env
     end
-    | None -> tbl_add i idx value t env
+    | None -> tbl_add idx value t env
   end
   | _ -> assert false
 
@@ -217,7 +217,7 @@ and interpret_expr (loc, expr) env =
   | Eprefix pexp -> interpret_prefixexp pexp env
   | Etableconstructor fl ->
     let* table, env = tableconstructor LuaTable.empty 1 fl env in
-    Ok (Vtable (Random.bits32 (), table), env)
+    Ok (Vtable table, env)
 
 and set_var v value env =
   let rec var_of_prefixexp pexp env =
@@ -242,11 +242,11 @@ and set_var v value env =
     in
     let idx = Eval_utils.integer_of_float_value idx in
     match t with
-    | Vtable (i, t) as tbl ->
+    | Vtable t as tbl ->
       if value = Vnil () then
         let t = LuaTable.remove idx t in
         let v = var_of_prefixexp pexp env in
-        set_var v (Vtable (i, t)) env
+        set_var v (Vtable t) env
       else
         let* tbl, env = newindex_metamechanism idx value tbl env in
         let v = var_of_prefixexp pexp env in
@@ -418,8 +418,8 @@ and interpret_functioncall fc env =
     let* idx, env = interpret_expr exp env in
     let idx = Eval_utils.integer_of_float_value idx in
     begin match t with
-    | Vtable (_i, tbl) -> begin
-      match LuaTable.get idx tbl with
+    | Vtable t -> begin
+      match LuaTable.get idx t with
       | None -> assert false
       | Some value ->
         let* _closure, return, env = interpret_fct value el env in
@@ -438,7 +438,7 @@ and interpret_functioncall fc env =
   | FCprename ((PEvar (VarName v) as var), name, Aexpl el) ->
     let* value = Env.get_value v env in
     begin match value with
-    | Vtable (_i, t) as tbl ->
+    | Vtable t as tbl ->
       let name = Vstring name in
       let* value, env =
         match LuaTable.get name t with
