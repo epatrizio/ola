@@ -153,46 +153,38 @@ and interpret_field field env =
     Ok ((v1, v2), env)
 
 and tableconstructor tbl idx fl env =
-  let tbl_add_rec id v tbl idx fl env =
-    match id with
-    | Vnil () ->
-      let t = LuaTable.add (Vnumber (Ninteger idx)) v tbl in
-      tableconstructor t (idx + 1) fl env
-    | v_idx ->
-      let t = LuaTable.add v_idx v tbl in
-      tableconstructor t idx fl env
+  let field_handler is_last f env =
+    let add_field tbl v_idx v_val =
+      match v_idx with
+      | Vnil () ->
+        incr idx;
+        LuaTable.add (Vnumber (Ninteger !idx)) v_val tbl
+      | v_idx -> LuaTable.add v_idx v_val tbl
+    in
+    let* (v_idx, v_val), env = interpret_field f env in
+    match v_val with
+    | VfunctionReturn [] | Vvariadic [] ->
+      let tbl = add_field tbl v_idx (Vnil ()) in
+      Ok (tbl, env)
+    | VfunctionReturn (v :: vl) | Vvariadic (v :: vl) ->
+      let tbl =
+        if is_last then
+          List.fold_left (fun tbl v -> add_field tbl v_idx v) tbl (v :: vl)
+        else add_field tbl v_idx v
+      in
+      Ok (tbl, env)
+    | v_val ->
+      let tbl = add_field tbl v_idx v_val in
+      Ok (tbl, env)
   in
   match fl with
   | [] -> Ok (tbl, env)
   | [ f ] ->
-    let* (v_idx, v_val), env = interpret_field f env in
-    begin match v_val with
-    | VfunctionReturn vl | Vvariadic vl ->
-      let tbl, _i, env =
-        List.fold_left
-          (fun (t, id, ev) v ->
-            match v_idx with
-            | Vnil () -> (LuaTable.add (Vnumber (Ninteger id)) v t, id + 1, ev)
-            | v_idx -> (LuaTable.add v_idx v t, id, ev) )
-          (tbl, idx, env) vl
-      in
-      Ok (tbl, env)
-    | v -> begin
-      match v_idx with
-      | Vnil () -> Ok (LuaTable.add (Vnumber (Ninteger idx)) v tbl, env)
-      | v_idx -> Ok (LuaTable.add v_idx v tbl, env)
-    end
-    end
+    let* tbl, env = field_handler true f env in
+    Ok (tbl, env)
   | f :: fl ->
-    let* (v_idx, v_val), env = interpret_field f env in
-    begin match v_val with
-    | VfunctionReturn vl | Vvariadic vl -> begin
-      match vl with
-      | [] -> tbl_add_rec v_idx (Vnil ()) tbl idx fl env
-      | v :: _vl -> tbl_add_rec v_idx v tbl idx fl env
-    end
-    | v -> tbl_add_rec v_idx v tbl idx fl env
-    end
+    let* tbl, env = field_handler false f env in
+    tableconstructor tbl idx fl env
 
 and interpret_expr (loc, expr) env =
   match expr with
@@ -216,7 +208,8 @@ and interpret_expr (loc, expr) env =
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
   | Etableconstructor fl ->
-    let* table, env = tableconstructor LuaTable.empty 1 fl env in
+    let idx = ref 0 in
+    let* table, env = tableconstructor LuaTable.empty idx fl env in
     Ok (Vtable table, env)
 
 and set_var v value env =
