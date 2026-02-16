@@ -255,79 +255,56 @@ and to_vall el env =
     (Ok ([], env))
     el
 
-and lists_assign vl vall env =
+and lists_assign is_local vl vall env =
+  let var_handler is_local var value env =
+    if is_local then
+      let name = match var with VarName name -> name | _ -> assert false in
+      Env.add_value name value env
+    else
+      let* () = set_var var value env in
+      Ok env
+  in
+  let assign_handler is_local var value vl tl env =
+    if is_local then
+      let* env = var_handler is_local var value env in
+      lists_assign is_local vl tl env
+    else
+      let* env = lists_assign is_local vl tl env in
+      var_handler is_local var value env
+  in
   begin match (vl, vall) with
-  | [], [] | [], _ -> Ok ()
+  | [], [] | [], _ -> Ok env
   | vl, [] ->
     List.fold_left
       (fun acc v ->
-        let () = Result.get_ok acc in
-        set_var v (Vnil ()) env )
-      (Ok ()) vl
+        let env = Result.get_ok acc in
+        var_handler is_local v (Vnil ()) env )
+      (Ok env) vl
   | v :: vl, [ (l, va) ] -> (
     match va with
     | VfunctionReturn vall | Vvariadic vall -> begin
       match vall with
-      | [] -> set_var v (Vnil ()) env
+      | [] -> var_handler is_local v (Vnil ()) env
       | va :: vall ->
         let vall = List.map (fun v -> (l, v)) vall in
-        let* () = lists_assign vl vall env in
-        set_var v va env
+        assign_handler is_local v va vl vall env
     end
-    | va ->
-      let* () = lists_assign vl [] env in
-      set_var v va env )
+    | Vfunction (_i, _bl, cl_env) as f ->
+      (* wip *)
+      if is_local then
+        let name = match v with VarName name -> name | _ -> assert false in
+        let* () = Env.update_value name f cl_env in
+        lists_assign true vl [] env
+      else assign_handler is_local v f vl [] env
+    | va -> assign_handler is_local v va vl [] env )
   | v :: vl, (_l, va) :: tl -> (
     match va with
     | VfunctionReturn vall | Vvariadic vall -> begin
       match vall with
-      | [] -> set_var v (Vnil ()) env
-      | va :: _vall ->
-        let* () = lists_assign vl tl env in
-        set_var v va env
+      | [] -> var_handler is_local v (Vnil ()) env (*set_var v (Vnil ()) env*)
+      | va :: _vall -> assign_handler is_local v va vl tl env
     end
-    | va ->
-      let* () = lists_assign vl tl env in
-      set_var v va env )
-  end
-
-and lists_lassign nal vall env =
-  begin match (nal, vall) with
-  | [], [] | [], _ -> Ok env
-  | nal, [] ->
-    List.fold_left
-      (fun acc (n, _on) ->
-        let e = Result.get_ok acc in
-        Env.add_value n (Vnil ()) e )
-      (Ok env) nal
-  | (n, _on) :: vl, [ (l, va) ] -> (
-    match va with
-    | VfunctionReturn vall | Vvariadic vall -> begin
-      match vall with
-      | [] -> Env.add_value n (Vnil ()) env
-      | va :: vall ->
-        let* env = Env.add_value n va env in
-        let vall = List.map (fun v -> (l, v)) vall in
-        lists_lassign vl vall env
-    end
-    | Vfunction (_i, _bl, cl_env) as f ->
-      let* () = Env.update_value n f cl_env in
-      lists_lassign vl [] env
-    | va ->
-      let* env = Env.add_value n va env in
-      lists_lassign vl [] env )
-  | (n, _on) :: vl, (_l, va) :: tl -> (
-    match va with
-    | VfunctionReturn vall | Vvariadic vall -> begin
-      match vall with
-      | [] -> Env.add_value n (Vnil ()) env
-      | va :: _vall ->
-        let* env = Env.add_value n va env in
-        lists_lassign vl tl env
-    end
-    | va ->
-      let* env = Env.add_value n va env in
-      lists_lassign vl tl env )
+    | va -> assign_handler is_local v va vl tl env )
   end
 
 and lists_args pl vall env =
@@ -345,11 +322,11 @@ and lists_args pl vall env =
     let env =
       Env.add_local_force "vararg" (vall_to_vvariadic vall cut_at_n) env
     in
-    let vl = List.map (fun n -> (n, None)) nl in
-    lists_lassign vl vall env
+    let vl = List.map (fun n -> VarName n) nl in
+    lists_assign true vl vall env
   | PLlist (nl, false) ->
-    let vl = List.map (fun n -> (n, None)) nl in
-    lists_lassign vl vall env
+    let vl = List.map (fun n -> VarName n) nl in
+    lists_assign true vl vall env
 
 and interpret_fct value el env =
   let* _ = typecheck_function value in
@@ -452,11 +429,11 @@ and interpret_stmt stmt env : _ result =
   | Sempty -> Ok env
   | Sassign (vl, el) ->
     let* vall, env = to_vall el env in
-    let* () = lists_assign vl vall env in
-    Ok env
+    lists_assign false vl vall env
   | SassignLocal (nal, el) ->
+    let vl = List.map (fun (name, _) -> VarName name) nal in
     let* vall, env = to_vall el env in
-    lists_lassign nal vall env
+    lists_assign true vl vall env
   | Sbreak -> raise (Break_catch env)
   | Sreturn el -> raise (Return_catch (el, env))
   | Slabel _ -> Ok env
