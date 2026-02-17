@@ -153,7 +153,7 @@ and interpret_field field env =
     Ok ((v1, v2), env)
 
 and tableconstructor tbl idx fl env =
-  let field_handler is_last f env =
+  let field_handler ~is_last f env =
     let add_field tbl v_idx v_val =
       match v_idx with
       | Vnil () ->
@@ -180,10 +180,10 @@ and tableconstructor tbl idx fl env =
   match fl with
   | [] -> Ok (tbl, env)
   | [ f ] ->
-    let* tbl, env = field_handler true f env in
+    let* tbl, env = field_handler ~is_last:true f env in
     Ok (tbl, env)
   | f :: fl ->
-    let* tbl, env = field_handler false f env in
+    let* tbl, env = field_handler ~is_last:false f env in
     tableconstructor tbl idx fl env
 
 and interpret_expr (loc, expr) env =
@@ -255,7 +255,7 @@ and to_vall el env =
     (Ok ([], env))
     el
 
-and lists_assign is_local vl vall env =
+and lists_assign ?(is_local = false) vl vall env =
   let var_handler is_local var value env =
     if is_local then
       let name = match var with VarName name -> name | _ -> assert false in
@@ -267,9 +267,9 @@ and lists_assign is_local vl vall env =
   let assign_handler is_local var value vl tl env =
     if is_local then
       let* env = var_handler is_local var value env in
-      lists_assign is_local vl tl env
+      lists_assign ~is_local vl tl env
     else
-      let* env = lists_assign is_local vl tl env in
+      let* env = lists_assign ~is_local vl tl env in
       var_handler is_local var value env
   in
   begin match (vl, vall) with
@@ -294,7 +294,7 @@ and lists_assign is_local vl vall env =
       if is_local then
         let name = match v with VarName name -> name | _ -> assert false in
         let* () = Env.update_value name f cl_env in
-        lists_assign true vl [] env
+        lists_assign ~is_local vl [] env
       else assign_handler is_local v f vl [] env
     | va -> assign_handler is_local v va vl [] env )
   | v :: vl, (_l, va) :: tl -> (
@@ -323,10 +323,10 @@ and lists_args pl vall env =
       Env.add_local_force "vararg" (vall_to_vvariadic vall cut_at_n) env
     in
     let vl = List.map (fun n -> VarName n) nl in
-    lists_assign true vl vall env
+    lists_assign ~is_local:true vl vall env
   | PLlist (nl, false) ->
     let vl = List.map (fun n -> VarName n) nl in
-    lists_assign true vl vall env
+    lists_assign ~is_local:true vl vall env
 
 and interpret_fct value el env =
   let* _ = typecheck_function value in
@@ -429,11 +429,11 @@ and interpret_stmt stmt env : _ result =
   | Sempty -> Ok env
   | Sassign (vl, el) ->
     let* vall, env = to_vall el env in
-    lists_assign false vl vall env
+    lists_assign vl vall env
   | SassignLocal (nal, el) ->
     let vl = List.map (fun (name, _) -> VarName name) nal in
     let* vall, env = to_vall el env in
-    lists_assign true vl vall env
+    lists_assign ~is_local:true vl vall env
   | Sbreak -> raise (Break_catch env)
   | Sreturn el -> raise (Return_catch (el, env))
   | Slabel _ -> Ok env
