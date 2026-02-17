@@ -54,31 +54,6 @@ max(10, 4)
 print(max(10, 4))
 print(result) -- 10
 
--- recursive call
-
-function Fact(n)
-  if n <= 1 then
-    return 1
-  else
-    return n * Fact(n - 1)
-  end
-end
-
-print(n)       -- nil
-print(Fact(5)) -- 120
-
-function Fib(n)
-  if n <= 0 then
-    return 0
-  elseif n == 1 then
-    return 1
-  else
-    return Fib(n - 1) + Fib(n - 2)
-  end
-end
-
-print(Fib(15)) -- 610
-
 -- function def as a value
 
 local print_fct = function(p)
