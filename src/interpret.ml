@@ -317,14 +317,14 @@ and lists_args pl vall env =
   | PLvariadic ->
     let env = Env.add_local_force "vararg" (vall_to_vvariadic vall 0) env in
     Ok env
-  | PLlist (nl, true) ->
-    let cut_at_n = List.length nl in
+  | PLlist (nl, is_variadic) ->
     let env =
-      Env.add_local_force "vararg" (vall_to_vvariadic vall cut_at_n) env
+      if is_variadic then
+        Env.add_local_force "vararg"
+          (vall_to_vvariadic vall (List.length nl))
+          env
+      else env
     in
-    let vl = List.map (fun n -> VarName n) nl in
-    lists_assign ~is_local:true vl vall env
-  | PLlist (nl, false) ->
     let vl = List.map (fun n -> VarName n) nl in
     lists_assign ~is_local:true vl vall env
 
