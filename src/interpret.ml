@@ -32,21 +32,9 @@ let rec block_from_pointer pt stmt_list =
 
 let rec interpret_bbinop_expr binop expr1 expr2 env =
   let* v1, env = interpret_expr expr1 env in
-  (* let* v2, env = interpret_expr expr2 env in
-  let v = eval_bbinop binop v1 v2 in
-  Ok (v, env) *)
-  match binop with
-  | Band -> begin
-    match v1 with
-    | Vboolean false | Vnil () -> Ok (v1, env)
-    | _ -> interpret_expr expr2 env (* short-circuit evaluation *)
-  end
-  | Bor -> begin
-    match v1 with
-    | v when v <> Vnil () && v <> Vboolean false -> Ok (v1, env)
-    | _ -> interpret_expr expr2 env (* short-circuit evaluation *)
-  end
-  | _ -> assert false (* call error *)
+  match eval_bbinop binop v1 with
+  | Some v1 -> Ok (v1, env)
+  | None -> interpret_expr expr2 env
 
 and interpret_prefixexp pexp env =
   match pexp with

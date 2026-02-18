@@ -278,21 +278,17 @@ let eval_binop binop (loc1, v1) (loc2, v2) env =
     eval_bitwise_binop binop (loc1, v1) (loc2, v2) env
   | Blt | Ble | Bgt | Bge | Beq | Bneq ->
     eval_rel_binop binop (loc1, v1) (loc2, v2) env
-  | Band | Bor ->
-    (* call error - short-circuit eval in Interpret module *)
-    assert false
+  (* second operand interpretation is not always necessary *)
+  | Band | Bor -> assert false
 
-(* wip
-let eval_bbinop binop v1 v2 =
+let eval_bbinop binop v1 =
   match binop with
   | Band -> begin
-    match v1 with
-    | Vboolean false | Vnil () -> v1
-    | _ -> v2 (* WIP: short-circuit evaluation *)
+    match v1 with Vboolean false | Vnil () -> Some v1 | _ -> None
   end
   | Bor -> begin
     match v1 with
-    | v when v <> Vnil () && v <> Vboolean false -> v1
-    | _ -> v2 (* WIP: short-circuit evaluation *)
+    | v when v <> Vnil () && v <> Vboolean false -> Some v1
+    | _ -> None
   end
-  | _ -> assert false call error *)
+  | _ -> assert false (* call error *)

@@ -177,7 +177,7 @@ and typecheck_expr expr env =
   | Eunop (Usharp, e) -> typecheck_sharp_unop e env
   | Eunop (Ulnot, e) -> typecheck_bitwise_unop e env
   | Ebinop (_, Band, _) | Ebinop (_, Bor, _) ->
-    Ok Tnil (* Nb. all types are possible! *)
+    Ok Tboolean (* Nb. all types are possible! *)
   | Ebinop (e1, ((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e2)
     ->
     typecheck_arith_binop op e1 e2 env
