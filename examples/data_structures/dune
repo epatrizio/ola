@@ -1,2 +1,2 @@
 (cram
- (deps array.lua linked_list.lua set.lua))
+ (deps array.lua binary_search_tree.lua linked_list.lua set.lua))
