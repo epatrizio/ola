@@ -621,7 +621,10 @@ and interpret_stmt stmt env : _ result =
     | _ -> assert false
     end
   (* | Sfunction (_n, _fb) -> env *)
-  (* | SfunctionLocal (_n, _fb) -> env *)
+  | SfunctionLocal (n, fb) ->
+    let func_value = Vfunction (Random.bits32 (), fb, env) in
+    let* () = Env.update_value n func_value env in
+    Ok env
   | SfunctionCall fc ->
     let* _v, env = interpret_functioncall fc env in
     Ok env

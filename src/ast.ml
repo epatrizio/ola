@@ -135,8 +135,7 @@ module rec Value : sig
     | Siterator of string list * expr list * block
     (* | Sfunction of funcname * funcbody *)
     (* syntactic sugar: transform Sassign in parser *)
-    (* | SfunctionLocal of name * funcbody *)
-    (* syntactic sugar: transform SassignLocal in parser *)
+    | SfunctionLocal of string * (parlist * block)
     | SfunctionCall of functioncall
 
   and block = stmt list
@@ -207,6 +206,7 @@ end = struct
     | Sif of expr * block * (expr * block) list * block option
     | Sfor of string * expr * expr * expr option * block
     | Siterator of string list * expr list * block
+    | SfunctionLocal of string * (parlist * block)
     | SfunctionCall of functioncall
 
   and block = stmt list
@@ -396,9 +396,8 @@ and print_stmt fmt stmt =
       lel print_block b
   (* | Sfunction (fname, fbody) ->
      fprintf fmt {|function %a%a|} print_funcname fname print_funcbody fbody *)
-  (* | SfunctionLocal (name, fbody) ->
-     fprintf fmt {|local function %a%a|} print_var (Name name)
-       print_funcbody fbody *)
+  | SfunctionLocal (name, fb) ->
+    fprintf fmt {|local function %a%a|} pp_print_string name print_funcbody fb
   | SfunctionCall fc -> print_functioncall fmt fc
 
 and print_block fmt block =

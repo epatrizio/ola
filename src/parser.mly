@@ -75,13 +75,7 @@ let stat ==
       | PLvariadic -> pl
       in Sassign (vl, [ ($startpos, $endpos), (Efunctiondef (pl, body)) ])
   }
-  | LOCAL; FUNCTION; name = NAME; ~ = funcbody; {
-    (* SfunctionLocal syntactic sugar *)
-    SassignLocal (
-      [ name, None ],
-      [ ($startpos, $endpos), (Efunctiondef funcbody) ]
-    )
-  }
+  | LOCAL; FUNCTION; name = NAME; ~ = funcbody; <SfunctionLocal>
   | LOCAL; ~ = attnamelist; ~ = loption(preceded(EQ, explist)); <SassignLocal>
 
 (* TODO: remove this one *)

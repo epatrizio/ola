@@ -4,6 +4,7 @@
   bitwise_unop_float.lua
   bitwise_unop_func.lua
   bitwise_unop_table.lua
+  function_rec.lua
   functioncall_1.lua
   functioncall_2.lua
   functioncall_3.lua

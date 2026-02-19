@@ -74,6 +74,8 @@ end = struct
       let bel = check_list el analyze_expr in
       let bb = analyze_block b in
       bel || bb
+    | SfunctionLocal (_, (pl, b)) ->
+      analyze_functiondef pl b (Ast.empty_location ())
 
   and analyze_block block = check_list block analyze_stmt
 
@@ -172,6 +174,9 @@ end = struct
       env
     | Siterator (_, el, b) ->
       let env = List.fold_left (fun env exp -> analyze_expr exp env) env el in
+      let _ = analyze_block b env in
+      env
+    | SfunctionLocal (_, (_, b)) ->
       let _ = analyze_block b env in
       env
 
