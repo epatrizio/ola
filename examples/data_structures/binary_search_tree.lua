@@ -4,10 +4,29 @@ Binary search tree data structure
   https://en.wikipedia.org/wiki/Binary_search_tree
 --]]
 
+local function default_compare_func(a, b)
+  assert(type(a) == type(b))
+  if a < b then
+    return -1
+  elseif a == b then
+    return 0
+  else
+    return 1
+  end
+end
+
 local node = {}
 
-function node.create(value)
-  return { value = value, left = nil, right = nil }
+function node.create_leaf(value, compare_func)
+  if compare_func == nil then
+    compare_func = default_compare_func
+  end
+  return { value = value, left = nil, right = nil, __compare = compare_func }
+end
+
+function node.create(value, left, right, compare_func)
+  assert(compare_func ~= nil)
+  return { value = value, left = left, right = right, __compare = compare_func }
 end
 
 -- BST = Binary Search Tree
@@ -59,41 +78,41 @@ function bst.min(bt)
   end
 end
 
-function bst.add(value, bt)
+function bst.add(value, bt, compare_func)
   if bst.is_empty(bt) then
-    return node.create(value)
-  elseif value < bt.value then
-    return { value = bt.value, left = bst.add(value, bt.left), right = bt.right }
+    return node.create_leaf(value, compare_func)
+  elseif bt.__compare(value, bt.value) < 0 then
+    return node.create(bt.value, bst.add(value, bt.left), bt.right, bt.__compare)
   else
-    return { value = bt.value, left = bt.left, right = bst.add(value, bt.right) }
+    return node.create(bt.value, bt.left, bst.add(value, bt.right), bt.__compare)
   end
 end
 
 function bst.delete(value, bt)
   if bst.is_empty(bt) then
     return bt
-  elseif value == bt.value and bst.is_empty(bt.left) and bst.is_empty(bt.right) then
+  elseif bt.__compare(value, bt.value) == 0 and bst.is_empty(bt.left) and bst.is_empty(bt.right) then
     return nil
-  elseif value == bt.value and bst.is_empty(bt.left) then
+  elseif bt.__compare(value, bt.value) == 0 and bst.is_empty(bt.left) then
     return bt.right
-  elseif value == bt.value and bst.is_empty(bt.right) then
+  elseif bt.__compare(value, bt.value) == 0 and bst.is_empty(bt.right) then
     return bt.left
-  elseif value == bt.value then
+  elseif bt.__compare(value, bt.value) == 0 then
     local left_max = bst.max(bt.left)
-    return { value = left_max, left = bst.delete(left_max, bt.left), right = bt.right }
-  elseif value < bt.value then
-    return { value = bt.value, left = bst.delete(value, bt.left), right = bt.right }
+    return node.create(left_max, bst.delete(left_max, bt.left), bt.right, bt.__compare)
+  elseif bt.__compare(value, bt.value) < 0 then
+    return node.create(bt.value, bst.delete(value, bt.left), bt.right, bt.__compare)
   else
-    return { value = bt.value, left = bt.left, right = bst.delete(value, bt.right) }
+    return node.create(bt.value, bt.left, bst.delete(value, bt.right), bt.__compare)
   end
 end
 
 function bst.search(value, bt)
   if bst.is_empty(bt) then
     return false
-  elseif value == bt.value then
+  elseif bt.__compare(value, bt.value) == 0 then
     return true
-  elseif value < bt.value then
+  elseif bt.__compare(value, bt.value) < 0 then
     return bst.search(value, bt.left)
   else
     return bst.search(value, bt.right)
@@ -132,6 +151,8 @@ end
 
 -- basic usage
 
+print("**** bst of integer ****")
+-- bst of integer
 local bt = bst.create()
 bt = bst.add(11, bt)
 bt = bst.add(33, bt)
@@ -161,3 +182,47 @@ print("nb leafs", bst.nb_leaf(bt))
 print("min", bst.min(bt))
 print("max", bst.max(bt))
 print("search 55", bst.search(55, bt))
+
+print("**** bst of string 1 ****")
+-- bst of string
+local bt_s1 = bst.create()
+bt_s1 = bst.add("str_1", bt_s1)
+bt_s1 = bst.add("str_2", bt_s1)
+bt_s1 = bst.add("aa", bt_s1)
+bt_s1 = bst.add("aaa", bt_s1)
+bt_s1 = bst.add("zzz", bt_s1)
+print("min", bst.min(bt_s1))
+print("max", bst.max(bt_s1))
+print("-- print_infix")
+bst.print_infix(bt_s1)
+
+-- advanced usage with specific compare function
+
+print("**** bst of string 2 ****")
+
+local function strlen_compare_func(a, b)
+  assert(type(a) == type(b))
+  assert(type(a) == "string")
+  if #a < #b then
+    return -1
+  elseif #a == #b then
+    return default_compare_func(a, b)
+  else
+    return 1
+  end
+end
+
+-- bst of string with strlen_compare_func
+local bt_s2 = bst.create()
+bt_s2 = bst.add("str_1", bt_s2, strlen_compare_func)
+bt_s2 = bst.add("str_2", bt_s2)
+bt_s2 = bst.add("aa", bt_s2)
+bt_s2 = bst.add("aaa", bt_s2)
+bt_s2 = bst.add("zzz", bt_s2)
+bt_s2 = bst.add("zzzzzzz", bt_s2)
+bt_s2 = bst.delete("zzzzzzz", bt_s2)
+bt_s2 = bst.delete("azerty", bt_s2)
+print("min", bst.min(bt_s2))
+print("max", bst.max(bt_s2))
+print("-- print_infix")
+bst.print_infix(bt_s2)

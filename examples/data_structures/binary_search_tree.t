@@ -4,6 +4,7 @@
   stdlib loading ...
   scope analysis ...
   interprete ...
+  **** bst of integer ****
   nb nodes, 5
   nb leafs, 3
   min, 10
@@ -35,3 +36,21 @@
   min, 11
   max, 22
   search 55, false
+  **** bst of string 1 ****
+  min, aa
+  max, zzz
+  -- print_infix
+  aa
+  aaa
+  str_1
+  str_2
+  zzz
+  **** bst of string 2 ****
+  min, aa
+  max, str_2
+  -- print_infix
+  aa
+  aaa
+  zzz
+  str_1
+  str_2
