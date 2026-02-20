@@ -30,6 +30,7 @@ type typ =
   | Ttable
   | Tuserdata
   | Tthread
+  | Tref of typ
 
 type unop =
   | Unot
@@ -77,6 +78,7 @@ module rec Value : sig
       (* int32 = stdlib function unique id *)
     | VfunctionReturn of t list
     | Vtable of LuaTable.t
+    | Vref of var
 
   and expr = location * expr'
 
@@ -156,6 +158,7 @@ end = struct
     | VfunctionStdLib of int32 * (t list -> t Env.t -> t list * t Env.t)
     | VfunctionReturn of t list
     | Vtable of LuaTable.t
+    | Vref of var
 
   and expr = location * expr'
 
@@ -271,6 +274,14 @@ let print_number fmt number =
   | Ninteger i -> pp_print_int fmt i
   | Nfloat f -> pp_print_float fmt f
 
+let print_parlist fmt pl =
+  match pl with
+  | PLlist (nl, true) ->
+    fprintf fmt {|%a, ...|} (pp_print_list ~pp_sep pp_print_string) nl
+  | PLlist (nl, false) ->
+    fprintf fmt {|%a|} (pp_print_list ~pp_sep pp_print_string) nl
+  | PLvariadic -> fprintf fmt "..."
+
 let rec print_value fmt value =
   match value with
   | Vnil () -> pp_print_string fmt "nil"
@@ -282,14 +293,7 @@ let rec print_value fmt value =
   | VfunctionReturn vl | Vvariadic vl ->
     (pp_print_list ~pp_sep print_value) fmt vl
   | Vtable tbl -> fprintf fmt {|%s|} (LuaTable.to_string tbl)
-
-let rec print_parlist fmt pl =
-  match pl with
-  | PLlist (nl, true) ->
-    fprintf fmt {|%a, ...|} (pp_print_list ~pp_sep pp_print_string) nl
-  | PLlist (nl, false) ->
-    fprintf fmt {|%a|} (pp_print_list ~pp_sep pp_print_string) nl
-  | PLvariadic -> fprintf fmt "..."
+  | Vref v -> fprintf fmt {|ref: %a|} print_var v
 
 and print_var fmt v =
   match v with
