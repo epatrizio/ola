@@ -26,15 +26,15 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v6
-      - name: cache
-        id: cache-opam
-        uses: actions/cache@v5
-        env:
-          cache-name: cache-opam-build
-        with:
-          path: |
-            ~/work/ola/ola/_opam/
-          key: ${{ runner.os }}-build-${{ matrix.ocaml-compiler }}-${{ env.cache-name }}-${{ hashFiles('**/*.opam') }}
+      # - name: cache
+      #   id: cache-opam
+      #   uses: actions/cache@v5
+      #   env:
+      #     cache-name: cache-opam-build
+      #   with:
+      #     path: |
+      #       ~/work/ola/ola/_opam/
+      #     key: ${{ runner.os }}-build-${{ matrix.ocaml-compiler }}-${{ env.cache-name }}-${{ hashFiles('**/*.opam') }}
       - name: setup-ocaml
         uses: ocaml/setup-ocaml@v3
         with:
@@ -51,6 +51,7 @@ jobs:
       - name: setup
         if: steps.cache-opam.outputs.cache-hit != 'true'
         run: |
+          opam init --disable-sandboxing --reinit
           opam install . --deps-only --with-test --with-doc
           opam install ocamlformat
           opam clean --switch-cleanup
