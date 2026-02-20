@@ -9,6 +9,7 @@
 *)
 
 open Ast
+open Ast.Value
 open Syntax
 
 exception Typing_error of Ast.location option * string
@@ -146,11 +147,9 @@ and typecheck_str_binop ((loc1, _e1) as expr1) ((loc2, _e2) as expr2) env =
 
 and typecheck_var ?(strict = false) var env =
   match var with
-  | VarName n -> begin
-    match Env.get_value n env with
-    | Ok v -> Ok (typecheck_value v)
-    | Error msg -> error None ("Env error: " ^ msg)
-  end
+  | VarName n ->
+    let* v = Env.get_value n env in
+    Ok (typecheck_value v)
   | VarTableField (pexp, ((l, _) as exp)) -> (
     let* t_pexp = typecheck_prefixexp pexp env in
     let* t_exp = typecheck_expr exp env in
@@ -178,7 +177,7 @@ and typecheck_expr expr env =
   | Eunop (Usharp, e) -> typecheck_sharp_unop e env
   | Eunop (Ulnot, e) -> typecheck_bitwise_unop e env
   | Ebinop (_, Band, _) | Ebinop (_, Bor, _) ->
-    Ok Tnil (* Nb. all types are possible! *)
+    Ok Tboolean (* Nb. all types are possible! *)
   | Ebinop (e1, ((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e2)
     ->
     typecheck_arith_binop op e1 e2 env

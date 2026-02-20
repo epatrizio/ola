@@ -80,3 +80,10 @@ tbl[4] = 44             -- new index: fun call
 print(tbl[2])           -- 222
 print(tbl.key_new)
 print(tbl[4])
+
+-- __name tests
+
+tbl = setmetatable(tbl, { __name = 42 })
+-- print(tbl)                                           -- table: uid (42 isn't a string)
+tbl = setmetatable(tbl, { __name = "custom_name" })
+-- print(tbl)                                           -- custom_name: uid

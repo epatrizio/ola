@@ -29,7 +29,7 @@ let help () =
   print_endline "Ctrl+D: end of file, repl cleanly exit";
   print_endline "Ctrl+C: repl forced exit"
 
-let rec loop (chunk : Ast.block) (env : Ast.value Env.t) =
+let rec loop (chunk : Ast.Value.block) (env : Ast.Value.t Env.t) =
   match prompt () with
   | Phelp ->
     help ();
@@ -55,6 +55,9 @@ let rec loop (chunk : Ast.block) (env : Ast.value Env.t) =
       loop chunk env
     | Typer.Typing_error (_loc, message) ->
       print_endline ("Typing error: " ^ message);
+      loop chunk env
+    | Evaluator.Evaluation_error (_loc, message) ->
+      print_endline ("Interpretation error: " ^ message);
       loop chunk env
     | Interpret.Interpretation_error (_loc, message) ->
       print_endline ("Interpretation error: " ^ message);

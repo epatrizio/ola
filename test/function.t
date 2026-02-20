@@ -26,9 +26,6 @@ basics functions:
   10
   10
   nil
-  120
-  610
-  nil
   print::
   arg
   print::

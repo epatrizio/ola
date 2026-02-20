@@ -64,86 +64,168 @@ type number =
   | Ninteger of int
   | Nfloat of float
 
-type value =
-  | Vnil of unit
-  | Vboolean of bool
-  | Vnumber of number
-  | Vstring of string
-  | Vvariadic of value list
-  | Vfunction of int32 * (parlist * block) * value Env.t
-    (* int32 = function unique id *)
-  | VfunctionStdLib of
-      int32 * (value list -> value Env.t -> value list * value Env.t)
-    (* int32 = stdlib function unique id *)
-  | VfunctionReturn of value list
-  | Vtable of int32 * (value, value) Table.t (* int32 = table unique id *)
+module rec Value : sig
+  type t =
+    | Vnil of unit
+    | Vboolean of bool
+    | Vnumber of number
+    | Vstring of string
+    | Vvariadic of t list
+    | Vfunction of int32 * (parlist * block) * t Env.t
+      (* int32 = function unique id *)
+    | VfunctionStdLib of int32 * (t list -> t Env.t -> t list * t Env.t)
+      (* int32 = stdlib function unique id *)
+    | VfunctionReturn of t list
+    | Vtable of LuaTable.t
 
-and expr = location * expr'
+  and expr = location * expr'
 
-and expr' =
-  | Evalue of value
-  | Eunop of unop * expr
-  | Ebinop of expr * binop * expr
-  | Evariadic
-  | Efunctiondef of (parlist * block)
-  | Eprefix of prefixexp
-  | Etableconstructor of field list
+  and expr' =
+    | Evalue of t
+    | Eunop of unop * expr
+    | Ebinop of expr * binop * expr
+    | Evariadic
+    | Efunctiondef of (parlist * block)
+    | Eprefix of prefixexp
+    | Etableconstructor of field list
 
-and prefixexp =
-  | PEvar of var
-  | PEfunctioncall of functioncall
-  | PEexp of expr
+  and prefixexp =
+    | PEvar of var
+    | PEfunctioncall of functioncall
+    | PEexp of expr
 
-and var =
-  | VarName of string
-  | VarTableField of prefixexp * expr
-(* | VarTableFieldName of prefixexp * string *)
-(* syntactic sugar: transform VarTableField in parser *)
+  and var =
+    | VarName of string
+    | VarTableField of prefixexp * expr
+  (* | VarTableFieldName of prefixexp * string *)
+  (* syntactic sugar: transform VarTableField in parser *)
 
-and args = Aexpl of expr list
-(* | Atable of field list *)
-(* syntactic sugar: transform Atable in parser *)
-(* | Astr of string *)
-(* syntactic sugar: transform Aexpl in parser *)
+  and args = Aexpl of expr list
+  (* | Atable of field list *)
+  (* syntactic sugar: transform Atable in parser *)
+  (* | Astr of string *)
+  (* syntactic sugar: transform Aexpl in parser *)
 
-and functioncall =
-  | FCpreargs of prefixexp * args
-  | FCprename of prefixexp * string * args
+  and functioncall =
+    | FCpreargs of prefixexp * args
+    | FCprename of prefixexp * string * args
 
-and parlist =
-  | PLlist of string list * bool
-  | PLvariadic
+  and parlist =
+    | PLlist of string list * bool
+    | PLvariadic
 
-and field =
-  | Fexp of expr
-  | Fname of string * expr
-  | Fcol of expr * expr
+  and field =
+    | Fexp of expr
+    | Fname of string * expr
+    | Fcol of expr * expr
 
-and stmt =
-  | Sempty
-  | Sassign of var list * expr list
-  | SassignLocal of (string * string option) list * expr list
-  | Sbreak
-  | Sreturn of expr list
-  | Slabel of string
-  | Sgoto of string
-  | Sblock of block
-  | Swhile of expr * block
-  | Srepeat of block * expr
-  | Sif of expr * block * (expr * block) list * block option
-  | Sfor of string * expr * expr * expr option * block
-  | Siterator of string list * expr list * block
-  (* | Sfunction of funcname * funcbody *)
-  (* syntactic sugar: transform Sassign in parser *)
-  (* | SfunctionLocal of name * funcbody *)
-  (* syntactic sugar: transform SassignLocal in parser *)
-  | SfunctionCall of functioncall
+  and stmt =
+    | Sempty
+    | Sassign of var list * expr list
+    | SassignLocal of (string * string option) list * expr list
+    | Sbreak
+    | Sreturn of expr list
+    | Slabel of string
+    | Sgoto of string
+    | Sblock of block
+    | Swhile of expr * block
+    | Srepeat of block * expr
+    | Sif of expr * block * (expr * block) list * block option
+    | Sfor of string * expr * expr * expr option * block
+    | Siterator of string list * expr list * block
+    (* | Sfunction of funcname * funcbody *)
+    (* syntactic sugar: transform Sassign in parser *)
+    | SfunctionLocal of string * (parlist * block)
+    | SfunctionCall of functioncall
 
-and block = stmt list
+  and block = stmt list
+
+  val int_key_opt : t -> int option
+
+  val key_of_string : string -> t
+
+  val string_of_val : t -> string option
+end = struct
+  type t =
+    | Vnil of unit
+    | Vboolean of bool
+    | Vnumber of number
+    | Vstring of string
+    | Vvariadic of t list
+    | Vfunction of int32 * (parlist * block) * t Env.t
+    | VfunctionStdLib of int32 * (t list -> t Env.t -> t list * t Env.t)
+    | VfunctionReturn of t list
+    | Vtable of LuaTable.t
+
+  and expr = location * expr'
+
+  and expr' =
+    | Evalue of t
+    | Eunop of unop * expr
+    | Ebinop of expr * binop * expr
+    | Evariadic
+    | Efunctiondef of (parlist * block)
+    | Eprefix of prefixexp
+    | Etableconstructor of field list
+
+  and prefixexp =
+    | PEvar of var
+    | PEfunctioncall of functioncall
+    | PEexp of expr
+
+  and var =
+    | VarName of string
+    | VarTableField of prefixexp * expr
+
+  and args = Aexpl of expr list
+
+  and functioncall =
+    | FCpreargs of prefixexp * args
+    | FCprename of prefixexp * string * args
+
+  and parlist =
+    | PLlist of string list * bool
+    | PLvariadic
+
+  and field =
+    | Fexp of expr
+    | Fname of string * expr
+    | Fcol of expr * expr
+
+  and stmt =
+    | Sempty
+    | Sassign of var list * expr list
+    | SassignLocal of (string * string option) list * expr list
+    | Sbreak
+    | Sreturn of expr list
+    | Slabel of string
+    | Sgoto of string
+    | Sblock of block
+    | Swhile of expr * block
+    | Srepeat of block * expr
+    | Sif of expr * block * (expr * block) list * block option
+    | Sfor of string * expr * expr * expr option * block
+    | Siterator of string list * expr list * block
+    | SfunctionLocal of string * (parlist * block)
+    | SfunctionCall of functioncall
+
+  and block = stmt list
+
+  let int_key_opt = function
+    | Vnumber (Ninteger i) when i > 0 -> Some i
+    | _ -> None
+
+  let key_of_string str = Vstring str
+
+  let string_of_val = function Vstring str -> Some str | _ -> None
+end
+
+and LuaTable : (Table.S with type kv = Value.t) = Table.Make (Value)
 
 (* pretty printer *)
 
 open Format
+open Value
 
 let pp_sep fmt () = fprintf fmt ", "
 
@@ -199,7 +281,7 @@ let rec print_value fmt value =
     fprintf fmt {|function: %a|} pp_print_int (Int32.to_int i)
   | VfunctionReturn vl | Vvariadic vl ->
     (pp_print_list ~pp_sep print_value) fmt vl
-  | Vtable (i, _flo) -> fprintf fmt {|table: %a|} pp_print_int (Int32.to_int i)
+  | Vtable tbl -> fprintf fmt {|%s|} (LuaTable.to_string tbl)
 
 let rec print_parlist fmt pl =
   match pl with
@@ -314,9 +396,8 @@ and print_stmt fmt stmt =
       lel print_block b
   (* | Sfunction (fname, fbody) ->
      fprintf fmt {|function %a%a|} print_funcname fname print_funcbody fbody *)
-  (* | SfunctionLocal (name, fbody) ->
-     fprintf fmt {|local function %a%a|} print_var (Name name)
-       print_funcbody fbody *)
+  | SfunctionLocal (name, fb) ->
+    fprintf fmt {|local function %a%a|} pp_print_string name print_funcbody fb
   | SfunctionCall fc -> print_functioncall fmt fc
 
 and print_block fmt block =

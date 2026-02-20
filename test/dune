@@ -5,6 +5,7 @@
   blocks.lua
   closure.lua
   error.lua
+  function_rec.lua
   function.lua
   goto.lua
   iterators.lua

@@ -1,6 +1,6 @@
 (* Static analysis *)
 
-open Ast
+open Ast.Value
 open Utils
 
 exception Static_analysis_error of Ast.location option * string
@@ -12,7 +12,7 @@ let error loc_opt message = raise (Static_analysis_error (loc_opt, message))
     If so, check if the use of Evariadic expression is permitted in the function body
   *)
 module Variadic_func : sig
-  val analyze : Ast.block -> (unit, 'a) result
+  val analyze : Ast.Value.block -> (unit, 'a) result
 end = struct
   let is_variadic_function parlist =
     match parlist with
@@ -74,6 +74,8 @@ end = struct
       let bel = check_list el analyze_expr in
       let bb = analyze_block b in
       bel || bb
+    | SfunctionLocal (_, (pl, b)) ->
+      analyze_functiondef pl b (Ast.empty_location ())
 
   and analyze_block block = check_list block analyze_stmt
 
@@ -88,7 +90,7 @@ end
 (* Nb. <close> attribute isn't support (other concept).
     https://www.lua.org/manual/5.4/manual.html#3.3.8 (To-be-closed Variables) *)
 module Const_var : sig
-  val analyze : Ast.block -> (unit, 'a) result
+  val analyze : Ast.Value.block -> (unit, 'a) result
 end = struct
   module SMap = Map.Make (String)
 
@@ -172,6 +174,9 @@ end = struct
       env
     | Siterator (_, el, b) ->
       let env = List.fold_left (fun env exp -> analyze_expr exp env) env el in
+      let _ = analyze_block b env in
+      env
+    | SfunctionLocal (_, (_, b)) ->
       let _ = analyze_block b env in
       env
 

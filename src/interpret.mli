@@ -6,15 +6,15 @@ type block_pointer =
 exception Interpretation_error of Ast.location option * string
 
 val interpret_fct :
-     Ast.value
-  -> Ast.expr list
-  -> Ast.value Env.t
-  -> ( Ast.value * Ast.value * Ast.value Env.t
+     Ast.Value.t
+  -> Ast.Value.expr list
+  -> Ast.Value.t Env.t
+  -> ( Ast.Value.t * Ast.Value.t * Ast.Value.t Env.t
      , Ast.location option * string )
      result
 
 val run :
      ?pt:block_pointer
-  -> Ast.block
-  -> Ast.value Env.t
-  -> (Ast.value Env.t, Ast.location option * string) result
+  -> Ast.Value.block
+  -> Ast.Value.t Env.t
+  -> (Ast.Value.t Env.t, Ast.location option * string) result

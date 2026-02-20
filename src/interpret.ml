@@ -1,4 +1,6 @@
 open Ast
+open Ast.Value
+open Evaluator
 open Syntax
 open Typer
 
@@ -9,20 +11,15 @@ type block_pointer =
   | Last
   | Label of string
 
-exception Goto_catch of block_pointer * value Env.t
+exception Goto_catch of block_pointer * Ast.Value.t Env.t
 
-exception Break_catch of value Env.t
+exception Break_catch of Ast.Value.t Env.t
 
-exception Return_catch of expr list * value Env.t
+exception Return_catch of expr list * Ast.Value.t Env.t
 
 exception Interpretation_error of location option * string
 
 let error loc_opt message = raise (Interpretation_error (loc_opt, message))
-
-let env_result_check res =
-  match res with
-  | Ok v -> Ok v
-  | Error message -> error None (Format.sprintf "Env error: %s" message)
 
 let rec block_from_pointer pt stmt_list =
   match (pt, stmt_list) with
@@ -33,254 +30,11 @@ let rec block_from_pointer pt stmt_list =
   | Label l, Slabel n :: tl when l = n -> tl
   | Label l, _stmt :: tl -> block_from_pointer (Label l) tl
 
-let number_of_string loc value =
-  match value with
-  | Vstring str -> begin
-    match int_of_string_opt str with
-    | Some i -> Vnumber (Ninteger i)
-    | None -> (
-      match float_of_string_opt str with
-      | Some f -> Vnumber (Nfloat f)
-      | None ->
-        error loc
-          (Format.sprintf "attempt to perform on a string (%s) value" str) )
-  end
-  | _ -> value
-
-let get_int_from_value loc value =
-  match value with
-  | Vnumber (Nfloat f) ->
-    if Float.is_integer f then Vnumber (Ninteger (int_of_float f))
-    else
-      error (Some loc)
-        ("number has no integer representation: " ^ string_of_float f)
-  | _ -> value
-
-let get_int_value_opt = function
-  | Vnumber (Ninteger i) when i > 0 -> Some i
-  | _ -> None
-
-let vint_of_vfloat = function
-  | Vnumber (Nfloat f) as v ->
-    if Float.is_integer f then Vnumber (Ninteger (int_of_float f)) else v
-  | v -> v
-
 let rec interpret_bbinop_expr binop expr1 expr2 env =
   let* v1, env = interpret_expr expr1 env in
-  match binop with
-  | Band -> begin
-    match v1 with
-    | Vboolean false | Vnil () -> Ok (v1, env)
-    | _ -> interpret_expr expr2 env (* short-circuit evaluation *)
-  end
-  | Bor -> begin
-    match v1 with
-    | v when v <> Vnil () && v <> Vboolean false -> Ok (v1, env)
-    | _ -> interpret_expr expr2 env (* short-circuit evaluation *)
-  end
-  | _ -> assert false (* call error *)
-
-and interpret_arith_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
-  env =
-  let* v1, env = interpret_expr expr1 env in
-  let* v2, env = interpret_expr expr2 env in
-  let v1 = number_of_string (Some loc1) v1 in
-  let v2 = number_of_string (Some loc2) v2 in
-  let* _ =
-    typecheck_expr
-      (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
-      env
-  in
-  match (v1, v2) with
-  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
-    match binop with
-    | Badd -> Ok (Vnumber (Ninteger (i1 + i2)), env)
-    | Bsub -> Ok (Vnumber (Ninteger (i1 - i2)), env)
-    | Bmul -> Ok (Vnumber (Ninteger (i1 * i2)), env)
-    | Bdiv -> Ok (Vnumber (Nfloat (float_of_int i1 /. float_of_int i2)), env)
-    | Bfldiv -> Ok (Vnumber (Ninteger (i1 / i2)), env (* todo div by 0 error *))
-    | Bmod -> Ok (Vnumber (Ninteger (i1 mod i2)), env)
-    | Bexp ->
-      Ok (Vnumber (Nfloat (Float.pow (float_of_int i1) (float_of_int i2))), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f), Vnumber (Ninteger i) -> begin
-    match binop with
-    | Badd -> Ok (Vnumber (Nfloat (f +. float_of_int i)), env)
-    | Bsub -> Ok (Vnumber (Nfloat (f -. float_of_int i)), env)
-    | Bmul -> Ok (Vnumber (Nfloat (f *. float_of_int i)), env)
-    | Bdiv -> Ok (Vnumber (Nfloat (f /. float_of_int i)), env)
-    | Bfldiv ->
-      let _, q = Float.modf (f /. float_of_int i) in
-      Ok (Vnumber (Nfloat q), env)
-    | Bmod ->
-      let fi = float_of_int i in
-      let _, q = Float.modf (f /. fi) in
-      Ok (Vnumber (Nfloat (f -. (fi *. q))), env)
-    | Bexp -> Ok (Vnumber (Nfloat (Float.pow f (float_of_int i))), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Ninteger i), Vnumber (Nfloat f) -> begin
-    match binop with
-    | Badd -> Ok (Vnumber (Nfloat (float_of_int i +. f)), env)
-    | Bsub -> Ok (Vnumber (Nfloat (float_of_int i -. f)), env)
-    | Bmul -> Ok (Vnumber (Nfloat (float_of_int i *. f)), env)
-    | Bdiv -> Ok (Vnumber (Nfloat (float_of_int i /. f)), env)
-    | Bfldiv ->
-      let _, q = Float.modf (float_of_int i /. f) in
-      Ok (Vnumber (Nfloat q), env)
-    | Bmod ->
-      let fi = float_of_int i in
-      let _, q = Float.modf (fi /. f) in
-      Ok (Vnumber (Nfloat (fi -. (f *. q))), env)
-    | Bexp -> Ok (Vnumber (Nfloat (Float.pow (float_of_int i) f)), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) -> begin
-    match binop with
-    | Badd -> Ok (Vnumber (Nfloat (f1 +. f2)), env)
-    | Bsub -> Ok (Vnumber (Nfloat (f1 -. f2)), env)
-    | Bmul -> Ok (Vnumber (Nfloat (f1 *. f2)), env)
-    | Bdiv -> Ok (Vnumber (Nfloat (f1 /. f2)), env)
-    | Bfldiv ->
-      let _, q = Float.modf (f1 /. f2) in
-      Ok (Vnumber (Nfloat q), env)
-    | Bmod ->
-      let _, q = Float.modf (f1 /. f2) in
-      Ok (Vnumber (Nfloat (f1 -. (f2 *. q))), env)
-    | Bexp -> Ok (Vnumber (Nfloat (Float.pow f1 f2)), env)
-    | _ -> assert false (* call error *)
-  end
-  | _ -> assert false (* typing error *)
-
-and interpret_bitwise_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2)
-  env =
-  let* v1, env = interpret_expr expr1 env in
-  let* v2, env = interpret_expr expr2 env in
-  let v1 = get_int_from_value loc1 v1 in
-  let v2 = get_int_from_value loc1 v2 in
-  let* _ =
-    typecheck_expr
-      (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
-      env
-  in
-  match (v1, v2) with
-  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
-    match binop with
-    | Bland -> Ok (Vnumber (Ninteger (i1 land i2)), env)
-    | Blor -> Ok (Vnumber (Ninteger (i1 lor i2)), env)
-    | Blxor -> Ok (Vnumber (Ninteger (i1 lxor i2)), env)
-    | Blsl -> Ok (Vnumber (Ninteger (i1 lsl i2)), env)
-    | Blsr -> Ok (Vnumber (Ninteger (i1 lsr i2)), env)
-    | _ -> assert false (* call error *)
-  end
-  | _ -> assert false (* typing error *)
-
-and interpret_rel_binop_expr binop ((loc1, _) as expr1) ((loc2, _) as expr2) env
-    =
-  let* v1, env = interpret_expr expr1 env in
-  let* v2, env = interpret_expr expr2 env in
-  let* _ =
-    typecheck_expr
-      (loc1, Ebinop ((loc1, Evalue v1), binop, (loc2, Evalue v2)))
-      env
-  in
-  match (v1, v2) with
-  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
-    match binop with
-    | Blt -> Ok (Vboolean (i1 < i2), env)
-    | Ble -> Ok (Vboolean (i1 <= i2), env)
-    | Bgt -> Ok (Vboolean (i1 > i2), env)
-    | Bge -> Ok (Vboolean (i1 >= i2), env)
-    | Beq -> Ok (Vboolean (i1 = i2), env)
-    | Bneq -> Ok (Vboolean (i1 != i2), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f), Vnumber (Ninteger i) -> begin
-    match binop with
-    | Blt -> Ok (Vboolean (f < float_of_int i), env)
-    | Ble -> Ok (Vboolean (f <= float_of_int i), env)
-    | Bgt -> Ok (Vboolean (f > float_of_int i), env)
-    | Bge -> Ok (Vboolean (f >= float_of_int i), env)
-    | Beq -> Ok (Vboolean (f = float_of_int i), env)
-    | Bneq -> Ok (Vboolean (f != float_of_int i), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Ninteger i), Vnumber (Nfloat f) -> begin
-    match binop with
-    | Blt -> Ok (Vboolean (float_of_int i < f), env)
-    | Ble -> Ok (Vboolean (float_of_int i <= f), env)
-    | Bgt -> Ok (Vboolean (float_of_int i > f), env)
-    | Bge -> Ok (Vboolean (float_of_int i >= f), env)
-    | Beq -> Ok (Vboolean (float_of_int i = f), env)
-    | Bneq -> Ok (Vboolean (float_of_int i != f), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) -> begin
-    match binop with
-    | Blt -> Ok (Vboolean (f1 < f2), env)
-    | Ble -> Ok (Vboolean (f1 <= f2), env)
-    | Bgt -> Ok (Vboolean (f1 > f2), env)
-    | Bge -> Ok (Vboolean (f1 >= f2), env)
-    | Beq -> Ok (Vboolean (f1 = f2), env)
-    | Bneq -> Ok (Vboolean (f1 != f2), env)
-    | _ -> assert false (* call error *)
-  end
-  | Vnil (), Vnil () -> begin
-    match binop with
-    | Beq -> Ok (Vboolean true, env)
-    | Bneq -> Ok (Vboolean false, env)
-    | _ -> assert false (* typing error *)
-  end
-  | Vboolean b1, Vboolean b2 -> begin
-    match binop with
-    | Beq -> Ok (Vboolean (b1 = b2), env)
-    | Bneq -> Ok (Vboolean (b1 <> b2), env)
-    | _ -> assert false (* typing error *)
-  end
-  | Vstring s1, Vstring s2 -> begin
-    match binop with
-    | Blt -> Ok (Vboolean (s1 < s2), env)
-    | Ble -> Ok (Vboolean (s1 <= s2), env)
-    | Bgt -> Ok (Vboolean (s1 > s2), env)
-    | Bge -> Ok (Vboolean (s1 >= s2), env)
-    | Beq -> Ok (Vboolean (s1 = s2), env)
-    | Bneq -> Ok (Vboolean (s1 <> s2), env)
-    | _ -> assert false
-  end
-  | v1, v2 when v1 <> v2 -> begin
-    match binop with
-    | Beq -> Ok (Vboolean false, env)
-    | Bneq -> Ok (Vboolean true, env)
-    | _ -> assert false (* typing error *)
-  end
-  | _ -> assert false
-(* todo: to be implemented (Ex. VfunctionReturn. Check Array.lua example) *)
-
-and interpret_str_binop_expr ((loc1, _) as expr1) ((loc2, _) as expr2) env =
-  let* v1, env = interpret_expr expr1 env in
-  let* v2, env = interpret_expr expr2 env in
-  let* _ =
-    typecheck_expr
-      (loc1, Ebinop ((loc1, Evalue v1), Bddot, (loc2, Evalue v2)))
-      env
-  in
-  begin match (v1, v2) with
-  | Vstring s1, Vstring s2 -> Ok (Vstring (s1 ^ s2), env)
-  | Vstring s, Vnumber (Ninteger i) -> Ok (Vstring (s ^ string_of_int i), env)
-  | Vstring s, Vnumber (Nfloat f) -> Ok (Vstring (s ^ string_of_float f), env)
-  | Vnumber (Ninteger i), Vstring s -> Ok (Vstring (string_of_int i ^ s), env)
-  | Vnumber (Nfloat f), Vstring s -> Ok (Vstring (string_of_float f ^ s), env)
-  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) ->
-    Ok (Vstring (string_of_int i1 ^ string_of_int i2), env)
-  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) ->
-    Ok (Vstring (string_of_float f1 ^ string_of_float f2), env)
-  | Vnumber (Ninteger i), Vnumber (Nfloat f) ->
-    Ok (Vstring (string_of_int i ^ string_of_float f), env)
-  | Vnumber (Nfloat f), Vnumber (Ninteger i) ->
-    Ok (Vstring (string_of_float f ^ string_of_int i), env)
-  | _ -> assert false (* typing error *)
-  end
+  match eval_bbinop binop v1 with
+  | Some v1 -> Ok (v1, env)
+  | None -> interpret_expr expr2 env
 
 and interpret_prefixexp pexp env =
   match pexp with
@@ -296,7 +50,7 @@ and interpret_prefixexp pexp env =
 and interpret_var v env =
   match v with
   | VarName n ->
-    let* v = env_result_check (Env.get_value n env) in
+    let* v = Env.get_value n env in
     Ok (v, env)
   | VarTableField (pexp, ((l, _) as exp)) -> (
     let* t, env = interpret_prefixexp pexp env in
@@ -304,25 +58,25 @@ and interpret_var v env =
     let* _ =
       typecheck_var (VarTableField (PEexp (l, Evalue t), (l, Evalue idx))) env
     in
-    let idx = vint_of_vfloat idx in
+    let idx = Eval_utils.integer_of_float_value idx in
     match t with
-    | VfunctionReturn (Vtable (_i, t) :: _) | Vtable (_i, t) -> begin
-      match Table.get get_int_value_opt idx t with
-      | None -> index_metamechanism idx (Vtable (_i, t)) env
+    | VfunctionReturn (Vtable t :: _) | Vtable t -> begin
+      match LuaTable.get idx t with
+      | None -> index_metamechanism idx (Vtable t) env
       | Some v -> Ok (v, env)
     end
     | _ -> Ok (Vnil (), env) )
 
 and index_metamechanism idx tbl env =
   match tbl with
-  | Vtable (_i, t) -> begin
-    match Table.get_metatable t with
+  | Vtable t -> begin
+    match LuaTable.get_metatable t with
     | Some mt -> begin
-      match Table.get (fun _ -> None) (Vstring "__index") mt with
+      match LuaTable.get (Vstring "__index") mt with
       | Some v -> begin
         match v with
-        | Vtable (_i, t) as tbl -> begin
-          match Table.get get_int_value_opt idx t with
+        | Vtable t as tbl -> begin
+          match LuaTable.get idx t with
           | None -> index_metamechanism idx tbl env
           | Some v -> Ok (v, env)
         end
@@ -342,35 +96,34 @@ and index_metamechanism idx tbl env =
   | _ -> assert false
 
 and newindex_metamechanism idx value tbl env =
-  let tbl_add i idx value t env =
-    let t = Table.add get_int_value_opt idx value t in
-    Ok (Vtable (i, t), env)
+  let tbl_add idx value t env =
+    let t = LuaTable.add idx value t in
+    Ok (Vtable t, env)
   in
   match tbl with
-  | Vtable (i, t) -> begin
-    match Table.get_metatable t with
+  | Vtable t -> begin
+    match LuaTable.get_metatable t with
     | Some mt -> begin
-      match Table.get (fun _ -> None) (Vstring "__newindex") mt with
+      match LuaTable.get (Vstring "__newindex") mt with
       | Some v -> begin
         match v with
-        | Vtable (_i, _t) -> assert false (* TODO *)
+        | Vtable _ -> assert false (* TODO *)
         | Vfunction (_i, _pb, _env) as f ->
-          if Table.key_exists get_int_value_opt idx t then
-            tbl_add i idx value t env
+          if LuaTable.key_exists idx t then tbl_add idx value t env
           else
             let arr = (empty_location (), Evalue tbl) in
             let key = (empty_location (), Evalue idx) in
             let value = (empty_location (), Evalue value) in
             let* _, _v, _env = interpret_fct f [ arr; key; value ] _env in
-            Ok (Vtable (i, t), env)
+            Ok (Vtable t, env)
         | _ ->
           error None
             "metatable.__newindex: attempt to index a non table or function \
              value"
       end
-      | None -> tbl_add i idx value t env
+      | None -> tbl_add idx value t env
     end
-    | None -> tbl_add i idx value t env
+    | None -> tbl_add idx value t env
   end
   | _ -> assert false
 
@@ -388,50 +141,38 @@ and interpret_field field env =
     Ok ((v1, v2), env)
 
 and tableconstructor tbl idx fl env =
-  let tbl_add_rec id v tbl idx fl env =
-    match id with
-    | Vnil () ->
-      let t = Table.add get_int_value_opt (Vnumber (Ninteger idx)) v tbl in
-      tableconstructor t (idx + 1) fl env
-    | v_idx ->
-      let t = Table.add get_int_value_opt v_idx v tbl in
-      tableconstructor t idx fl env
+  let field_handler ~is_last f env =
+    let add_field tbl v_idx v_val =
+      match v_idx with
+      | Vnil () ->
+        incr idx;
+        LuaTable.add (Vnumber (Ninteger !idx)) v_val tbl
+      | v_idx -> LuaTable.add v_idx v_val tbl
+    in
+    let* (v_idx, v_val), env = interpret_field f env in
+    match v_val with
+    | VfunctionReturn [] | Vvariadic [] ->
+      let tbl = add_field tbl v_idx (Vnil ()) in
+      Ok (tbl, env)
+    | VfunctionReturn (v :: vl) | Vvariadic (v :: vl) ->
+      let tbl =
+        if is_last then
+          List.fold_left (fun tbl v -> add_field tbl v_idx v) tbl (v :: vl)
+        else add_field tbl v_idx v
+      in
+      Ok (tbl, env)
+    | v_val ->
+      let tbl = add_field tbl v_idx v_val in
+      Ok (tbl, env)
   in
   match fl with
   | [] -> Ok (tbl, env)
   | [ f ] ->
-    let* (v_idx, v_val), env = interpret_field f env in
-    begin match v_val with
-    | VfunctionReturn vl | Vvariadic vl ->
-      let tbl, _i, env =
-        List.fold_left
-          (fun (t, id, ev) v ->
-            match v_idx with
-            | Vnil () ->
-              ( Table.add get_int_value_opt (Vnumber (Ninteger id)) v t
-              , id + 1
-              , ev )
-            | v_idx -> (Table.add get_int_value_opt v_idx v t, id, ev) )
-          (tbl, idx, env) vl
-      in
-      Ok (tbl, env)
-    | v -> begin
-      match v_idx with
-      | Vnil () ->
-        Ok (Table.add get_int_value_opt (Vnumber (Ninteger idx)) v tbl, env)
-      | v_idx -> Ok (Table.add get_int_value_opt v_idx v tbl, env)
-    end
-    end
+    let* tbl, env = field_handler ~is_last:true f env in
+    Ok (tbl, env)
   | f :: fl ->
-    let* (v_idx, v_val), env = interpret_field f env in
-    begin match v_val with
-    | VfunctionReturn vl | Vvariadic vl -> begin
-      match vl with
-      | [] -> tbl_add_rec v_idx (Vnil ()) tbl idx fl env
-      | v :: _vl -> tbl_add_rec v_idx v tbl idx fl env
-    end
-    | v -> tbl_add_rec v_idx v tbl idx fl env
-    end
+    let* tbl, env = field_handler ~is_last:false f env in
+    tableconstructor tbl idx fl env
 
 and interpret_expr (loc, expr) env =
   match expr with
@@ -440,58 +181,24 @@ and interpret_expr (loc, expr) env =
         | Vboolean _ | Vnumber _ | Vstring _ | Vvariadic _ | Vfunction _
         | VfunctionStdLib _ | VfunctionReturn _ | Vtable _ ) as v ) ->
     Ok (v, env)
-  | Eunop (Unot, ((l, _) as e)) ->
+  | Eunop (unop, e) ->
     let* v, env = interpret_expr e env in
-    let* _ = typecheck_expr (loc, Eunop (Unot, (l, Evalue v))) env in
-    begin match v with
-    | Vnil () -> Ok (Vboolean true, env)
-    | Vboolean b -> Ok (Vboolean (not b), env)
-    | _ -> Ok (Vboolean false, env)
-    end
-  | Eunop (Uminus, ((l, _) as e)) ->
-    let* v, env = interpret_expr e env in
-    let v = number_of_string (Some l) v in
-    let* _ = typecheck_expr (loc, Eunop (Uminus, (l, Evalue v))) env in
-    begin match v with
-    | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (-i)), env)
-    | Vnumber (Nfloat f) -> Ok (Vnumber (Nfloat (-.f)), env)
-    | _ -> assert false (* typing error *)
-    end
-  | Eunop (Usharp, ((l, _) as e)) ->
-    let* v, env = interpret_expr e env in
-    let* _ = typecheck_expr (loc, Eunop (Usharp, (l, Evalue v))) env in
-    begin match v with
-    | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
-    | Vtable (_i, t) ->
-      Ok (Vnumber (Ninteger (Table.border (fun v -> v = Vnil ()) t)), env)
-    | _ -> assert false (* typing error *)
-    end
-  | Eunop (Ulnot, ((l, _) as e)) ->
-    let* v, env = interpret_expr e env in
-    let v = get_int_from_value l v in
-    let* _ = typecheck_expr (loc, Eunop (Ulnot, (l, Evalue v))) env in
-    begin match v with
-    | Vnumber (Ninteger i) -> Ok (Vnumber (Ninteger (lnot i)), env)
-    | _ -> assert false (* typing error *)
-    end
+    eval_unop unop (loc, v) env
   | Ebinop (e1, ((Band | Bor) as op), e2) -> interpret_bbinop_expr op e1 e2 env
-  | Ebinop (e1, Bddot, e2) -> interpret_str_binop_expr e1 e2 env
-  | Ebinop (e1, ((Badd | Bsub | Bmul | Bdiv | Bfldiv | Bmod | Bexp) as op), e2)
-    ->
-    interpret_arith_binop_expr op e1 e2 env
-  | Ebinop (e1, ((Bland | Blor | Blxor | Blsl | Blsr) as op), e2) ->
-    interpret_bitwise_binop_expr op e1 e2 env
-  | Ebinop (e1, ((Blt | Ble | Bgt | Bge | Beq | Bneq) as op), e2) ->
-    interpret_rel_binop_expr op e1 e2 env
+  | Ebinop (e1, binop, e2) ->
+    let* v1, env = interpret_expr e1 env in
+    let* v2, env = interpret_expr e2 env in
+    eval_binop binop (loc, v1) (loc, v2) env
   | Evariadic ->
-    let* v = env_result_check (Env.get_value "vararg" env) in
+    let* v = Env.get_value "vararg" env in
     let* _ = typecheck_variadic v in
     Ok (v, env)
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
   | Etableconstructor fl ->
-    let* table, env = tableconstructor Table.empty 1 fl env in
-    Ok (Vtable (Random.bits32 (), table), env)
+    let idx = ref 0 in
+    let* table, env = tableconstructor LuaTable.empty idx fl env in
+    Ok (Vtable table, env)
 
 and set_var v value env =
   let rec var_of_prefixexp pexp env =
@@ -505,7 +212,7 @@ and set_var v value env =
     (* WIP *)
   in
   match v with
-  | VarName n -> env_result_check (Env.update_value n value env)
+  | VarName n -> Env.update_value n value env
   | VarTableField (pexp, ((l, _) as exp)) -> (
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
@@ -514,13 +221,13 @@ and set_var v value env =
         (VarTableField (PEexp (l, Evalue t), (l, Evalue idx)))
         env
     in
-    let idx = vint_of_vfloat idx in
+    let idx = Eval_utils.integer_of_float_value idx in
     match t with
-    | Vtable (i, t) as tbl ->
+    | Vtable t as tbl ->
       if value = Vnil () then
-        let t = Table.remove get_int_value_opt idx t in
+        let t = LuaTable.remove idx t in
         let v = var_of_prefixexp pexp env in
-        set_var v (Vtable (i, t)) env
+        set_var v (Vtable t) env
       else
         let* tbl, env = newindex_metamechanism idx value tbl env in
         let v = var_of_prefixexp pexp env in
@@ -536,79 +243,56 @@ and to_vall el env =
     (Ok ([], env))
     el
 
-and lists_assign vl vall env =
+and lists_assign ?(is_local = false) vl vall env =
+  let var_handler is_local var value env =
+    if is_local then
+      let name = match var with VarName name -> name | _ -> assert false in
+      Env.add_value name value env
+    else
+      let* () = set_var var value env in
+      Ok env
+  in
+  let assign_handler is_local var value vl tl env =
+    if is_local then
+      let* env = var_handler is_local var value env in
+      lists_assign ~is_local vl tl env
+    else
+      let* env = lists_assign ~is_local vl tl env in
+      var_handler is_local var value env
+  in
   begin match (vl, vall) with
-  | [], [] | [], _ -> Ok ()
+  | [], [] | [], _ -> Ok env
   | vl, [] ->
     List.fold_left
       (fun acc v ->
-        let () = Result.get_ok acc in
-        set_var v (Vnil ()) env )
-      (Ok ()) vl
+        let env = Result.get_ok acc in
+        var_handler is_local v (Vnil ()) env )
+      (Ok env) vl
   | v :: vl, [ (l, va) ] -> (
     match va with
     | VfunctionReturn vall | Vvariadic vall -> begin
       match vall with
-      | [] -> set_var v (Vnil ()) env
+      | [] -> var_handler is_local v (Vnil ()) env
       | va :: vall ->
         let vall = List.map (fun v -> (l, v)) vall in
-        let* () = lists_assign vl vall env in
-        set_var v va env
+        assign_handler is_local v va vl vall env
     end
-    | va ->
-      let* () = lists_assign vl [] env in
-      set_var v va env )
+    | Vfunction (_i, _bl, cl_env) as f ->
+      (* wip *)
+      if is_local then
+        let name = match v with VarName name -> name | _ -> assert false in
+        let* () = Env.update_value name f cl_env in
+        lists_assign ~is_local vl [] env
+      else assign_handler is_local v f vl [] env
+    | va -> assign_handler is_local v va vl [] env )
   | v :: vl, (_l, va) :: tl -> (
     match va with
     | VfunctionReturn vall | Vvariadic vall -> begin
       match vall with
-      | [] -> set_var v (Vnil ()) env
-      | va :: _vall ->
-        let* () = lists_assign vl tl env in
-        set_var v va env
+      | [] -> var_handler is_local v (Vnil ()) env (*set_var v (Vnil ()) env*)
+      | va :: _vall -> assign_handler is_local v va vl tl env
     end
-    | va ->
-      let* () = lists_assign vl tl env in
-      set_var v va env )
-  end
-
-and lists_lassign nal vall env =
-  begin match (nal, vall) with
-  | [], [] | [], _ -> Ok env
-  | nal, [] ->
-    List.fold_left
-      (fun acc (n, _on) ->
-        let e = Result.get_ok acc in
-        Env.add_value n (Vnil ()) e )
-      (Ok env) nal
-  | (n, _on) :: vl, [ (l, va) ] -> (
-    match va with
-    | VfunctionReturn vall | Vvariadic vall -> begin
-      match vall with
-      | [] -> Env.add_value n (Vnil ()) env
-      | va :: vall ->
-        let* env = Env.add_value n va env in
-        let vall = List.map (fun v -> (l, v)) vall in
-        lists_lassign vl vall env
-    end
-    | Vfunction (_i, _bl, cl_env) as f ->
-      let* () = env_result_check (Env.update_value n f cl_env) in
-      lists_lassign vl [] env
-    | va ->
-      let* env = Env.add_value n va env in
-      lists_lassign vl [] env )
-  | (n, _on) :: vl, (_l, va) :: tl -> (
-    match va with
-    | VfunctionReturn vall | Vvariadic vall -> begin
-      match vall with
-      | [] -> Env.add_value n (Vnil ()) env
-      | va :: _vall ->
-        let* env = Env.add_value n va env in
-        lists_lassign vl tl env
-    end
-    | va ->
-      let* env = Env.add_value n va env in
-      lists_lassign vl tl env )
+    | va -> assign_handler is_local v va vl tl env )
   end
 
 and lists_args pl vall env =
@@ -621,16 +305,16 @@ and lists_args pl vall env =
   | PLvariadic ->
     let env = Env.add_local_force "vararg" (vall_to_vvariadic vall 0) env in
     Ok env
-  | PLlist (nl, true) ->
-    let cut_at_n = List.length nl in
+  | PLlist (nl, is_variadic) ->
     let env =
-      Env.add_local_force "vararg" (vall_to_vvariadic vall cut_at_n) env
+      if is_variadic then
+        Env.add_local_force "vararg"
+          (vall_to_vvariadic vall (List.length nl))
+          env
+      else env
     in
-    let vl = List.map (fun n -> (n, None)) nl in
-    lists_lassign vl vall env
-  | PLlist (nl, false) ->
-    let vl = List.map (fun n -> (n, None)) nl in
-    lists_lassign vl vall env
+    let vl = List.map (fun n -> VarName n) nl in
+    lists_assign ~is_local:true vl vall env
 
 and interpret_fct value el env =
   let* _ = typecheck_function value in
@@ -683,17 +367,17 @@ and interpret_fct value el env =
 and interpret_functioncall fc env =
   match fc with
   | FCpreargs (PEvar (VarName v), Aexpl el) ->
-    let* value = env_result_check (Env.get_value v env) in
+    let* value = Env.get_value v env in
     let* closure, return, env = interpret_fct value el env in
-    let* () = env_result_check (Env.update_value v closure env) in
+    let* () = Env.update_value v closure env in
     Ok (return, env)
   | FCpreargs (PEvar (VarTableField (pexp, exp)), Aexpl el) ->
     let* t, env = interpret_prefixexp pexp env in
     let* idx, env = interpret_expr exp env in
-    let idx = vint_of_vfloat idx in
+    let idx = Eval_utils.integer_of_float_value idx in
     begin match t with
-    | Vtable (_i, tbl) -> begin
-      match Table.get get_int_value_opt idx tbl with
+    | Vtable t -> begin
+      match LuaTable.get idx t with
       | None -> assert false
       | Some value ->
         let* _closure, return, env = interpret_fct value el env in
@@ -710,12 +394,12 @@ and interpret_functioncall fc env =
     let* _closure, return, env = interpret_fct value el env in
     Ok (return, env)
   | FCprename ((PEvar (VarName v) as var), name, Aexpl el) ->
-    let* value = env_result_check (Env.get_value v env) in
+    let* value = Env.get_value v env in
     begin match value with
-    | Vtable (_i, t) as tbl ->
+    | Vtable t as tbl ->
       let name = Vstring name in
       let* value, env =
-        match Table.get get_int_value_opt name t with
+        match LuaTable.get name t with
         | None -> index_metamechanism name tbl env
         | Some value -> Ok (value, env)
       in
@@ -733,11 +417,11 @@ and interpret_stmt stmt env : _ result =
   | Sempty -> Ok env
   | Sassign (vl, el) ->
     let* vall, env = to_vall el env in
-    let* () = lists_assign vl vall env in
-    Ok env
+    lists_assign vl vall env
   | SassignLocal (nal, el) ->
+    let vl = List.map (fun (name, _) -> VarName name) nal in
     let* vall, env = to_vall el env in
-    lists_lassign nal vall env
+    lists_assign ~is_local:true vl vall env
   | Sbreak -> raise (Break_catch env)
   | Sreturn el -> raise (Return_catch (el, env))
   | Slabel _ -> Ok env
@@ -792,7 +476,7 @@ and interpret_stmt stmt env : _ result =
   | Sfor (n, e1, e2, oe, b) ->
     let init_val ((l, _e) as expr) env =
       let* v, env = interpret_expr expr env in
-      let v = number_of_string (Some l) v in
+      let v = Eval_utils.number_of_string (Some l) v in
       let* _ = typecheck_for_ctrl_expr (l, Evalue v) env in
       Ok (v, env)
     in
@@ -937,7 +621,10 @@ and interpret_stmt stmt env : _ result =
     | _ -> assert false
     end
   (* | Sfunction (_n, _fb) -> env *)
-  (* | SfunctionLocal (_n, _fb) -> env *)
+  | SfunctionLocal (n, fb) ->
+    let func_value = Vfunction (Random.bits32 (), fb, env) in
+    let* () = Env.update_value n func_value env in
+    Ok env
   | SfunctionCall fc ->
     let* _v, env = interpret_functioncall fc env in
     Ok env

@@ -7,7 +7,7 @@ Linked list data structure
 local node = {}
 
 function node.create(value)
-  return { value = value, next = {} }
+  return { value = value, next = nil }
 end
 
 local linked_list = {}
@@ -16,7 +16,7 @@ function linked_list.create()
   return nil
 end
 
-function linked_list.is_empy(ll)
+function linked_list.is_empty(ll)
   return ll == nil
 end
 
@@ -27,7 +27,7 @@ function linked_list.add(value, ll)
 end
 
 function linked_list.len(ll)
-  if linked_list.is_empy(ll) then
+  if linked_list.is_empty(ll) then
     return 0
   else
     return 1 + linked_list.len(ll.next)
@@ -35,7 +35,7 @@ function linked_list.len(ll)
 end
 
 function linked_list.print(ll)
-  if linked_list.is_empy(ll) then
+  if linked_list.is_empty(ll) then
     return
   else
     print(ll.value)
@@ -60,8 +60,8 @@ function stack.create()
   return linked_list.create()
 end
 
-function stack.is_empy(st)
-  return linked_list.is_empy(st)
+function stack.is_empty(st)
+  return linked_list.is_empty(st)
 end
 
 function stack.len(st)
@@ -77,7 +77,7 @@ function stack.push(value, st)
 end
 
 function stack.top(st)
-  if stack.is_empy(st) then
+  if stack.is_empty(st) then
     return nil
   else
     return st.value
@@ -85,7 +85,7 @@ function stack.top(st)
 end
 
 function stack.pop(st)
-  if stack.is_empy(st) then
+  if stack.is_empty(st) then
     return nil
   else
     return st.next

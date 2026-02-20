@@ -136,5 +136,27 @@ print(i)     -- 4
 print(a[3])  -- 20
 print(a[4])  -- nil
 
+-- exchanges the values of x and y
+x1, y1 = 24, 42
+print(x1, y1)           -- 24, 42
+x1, y1 = y1, x1
+print(x1, y1)           -- 42, 24
+
+local x2, y2 = 24, 42
+print(x2, y2)           -- 24, 42
+x2, y2 = y2, x2
+print(x2, y2)           -- 42, 24
+
+-- cyclically permutes the values of x, y, z
+x1, y1, z1 = 21, 42, 84
+print(x1, y1, z1)        -- 21, 42, 84
+x1, y1, z1 = y1, z1, x1
+print(x1, y1, z1)        -- 42, 84, 21
+
+local x2, y2, z2 = 21, 42, 84
+print(x2, y2, z2)        -- 21, 42, 84
+x2, y2, z2 = y2, z2, x2
+print(x2, y2, z2)        -- 42, 84, 21
+
 -- a[nil] = 42
 a[idx] = 42    -- error: table index is nil

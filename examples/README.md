@@ -39,6 +39,7 @@ With Lua Tables (associated with meta-mechanisms), it's possible to easly implem
 For example, [Sets end Bags](https://www.lua.org/pil/11.5.html) are explained in the official documentation.
 Here are some custom implemented examples (experimental, incomplete, but informative - I hope so :-):
   - Array: `dune exec ola -- ./examples/data_structures/array.lua`
+  - Binary Search Tree (BST): `dune exec ola -- ./examples/data_structures/binary_search_tree.lua`
   - Linked list and Stack (as linked list application example): `dune exec ola -- ./examples/data_structures/linked_list.lua`
   - Queue: `lua ./examples/data_structures/queue.lua`
   - Set: `dune exec ola -- ./examples/data_structures/set.lua`

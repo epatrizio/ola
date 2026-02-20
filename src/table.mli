@@ -1,33 +1,93 @@
-exception Table_error of string
+module type KeyType = sig
+  type t
 
-type 'a key =
-  | Ikey of int
-  | Kkey of 'a
+  val int_key_opt : t -> int option
 
-type ('a, 'b) t
+  val key_of_string : string -> t
 
-val empty : ('a, 'b) t
+  val string_of_val : t -> string option
+end
 
-val is_empty : ('a, 'b) t -> bool
+module type S = sig
+  exception Table_error of string
 
-val add : ('a -> int option) -> 'a -> 'b -> ('a, 'b) t -> ('a, 'b) t
+  val error : string -> 'a
 
-val remove : ('a -> int option) -> 'a -> ('a, 'b) t -> ('a, 'b) t
+  type kv
 
-val key_exists : ('a -> int option) -> 'a -> ('a, 'b) t -> bool
+  type key =
+    | Ikey of int
+    | Kkey of kv
 
-val get : ('a -> int option) -> 'a -> ('a, 'b) t -> 'b option
+  type t
 
-val border : ('b -> bool) -> ('a, 'b) t -> int
+  val empty : t
 
-val length : ('a, 'b) t -> int
+  val is_empty : t -> bool
 
-val next : 'a key option -> ('a, 'b) t -> ('a key * 'b) option
+  val add : kv -> kv -> t -> t
 
-val inext : ('b -> bool) -> int -> ('a, 'b) t -> (int * 'b) option
+  val remove : kv -> t -> t
 
-val get_metatable : ('a, 'b) t -> ('a, 'b) t option
+  val key_exists : kv -> t -> bool
 
-val set_metatable : ('a, 'b) t -> ('a, 'b) t -> ('a, 'b) t
+  val get : kv -> t -> kv option
 
-val remove_metatable : ('a, 'b) t -> ('a, 'b) t
+  val border : (kv -> bool) -> t -> int
+
+  val length : t -> int
+
+  val next : kv option -> t -> (key * kv) option
+
+  val inext : (kv -> bool) -> int -> t -> (int * kv) option
+
+  val get_metatable : t -> t option
+
+  val set_metatable : t -> t -> t
+
+  val remove_metatable : t -> t
+
+  val to_string : t -> string
+end
+
+module Make : functor (Key : KeyType) -> sig
+  exception Table_error of string
+
+  val error : string -> 'a
+
+  type kv = Key.t
+
+  type key =
+    | Ikey of int
+    | Kkey of kv
+
+  type t
+
+  val empty : t
+
+  val is_empty : t -> bool
+
+  val add : kv -> kv -> t -> t
+
+  val remove : kv -> t -> t
+
+  val key_exists : kv -> t -> bool
+
+  val get : kv -> t -> kv option
+
+  val border : (kv -> bool) -> t -> int
+
+  val length : t -> int
+
+  val next : kv option -> t -> (key * kv) option
+
+  val inext : (kv -> bool) -> int -> t -> (int * kv) option
+
+  val get_metatable : t -> t option
+
+  val set_metatable : t -> t -> t
+
+  val remove_metatable : t -> t
+
+  val to_string : t -> string
+end

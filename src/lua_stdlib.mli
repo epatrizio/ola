@@ -1,1 +1,1 @@
-val load : Ast.value Env.t -> (Ast.value Env.t, 'a) result
+val load : Ast.Value.t Env.t -> (Ast.Value.t Env.t, 'a) result
