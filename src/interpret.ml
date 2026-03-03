@@ -48,6 +48,11 @@ and interpret_prefixexp pexp env =
   | PEfunctioncall fc -> interpret_functioncall fc env
 
 and interpret_var v env =
+  let value_from_table idx tbl env =
+    match LuaTable.get idx tbl with
+    | None -> index_metamechanism idx (Vtable tbl) env
+    | Some v -> Ok (v, env)
+  in
   match v with
   | VarName n ->
     let* v = Env.get_value n env in
@@ -60,11 +65,13 @@ and interpret_var v env =
     in
     let idx = Eval_utils.integer_of_float_value idx in
     match t with
-    | VfunctionReturn (Vtable t :: _) | Vtable t -> begin
-      match LuaTable.get idx t with
-      | None -> index_metamechanism idx (Vtable t) env
-      | Some v -> Ok (v, env)
-    end
+    | VfunctionReturn (Vtable t :: _) | Vtable t -> value_from_table idx t env
+    | Vref (VarName n) ->
+      let* v = Env.get_value n env in
+      begin match v with
+      | Vtable t -> value_from_table idx t env
+      | _ -> assert false
+      end
     | _ -> Ok (Vnil (), env) )
 
 and index_metamechanism idx tbl env =
@@ -243,7 +250,7 @@ and set_var v value env =
           value env
       | _ -> assert false
       end
-    (* | Vref (VarTableField _) -> assert false WIP: TODO ? *)
+    | Vref (VarTableField _) -> assert false (* WIP: TODO ? *)
     | _ -> assert false (* typing error *) )
 
 and to_vall ?(ref = false) el env =
@@ -257,7 +264,8 @@ and to_vall ?(ref = false) el env =
       if ref then
         let _, exp' = exp in
         match exp' with
-        | Eprefix (PEvar v) ->
+        | Eprefix (PEvar (VarName n)) ->
+          let v = VarName n in
           let* t = typecheck_var v env in
           if t = Ttable then Ok (vl @ [ (l, Vref v) ], e) else interpret ()
         | _ -> interpret ()
@@ -343,8 +351,7 @@ and interpret_fct value el env =
   match value with
   | Vfunction (i, (pl, b), cl_env) as closure -> begin
     try
-      let* vall, env = to_vall el env in
-      (* WIP: let* vall, env = to_vall ~ref:true el env in *)
+      let* vall, env = to_vall ~ref:true el env in
       let* cl_env = lists_args pl vall cl_env in
       let* cl_env = interpret_block b cl_env in
       let closure = Vfunction (i, (pl, b), cl_env) in
@@ -366,8 +373,7 @@ and interpret_fct value el env =
       end
   end
   | VfunctionStdLib (i, fct) ->
-    (* WIP: ~ref:true ? *)
-    let* vall, env = to_vall el env in
+    let* vall, env = to_vall ~ref:true el env in
     let vall = List.map (fun (_l, v) -> v) vall in
     begin try
       let ret, env = fct vall env in
