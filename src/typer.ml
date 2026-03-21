@@ -63,8 +63,7 @@ and typecheck_arith_unop ((loc, _e) as expr) env =
 and typecheck_sharp_unop ((loc, _e) as expr) env =
   let* t = typecheck_expr expr env in
   match t with
-  | Tstring -> Ok (Tnumber Tinteger)
-  | Ttable -> Ok (Tnumber Tinteger)
+  | Tstring | Ttable | Tref Ttable -> Ok (Tnumber Tinteger)
   | Tnil -> error (Some loc) "attempt to get length of a nil value"
   | Tboolean -> error (Some loc) "attempt to get length of a boolean value"
   | Tnumber _ -> error (Some loc) "attempt to get length of a number value"

@@ -68,6 +68,13 @@ let eval_unop unop (loc, v) env =
     | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
     | Vtable t ->
       Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
+    | Vref (VarName n) ->
+      let* vr = Env.get_value n env in
+      begin match vr with
+      | Vtable t ->
+        Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
+      | _ -> assert false
+      end
     | _ -> assert false (* typing error *)
     end
   | Ulnot ->

@@ -5,6 +5,11 @@ function - pass by ref args:
   stdlib loading ...
   scope analysis ...
   interprete ...
-  0
+  1
   4242
+  42
+  2
+  4242
+  42
+  3
   42

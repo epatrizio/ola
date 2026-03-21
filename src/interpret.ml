@@ -92,6 +92,16 @@ and index_metamechanism idx tbl env =
           let key = (empty_location (), Evalue idx) in
           let* _, v, _env = interpret_fct f [ arr; key ] _env in
           Ok (v, env)
+        | Vref (VarName n) ->
+          let* v = Env.get_value n env in
+          begin match v with
+          | Vtable t as tbl -> begin
+            match LuaTable.get idx t with
+            | None -> index_metamechanism idx tbl env
+            | Some v -> Ok (v, env)
+          end
+          | _ -> assert false
+          end
         | _ ->
           error None
             "metatable.__index: attempt to index a non table or function value"
@@ -168,6 +178,14 @@ and tableconstructor tbl idx fl env =
         else add_field tbl v_idx v
       in
       Ok (tbl, env)
+    | Vref (VarName n) ->
+      let* vr = Env.get_value n env in
+      begin match vr with
+      | Vtable _ as t ->
+        let tbl = add_field tbl v_idx t in
+        Ok (tbl, env)
+      | _ -> assert false
+      end
     | v_val ->
       let tbl = add_field tbl v_idx v_val in
       Ok (tbl, env)
@@ -259,7 +277,11 @@ and to_vall ?(ref = false) el env =
       let vl, e = Result.get_ok acc in
       let interpret () =
         let* v, e = interpret_expr exp e in
-        Ok (vl @ [ (l, v) ], e)
+        match v with
+        | Vref vr ->
+          let* v, e = interpret_var vr env in
+          Ok (vl @ [ (l, v) ], e)
+        | _ -> Ok (vl @ [ (l, v) ], e)
       in
       if ref then
         let _, exp' = exp in
@@ -267,7 +289,11 @@ and to_vall ?(ref = false) el env =
         | Eprefix (PEvar (VarName n)) ->
           let v = VarName n in
           let* t = typecheck_var v env in
-          if t = Ttable then Ok (vl @ [ (l, Vref v) ], e) else interpret ()
+          begin match t with
+          (* | Tref Ttable -> assert false *)
+          | Ttable -> Ok (vl @ [ (l, Vref v) ], e)
+          | _ -> interpret ()
+          end
         | _ -> interpret ()
       else interpret () )
     (Ok ([], env))
@@ -348,19 +374,59 @@ and lists_args pl vall env =
 
 and interpret_fct value el env =
   let* _ = typecheck_function value in
+  let* vall, env = to_vall ~ref:true el env in
   match value with
   | Vfunction (i, (pl, b), cl_env) as closure -> begin
     try
-      let* vall, env = to_vall ~ref:true el env in
+      (* WIP: refacto - see lua_stdlib_basic env_get_table_value *)
+      List.iter
+        (fun (_, v) ->
+          match v with
+          | Vref (VarName n) -> begin
+            match Env.get_value n env with
+            | Ok v -> begin
+              match Env.update_value n v cl_env with
+              | Ok () -> ()
+              | Error _ -> assert false
+            end
+            | Error _ -> assert false
+          end
+          | _ -> () )
+        vall;
       let* cl_env = lists_args pl vall cl_env in
       let* cl_env = interpret_block b cl_env in
       let closure = Vfunction (i, (pl, b), cl_env) in
+      (* WIP *)
+      List.iter
+        (fun (_, v) ->
+          match v with
+          | Vref (VarName n) -> begin
+            match Env.get_value n cl_env with
+            | Ok v -> begin
+              match Env.update_value n v env with
+              | Ok () -> ()
+              | Error _ -> assert false
+            end
+            | Error _ -> assert false
+          end
+          | _ -> () )
+        vall;
+
       Ok (closure, VfunctionReturn [], env)
     with Return_catch (el, cl_env) ->
       begin match el with
       | [] -> Ok (closure, VfunctionReturn [], env)
       | [ e ] ->
         let* v, cl_env = interpret_expr e cl_env in
+        let v =
+          match v with
+          | Vref var -> begin
+            match interpret_var var cl_env with
+            | Ok (v, _) -> v
+            | Error _ -> assert false
+          end
+          | _ -> v
+        in
         let closure = Vfunction (i, (pl, b), cl_env) in
         (* shortcut: directly consider it's a value instead of VfunctionReturn [ v ] *)
         (* Nb. VfunctionReturn [] != Vnil () *)
@@ -373,7 +439,6 @@ and interpret_fct value el env =
       end
   end
   | VfunctionStdLib (i, fct) ->
-    let* vall, env = to_vall ~ref:true el env in
     let vall = List.map (fun (_l, v) -> v) vall in
     begin try
       let ret, env = fct vall env in
@@ -413,6 +478,18 @@ and interpret_functioncall fc env =
         let* _closure, return, env = interpret_fct value el env in
         Ok (return, env)
     end
+    | Vref (VarName n) ->
+      let* v = Env.get_value n env in
+      begin match v with
+      | Vtable t -> begin
+        match LuaTable.get idx t with
+        | None -> assert false
+        | Some value ->
+          let* _closure, return, env = interpret_fct value el env in
+          Ok (return, env)
+      end
+      | _ -> assert false
+      end
     | _ -> assert false (* typing error *)
     end
   | FCpreargs (PEexp e, Aexpl el) ->

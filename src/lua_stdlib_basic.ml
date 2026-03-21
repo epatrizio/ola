@@ -3,6 +3,15 @@ open Ast.Value
 
 let () = Random.self_init ()
 
+let env_get_table_value name env =
+  match Env.get_value name env with
+  | Ok v -> begin
+    match v with
+    | Vtable _ -> v
+    | _ -> Lua_stdlib_common.error "Lua_stdlib_basic.error: env_get_table_value"
+  end
+  | Error (_, msg) -> Lua_stdlib_common.error msg
+
 let rec tostring_value v env =
   match v with
   | Vnil () -> ("nil", env)
@@ -58,7 +67,7 @@ let asert v env =
   end;
   ([ Vnil () ], env)
 
-let next v env =
+let rec next v env =
   try
     match v with
     | [ Vtable tbl ] | [ Vtable tbl; Vnil () ] -> begin
@@ -73,18 +82,27 @@ let next v env =
       | Some (LuaTable.Kkey k, v) -> ([ k; v ], env)
       | None -> ([ Vnil () ], env)
     end
+    | [ Vref (VarName n) ] ->
+      let vt = env_get_table_value n env in
+      next [ vt ] env
+    | [ Vref (VarName n); v ] ->
+      let vt = env_get_table_value n env in
+      next [ vt; v ] env
     | _ -> assert false
   with LuaTable.Table_error msg -> Lua_stdlib_common.error msg
 
-let pairs v env =
+let rec pairs v env =
   match v with
   | [ Vtable tbl ] ->
     ([ VfunctionStdLib (Random.bits32 (), next); Vtable tbl; Vnil () ], env)
+  | [ Vref (VarName n) ] ->
+    let vt = env_get_table_value n env in
+    pairs [ vt ] env
   | _ ->
     Lua_stdlib_common.typing_error
       "bad argument #1 to 'for iterator' (table expected)"
 
-let inext v env =
+let rec inext v env =
   match v with
   | [ Vtable tbl ] | [ Vtable tbl; Vnil () ] -> begin
     match LuaTable.inext (fun v -> v = Vnil ()) 0 tbl with
@@ -96,12 +114,21 @@ let inext v env =
     | Some (i, v) -> ([ Vnumber (Ninteger i); v ], env)
     | None -> ([ Vnil () ], env)
   end
+  | [ Vref (VarName n) ] ->
+    let vt = env_get_table_value n env in
+    inext [ vt ] env
+  | [ Vref (VarName n); v ] ->
+    let vt = env_get_table_value n env in
+    inext [ vt; v ] env
   | _ -> assert false
 
-let ipairs v env =
+let rec ipairs v env =
   match v with
   | [ Vtable tbl ] ->
     ([ VfunctionStdLib (Random.bits32 (), inext); Vtable tbl; Vnil () ], env)
+  | [ Vref (VarName n) ] ->
+    let vt = env_get_table_value n env in
+    ipairs [ vt ] env
   | _ ->
     Lua_stdlib_common.typing_error
       "bad argument #1 to 'for iterator' (table expected)"
@@ -118,7 +145,7 @@ let print v env =
   Format.fprintf Format.std_formatter "@.";
   ([ Vnil () ], env)
 
-let typ v env =
+let rec typ v env =
   match v with
   | [ Vnil () ] -> ([ Vstring "nil" ], env)
   | [ Vboolean _ ] -> ([ Vstring "boolean" ], env)
@@ -126,6 +153,9 @@ let typ v env =
   | [ Vstring _ ] -> ([ Vstring "string" ], env)
   | [ Vtable _ ] -> ([ Vstring "table" ], env)
   | [ Vfunction _ ] | [ VfunctionStdLib _ ] -> ([ Vstring "function" ], env)
+  | [ Vref (VarName n) ] ->
+    let vt = env_get_table_value n env in
+    typ [ vt ] env
   | [ v ] ->
     Ast.print_value Format.err_formatter v;
     assert false
@@ -138,7 +168,7 @@ let tostring v env =
     ([ Vstring s ], env)
   | _ -> assert false
 
-let getmetatable v env =
+let rec getmetatable v env =
   match v with
   | [ Vtable tbl ] -> begin
     match LuaTable.get_metatable tbl with
@@ -149,10 +179,13 @@ let getmetatable v env =
     end
     | None -> ([ Vnil () ], env)
   end
+  | [ Vref (VarName n) ] ->
+    let vt = env_get_table_value n env in
+    getmetatable [ vt ] env
   | _ -> ([ Vnil () ], env)
 
 (* TODO: memo, env must be updated. For now, it's impossible! *)
-let setmetatable v env =
+let rec setmetatable v env =
   match v with
   | Vtable tbl :: Vnil () :: _tl ->
     let tbl = LuaTable.remove_metatable tbl in
@@ -170,6 +203,19 @@ let setmetatable v env =
       let tbl = LuaTable.set_metatable meta_tbl tbl in
       ([ Vtable tbl ], env)
   end
+  | Vref (VarName n) :: Vnil () :: _tl ->
+    let vt = env_get_table_value n env in
+    setmetatable [ vt; Vnil () ] env
+  | Vref (VarName n) :: Vtable meta_tbl :: _tl ->
+    let vt = env_get_table_value n env in
+    setmetatable [ vt; Vtable meta_tbl ] env
+  | Vtable tbl :: Vref (VarName n) :: _tl ->
+    let vt = env_get_table_value n env in
+    setmetatable [ Vtable tbl; vt ] env
+  | Vref (VarName n_tbl) :: Vref (VarName n_meta_tbl) :: _tl ->
+    let vtbl = env_get_table_value n_tbl env in
+    let vmtbl = env_get_table_value n_meta_tbl env in
+    setmetatable [ vtbl; vmtbl ] env
   | Vtable _ :: _tl ->
     Lua_stdlib_common.typing_error
       "bad argument #2 to 'setmetatable' (nil or table expected)"
