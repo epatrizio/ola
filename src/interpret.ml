@@ -369,45 +369,32 @@ and lists_args pl vall env =
     lists_assign ~is_local:true vl vall env
 
 and interpret_fct value el env =
+  let update_env vall env_source env_target =
+    List.iter
+      (fun (l, v) ->
+        match v with
+        | Vref (VarName n) -> begin
+          match Ast_utils.get_table_value n env_source with
+          | Ok v -> begin
+            match Env.update_value n v env_target with
+            | Ok () -> ()
+            | Error (l, msg) -> error l msg
+          end
+          | Error () -> error (Some l) "interpret_fct.update_env error"
+        end
+        | _ -> () )
+      vall
+  in
   let* _ = typecheck_function value in
   let* vall, env = to_vall ~ref:true el env in
   match value with
   | Vfunction (i, (pl, b), cl_env) as closure -> begin
     try
-      (* WIP: refacto - see lua_stdlib_basic env_get_table_value *)
-      List.iter
-        (fun (_, v) ->
-          match v with
-          | Vref (VarName n) -> begin
-            match Env.get_value n env with
-            | Ok v -> begin
-              match Env.update_value n v cl_env with
-              | Ok () -> ()
-              | Error _ -> assert false
-            end
-            | Error _ -> assert false
-          end
-          | _ -> () )
-        vall;
+      let () = update_env vall env cl_env in
       let* cl_env = lists_args pl vall cl_env in
       let* cl_env = interpret_block b cl_env in
       let closure = Vfunction (i, (pl, b), cl_env) in
-      (* WIP *)
-      List.iter
-        (fun (_, v) ->
-          match v with
-          | Vref (VarName n) -> begin
-            match Env.get_value n cl_env with
-            | Ok v -> begin
-              match Env.update_value n v env with
-              | Ok () -> ()
-              | Error _ -> assert false
-            end
-            | Error _ -> assert false
-          end
-          | _ -> () )
-        vall;
-
+      let () = update_env vall cl_env env in
       Ok (closure, VfunctionReturn [], env)
     with Return_catch (el, cl_env) ->
       begin match el with
