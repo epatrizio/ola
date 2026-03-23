@@ -66,12 +66,11 @@ and interpret_var v env =
     let idx = Eval_utils.integer_of_float_value idx in
     match t with
     | VfunctionReturn (Vtable t :: _) | Vtable t -> value_from_table idx t env
-    | Vref (VarName n) ->
-      let* v = Env.get_value n env in
-      begin match v with
-      | Vtable t -> value_from_table idx t env
+    | Vref (VarName n) -> begin
+      match Ast_utils.get_luatable_value n env with
+      | Ok t -> value_from_table idx t env
       | _ -> assert false
-      end
+    end
     | _ -> Ok (Vnil (), env) )
 
 and index_metamechanism idx tbl env =
@@ -92,16 +91,15 @@ and index_metamechanism idx tbl env =
           let key = (empty_location (), Evalue idx) in
           let* _, v, _env = interpret_fct f [ arr; key ] _env in
           Ok (v, env)
-        | Vref (VarName n) ->
-          let* v = Env.get_value n env in
-          begin match v with
-          | Vtable t as tbl -> begin
+        | Vref (VarName n) -> begin
+          match Ast_utils.get_table_value n env with
+          | Ok (Vtable t as tbl) -> begin
             match LuaTable.get idx t with
             | None -> index_metamechanism idx tbl env
             | Some v -> Ok (v, env)
           end
           | _ -> assert false
-          end
+        end
         | _ ->
           error None
             "metatable.__index: attempt to index a non table or function value"
@@ -178,14 +176,13 @@ and tableconstructor tbl idx fl env =
         else add_field tbl v_idx v
       in
       Ok (tbl, env)
-    | Vref (VarName n) ->
-      let* vr = Env.get_value n env in
-      begin match vr with
-      | Vtable _ as t ->
+    | Vref (VarName n) -> begin
+      match Ast_utils.get_table_value n env with
+      | Ok t ->
         let tbl = add_field tbl v_idx t in
         Ok (tbl, env)
-      | _ -> assert false
-      end
+      | Error () -> assert false
+    end
     | v_val ->
       let tbl = add_field tbl v_idx v_val in
       Ok (tbl, env)
@@ -259,15 +256,14 @@ and set_var v value env =
         let* tbl, env = newindex_metamechanism idx value tbl env in
         let v = var_of_prefixexp pexp env in
         set_var v tbl env
-    | Vref (VarName v) ->
-      let* vr = Env.get_value v env in
-      begin match vr with
-      | Vtable _ ->
+    | Vref (VarName v) -> begin
+      match Ast_utils.get_table_value v env with
+      | Ok _ ->
         set_var
           (VarTableField (PEvar (VarName v), (empty_location (), Evalue idx)))
           value env
-      | _ -> assert false
-      end
+      | Error () -> assert false
+    end
     | Vref (VarTableField _) -> assert false (* WIP: TODO ? *)
     | _ -> assert false (* typing error *) )
 
@@ -478,10 +474,9 @@ and interpret_functioncall fc env =
         let* _closure, return, env = interpret_fct value el env in
         Ok (return, env)
     end
-    | Vref (VarName n) ->
-      let* v = Env.get_value n env in
-      begin match v with
-      | Vtable t -> begin
+    | Vref (VarName n) -> begin
+      match Ast_utils.get_luatable_value n env with
+      | Ok t -> begin
         match LuaTable.get idx t with
         | None -> assert false
         | Some value ->
@@ -489,7 +484,7 @@ and interpret_functioncall fc env =
           Ok (return, env)
       end
       | _ -> assert false
-      end
+    end
     | _ -> assert false (* typing error *)
     end
   | FCpreargs (PEexp e, Aexpl el) ->

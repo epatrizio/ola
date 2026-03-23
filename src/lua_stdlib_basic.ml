@@ -3,14 +3,14 @@ open Ast.Value
 
 let () = Random.self_init ()
 
-let env_get_table_value name env =
-  match Env.get_value name env with
-  | Ok v -> begin
-    match v with
-    | Vtable _ -> v
-    | _ -> Lua_stdlib_common.error "Lua_stdlib_basic.error: env_get_table_value"
-  end
-  | Error (_, msg) -> Lua_stdlib_common.error msg
+let get_table_value name env =
+  match Ast_utils.get_table_value name env with
+  | Ok v -> v
+  | Error () ->
+    let msg =
+      Format.sprintf "Lua_stdlib_basic.get_table_value.error: %s" name
+    in
+    Lua_stdlib_common.error msg
 
 let rec tostring_value v env =
   match v with
@@ -83,10 +83,10 @@ let rec next v env =
       | None -> ([ Vnil () ], env)
     end
     | [ Vref (VarName n) ] ->
-      let vt = env_get_table_value n env in
+      let vt = get_table_value n env in
       next [ vt ] env
     | [ Vref (VarName n); v ] ->
-      let vt = env_get_table_value n env in
+      let vt = get_table_value n env in
       next [ vt; v ] env
     | _ -> assert false
   with LuaTable.Table_error msg -> Lua_stdlib_common.error msg
@@ -96,7 +96,7 @@ let rec pairs v env =
   | [ Vtable tbl ] ->
     ([ VfunctionStdLib (Random.bits32 (), next); Vtable tbl; Vnil () ], env)
   | [ Vref (VarName n) ] ->
-    let vt = env_get_table_value n env in
+    let vt = get_table_value n env in
     pairs [ vt ] env
   | _ ->
     Lua_stdlib_common.typing_error
@@ -115,10 +115,10 @@ let rec inext v env =
     | None -> ([ Vnil () ], env)
   end
   | [ Vref (VarName n) ] ->
-    let vt = env_get_table_value n env in
+    let vt = get_table_value n env in
     inext [ vt ] env
   | [ Vref (VarName n); v ] ->
-    let vt = env_get_table_value n env in
+    let vt = get_table_value n env in
     inext [ vt; v ] env
   | _ -> assert false
 
@@ -127,7 +127,7 @@ let rec ipairs v env =
   | [ Vtable tbl ] ->
     ([ VfunctionStdLib (Random.bits32 (), inext); Vtable tbl; Vnil () ], env)
   | [ Vref (VarName n) ] ->
-    let vt = env_get_table_value n env in
+    let vt = get_table_value n env in
     ipairs [ vt ] env
   | _ ->
     Lua_stdlib_common.typing_error
@@ -154,7 +154,7 @@ let rec typ v env =
   | [ Vtable _ ] -> ([ Vstring "table" ], env)
   | [ Vfunction _ ] | [ VfunctionStdLib _ ] -> ([ Vstring "function" ], env)
   | [ Vref (VarName n) ] ->
-    let vt = env_get_table_value n env in
+    let vt = get_table_value n env in
     typ [ vt ] env
   | [ v ] ->
     Ast.print_value Format.err_formatter v;
@@ -180,7 +180,7 @@ let rec getmetatable v env =
     | None -> ([ Vnil () ], env)
   end
   | [ Vref (VarName n) ] ->
-    let vt = env_get_table_value n env in
+    let vt = get_table_value n env in
     getmetatable [ vt ] env
   | _ -> ([ Vnil () ], env)
 
@@ -204,17 +204,17 @@ let rec setmetatable v env =
       ([ Vtable tbl ], env)
   end
   | Vref (VarName n) :: Vnil () :: _tl ->
-    let vt = env_get_table_value n env in
+    let vt = get_table_value n env in
     setmetatable [ vt; Vnil () ] env
   | Vref (VarName n) :: Vtable meta_tbl :: _tl ->
-    let vt = env_get_table_value n env in
+    let vt = get_table_value n env in
     setmetatable [ vt; Vtable meta_tbl ] env
   | Vtable tbl :: Vref (VarName n) :: _tl ->
-    let vt = env_get_table_value n env in
+    let vt = get_table_value n env in
     setmetatable [ Vtable tbl; vt ] env
   | Vref (VarName n_tbl) :: Vref (VarName n_meta_tbl) :: _tl ->
-    let vtbl = env_get_table_value n_tbl env in
-    let vmtbl = env_get_table_value n_meta_tbl env in
+    let vtbl = get_table_value n_tbl env in
+    let vmtbl = get_table_value n_meta_tbl env in
     setmetatable [ vtbl; vmtbl ] env
   | Vtable _ :: _tl ->
     Lua_stdlib_common.typing_error

@@ -225,6 +225,26 @@ end
 
 and LuaTable : (Table.S with type kv = Value.t) = Table.Make (Value)
 
+(* utils *)
+
+module Ast_utils : sig
+  val get_table_value : string -> Value.t Env.t -> (Value.t, unit) result
+
+  val get_luatable_value : string -> Value.t Env.t -> (LuaTable.t, unit) result
+end = struct
+  open Value
+
+  let get_table_value name env =
+    match Env.get_value name env with
+    | Ok v -> begin match v with Vtable _ -> Ok v | _ -> Error () end
+    | Error _ -> Error ()
+
+  let get_luatable_value name env =
+    match get_table_value name env with
+    | Ok (Vtable lt) -> Ok lt
+    | _ -> Error ()
+end
+
 (* pretty printer *)
 
 open Format
