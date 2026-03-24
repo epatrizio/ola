@@ -170,11 +170,9 @@ print(tbl8[42.0])     -- 42.42 (same table field)
 local tbl9 = { key = 0 }
 
 function tbl9:add(val)          -- (val) -> (self, val)
-    self.key = self.key + val   -- call context: self = tbl9 current state
-    return self                 -- unnecessary return stmt (bug: https://github.com/epatrizio/ola/issues/35)
+  self.key = self.key + val     -- call context: self = tbl9 current state
 end
 
--- tbl9:add(42)                 -- same bug
-tbl9 = tbl9:add(40)
-tbl9 = tbl9:add(2)
+tbl9:add(40)
+tbl9:add(2)
 print(tbl9.key)                 -- 42
