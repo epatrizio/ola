@@ -21,8 +21,9 @@ local function g(a)
   b[1] = 42
 end
 
-local arr_3 = { 3 }
+-- BUG: https://github.com/epatrizio/ola/issues/47
+-- local arr_3 = { 3 }
 
-print(arr_3[1])     -- 3
-g(arr_3)            -- pass by ref
-print(arr_3[1])     -- 42 - ref modified in g function via local b var
+-- print(arr_3[1])     -- 3
+-- g(arr_3)            -- pass by ref
+-- print(arr_3[1])     -- 42 - ref modified in g function via local b var

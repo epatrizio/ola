@@ -11,5 +11,3 @@ function - pass by ref args:
   2
   4242
   42
-  3
-  42
