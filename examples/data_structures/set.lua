@@ -12,12 +12,10 @@ end
 
 function set.add(val, s)
   s[val] = true
-  return s                    -- non-mandatory: https://github.com/epatrizio/ola/issues/35
 end
 
 function set.remove(val, s)
   s[val] = nil
-  return s                    -- non-mandatory: https://github.com/epatrizio/ola/issues/35
 end
 
 function set.has(val, s)
@@ -28,11 +26,11 @@ function set.has(val, s)
 end
 
 local s = set.create()
-s = set.add("word_1", s)
-s = set.add("word_2", s)
-s = set.add("word_2", s)      -- same value
-s = set.add("word_3", s)
-s = set.remove("word_3", s)
+set.add("word_1", s)
+set.add("word_2", s)
+set.add("word_2", s)      -- same value
+set.add("word_3", s)
+set.remove("word_3", s)
 
 print(set.has("ko", s))       -- false
 print(set.has("word_1", s))   -- true

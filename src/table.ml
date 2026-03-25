@@ -154,12 +154,12 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
    Pre-condition 2: key exists *)
   let rec next_elt key tbl =
     match Key.int_key_opt key with
-    | Some idx -> begin
-      match tbl.ilist with
+    | Some idx ->
+      begin match tbl.ilist with
       | [] -> assert false (* PC2 *)
       | (i, _) :: tl when idx = i -> first_elt { tbl with ilist = tl }
       | _ :: tl -> next_elt key { tbl with ilist = tl }
-    end
+      end
     | None -> (
       match tbl.klist with
       | [] -> assert false (* PC2 *)
@@ -174,19 +174,19 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
     if is_empty tbl then None
     else
       match key with
-      | Some key -> begin
-        match Key.int_key_opt key with
-        | Some idx -> begin
-          match i_get idx tbl with
+      | Some key ->
+        begin match Key.int_key_opt key with
+        | Some idx ->
+          begin match i_get idx tbl with
           | Some _ -> next_elt key tbl
           | None -> error ("invalid key to 'next': " ^ Int.to_string idx)
-        end
-        | None -> begin
-          match k_get key tbl with
+          end
+        | None ->
+          begin match k_get key tbl with
           | Some _ -> next_elt key tbl
           | None -> error "invalid key to 'next'"
+          end
         end
-      end
       | None -> first_elt tbl
 
   let inext fun_border_up idx tbl =
@@ -206,13 +206,13 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
   let to_string tbl =
     let str_prefix =
       match get_metatable tbl with
-      | Some mt -> begin
-        match get (Key.key_of_string "__name") mt with
-        | Some k -> begin
-          match Key.string_of_val k with Some s -> s | None -> "table"
-        end
+      | Some mt ->
+        begin match get (Key.key_of_string "__name") mt with
+        | Some k ->
+          begin match Key.string_of_val k with Some s -> s | None -> "table"
+          end
         | None -> "table"
-      end
+        end
       | None -> "table"
     in
     Format.sprintf "%s: %i" str_prefix (Int32.to_int tbl.uid)

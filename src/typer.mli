@@ -4,7 +4,9 @@ val typecheck_function :
   Ast.Value.t -> (Ast.typ, Ast.location option * string) result
 
 val typecheck_variadic :
-  Ast.Value.t -> (Ast.typ, Ast.location option * string) result
+     Ast.Value.t
+  -> Ast.Value.t Env.t
+  -> (Ast.typ, Ast.location option * string) result
 
 val typecheck_var :
      ?strict:bool

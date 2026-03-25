@@ -48,6 +48,11 @@ and interpret_prefixexp pexp env =
   | PEfunctioncall fc -> interpret_functioncall fc env
 
 and interpret_var v env =
+  let value_from_table idx tbl env =
+    match LuaTable.get idx tbl with
+    | None -> index_metamechanism idx (Vtable tbl) env
+    | Some v -> Ok (v, env)
+  in
   match v with
   | VarName n ->
     let* v = Env.get_value n env in
@@ -60,39 +65,49 @@ and interpret_var v env =
     in
     let idx = Eval_utils.integer_of_float_value idx in
     match t with
-    | VfunctionReturn (Vtable t :: _) | Vtable t -> begin
-      match LuaTable.get idx t with
-      | None -> index_metamechanism idx (Vtable t) env
-      | Some v -> Ok (v, env)
-    end
+    | VfunctionReturn (Vtable t :: _) | Vtable t -> value_from_table idx t env
+    | Vref (VarName n) ->
+      begin match Ast_utils.get_luatable_value n env with
+      | Ok t -> value_from_table idx t env
+      | _ -> assert false
+      end
     | _ -> Ok (Vnil (), env) )
 
 and index_metamechanism idx tbl env =
   match tbl with
-  | Vtable t -> begin
-    match LuaTable.get_metatable t with
-    | Some mt -> begin
-      match LuaTable.get (Vstring "__index") mt with
-      | Some v -> begin
-        match v with
-        | Vtable t as tbl -> begin
-          match LuaTable.get idx t with
+  | Vtable t ->
+    begin match LuaTable.get_metatable t with
+    | Some mt ->
+      begin match LuaTable.get (Vstring "__index") mt with
+      | Some v ->
+        begin match v with
+        | Vtable t as tbl ->
+          begin match LuaTable.get idx t with
           | None -> index_metamechanism idx tbl env
           | Some v -> Ok (v, env)
-        end
+          end
         | Vfunction (_i, _pb, _env) as f ->
           let arr = (empty_location (), Evalue tbl) in
           let key = (empty_location (), Evalue idx) in
           let* _, v, _env = interpret_fct f [ arr; key ] _env in
           Ok (v, env)
+        | Vref (VarName n) ->
+          begin match Ast_utils.get_table_value n env with
+          | Ok (Vtable t as tbl) ->
+            begin match LuaTable.get idx t with
+            | None -> index_metamechanism idx tbl env
+            | Some v -> Ok (v, env)
+            end
+          | _ -> assert false
+          end
         | _ ->
           error None
             "metatable.__index: attempt to index a non table or function value"
-      end
+        end
       | None -> Ok (Vnil (), env)
-    end
+      end
     | None -> Ok (Vnil (), env)
-  end
+    end
   | _ -> assert false
 
 and newindex_metamechanism idx value tbl env =
@@ -101,12 +116,12 @@ and newindex_metamechanism idx value tbl env =
     Ok (Vtable t, env)
   in
   match tbl with
-  | Vtable t -> begin
-    match LuaTable.get_metatable t with
-    | Some mt -> begin
-      match LuaTable.get (Vstring "__newindex") mt with
-      | Some v -> begin
-        match v with
+  | Vtable t ->
+    begin match LuaTable.get_metatable t with
+    | Some mt ->
+      begin match LuaTable.get (Vstring "__newindex") mt with
+      | Some v ->
+        begin match v with
         | Vtable _ -> assert false (* TODO *)
         | Vfunction (_i, _pb, _env) as f ->
           if LuaTable.key_exists idx t then tbl_add idx value t env
@@ -120,11 +135,11 @@ and newindex_metamechanism idx value tbl env =
           error None
             "metatable.__newindex: attempt to index a non table or function \
              value"
-      end
+        end
       | None -> tbl_add idx value t env
-    end
+      end
     | None -> tbl_add idx value t env
-  end
+    end
   | _ -> assert false
 
 and interpret_field field env =
@@ -161,6 +176,13 @@ and tableconstructor tbl idx fl env =
         else add_field tbl v_idx v
       in
       Ok (tbl, env)
+    | Vref (VarName n) ->
+      begin match Ast_utils.get_table_value n env with
+      | Ok t ->
+        let tbl = add_field tbl v_idx t in
+        Ok (tbl, env)
+      | Error () -> assert false
+      end
     | v_val ->
       let tbl = add_field tbl v_idx v_val in
       Ok (tbl, env)
@@ -181,6 +203,7 @@ and interpret_expr (loc, expr) env =
         | Vboolean _ | Vnumber _ | Vstring _ | Vvariadic _ | Vfunction _
         | VfunctionStdLib _ | VfunctionReturn _ | Vtable _ ) as v ) ->
     Ok (v, env)
+  | Evalue (Vref v) -> interpret_var v env
   | Eunop (unop, e) ->
     let* v, env = interpret_expr e env in
     eval_unop unop (loc, v) env
@@ -191,7 +214,7 @@ and interpret_expr (loc, expr) env =
     eval_binop binop (loc, v1) (loc, v2) env
   | Evariadic ->
     let* v = Env.get_value "vararg" env in
-    let* _ = typecheck_variadic v in
+    let* _ = typecheck_variadic v env in
     Ok (v, env)
   | Efunctiondef fb -> Ok (Vfunction (Random.bits32 (), fb, env), env)
   | Eprefix pexp -> interpret_prefixexp pexp env
@@ -232,14 +255,40 @@ and set_var v value env =
         let* tbl, env = newindex_metamechanism idx value tbl env in
         let v = var_of_prefixexp pexp env in
         set_var v tbl env
+    | Vref (VarName v) ->
+      begin match Ast_utils.get_table_value v env with
+      | Ok _ ->
+        set_var
+          (VarTableField (PEvar (VarName v), (empty_location (), Evalue idx)))
+          value env
+      | Error () -> assert false
+      end
     | _ -> assert false (* typing error *) )
 
-and to_vall el env =
+and to_vall ?(ref = false) el env =
   List.fold_left
     (fun acc ((l, _e) as exp) ->
       let vl, e = Result.get_ok acc in
-      let* v, e = interpret_expr exp e in
-      Ok (vl @ [ (l, v) ], e) )
+      let interpret () =
+        let* v, e = interpret_expr exp e in
+        match v with
+        | Vref vr ->
+          let* v, e = interpret_var vr env in
+          Ok (vl @ [ (l, v) ], e)
+        | _ -> Ok (vl @ [ (l, v) ], e)
+      in
+      if ref then
+        let _, exp' = exp in
+        match exp' with
+        | Eprefix (PEvar (VarName n)) ->
+          let v = VarName n in
+          let* t = typecheck_var v env in
+          begin match t with
+          | Ttable -> Ok (vl @ [ (l, Vref v) ], e)
+          | _ -> interpret ()
+          end
+        | _ -> interpret ()
+      else interpret () )
     (Ok ([], env))
     el
 
@@ -270,15 +319,14 @@ and lists_assign ?(is_local = false) vl vall env =
       (Ok env) vl
   | v :: vl, [ (l, va) ] -> (
     match va with
-    | VfunctionReturn vall | Vvariadic vall -> begin
-      match vall with
+    | VfunctionReturn vall | Vvariadic vall ->
+      begin match vall with
       | [] -> var_handler is_local v (Vnil ()) env
       | va :: vall ->
         let vall = List.map (fun v -> (l, v)) vall in
         assign_handler is_local v va vl vall env
-    end
+      end
     | Vfunction (_i, _bl, cl_env) as f ->
-      (* wip *)
       if is_local then
         let name = match v with VarName name -> name | _ -> assert false in
         let* () = Env.update_value name f cl_env in
@@ -287,11 +335,11 @@ and lists_assign ?(is_local = false) vl vall env =
     | va -> assign_handler is_local v va vl [] env )
   | v :: vl, (_l, va) :: tl -> (
     match va with
-    | VfunctionReturn vall | Vvariadic vall -> begin
-      match vall with
-      | [] -> var_handler is_local v (Vnil ()) env (*set_var v (Vnil ()) env*)
+    | VfunctionReturn vall | Vvariadic vall ->
+      begin match vall with
+      | [] -> var_handler is_local v (Vnil ()) env
       | va :: _vall -> assign_handler is_local v va vl tl env
-    end
+      end
     | va -> assign_handler is_local v va vl tl env )
   end
 
@@ -317,20 +365,47 @@ and lists_args pl vall env =
     lists_assign ~is_local:true vl vall env
 
 and interpret_fct value el env =
+  let update_env vall env_source env_target =
+    List.iter
+      (fun (l, v) ->
+        match v with
+        | Vref (VarName n) ->
+          begin match Ast_utils.get_table_value n env_source with
+          | Ok v ->
+            begin match Env.update_value n v env_target with
+            | Ok () -> ()
+            | Error (l, msg) -> error l msg
+            end
+          | Error () -> error (Some l) "interpret_fct.update_env error"
+          end
+        | _ -> () )
+      vall
+  in
   let* _ = typecheck_function value in
+  let* vall, env = to_vall ~ref:true el env in
   match value with
-  | Vfunction (i, (pl, b), cl_env) as closure -> begin
-    try
-      let* vall, env = to_vall el env in
+  | Vfunction (i, (pl, b), cl_env) as closure ->
+    begin try
+      let () = update_env vall env cl_env in
       let* cl_env = lists_args pl vall cl_env in
       let* cl_env = interpret_block b cl_env in
       let closure = Vfunction (i, (pl, b), cl_env) in
+      let () = update_env vall cl_env env in
       Ok (closure, VfunctionReturn [], env)
     with Return_catch (el, cl_env) ->
       begin match el with
       | [] -> Ok (closure, VfunctionReturn [], env)
       | [ e ] ->
         let* v, cl_env = interpret_expr e cl_env in
+        let v =
+          match v with
+          | Vref var ->
+            begin match interpret_var var cl_env with
+            | Ok (v, _) -> v
+            | Error _ -> assert false
+            end
+          | _ -> v
+        in
         let closure = Vfunction (i, (pl, b), cl_env) in
         (* shortcut: directly consider it's a value instead of VfunctionReturn [ v ] *)
         (* Nb. VfunctionReturn [] != Vnil () *)
@@ -341,9 +416,8 @@ and interpret_fct value el env =
         let closure = Vfunction (i, (pl, b), cl_env) in
         Ok (closure, VfunctionReturn vl, env)
       end
-  end
+    end
   | VfunctionStdLib (i, fct) ->
-    let* vall, env = to_vall el env in
     let vall = List.map (fun (_l, v) -> v) vall in
     begin try
       let ret, env = fct vall env in
@@ -357,11 +431,11 @@ and interpret_fct value el env =
       error None (Format.sprintf "Typing error: %s" msg)
     | Lua_stdlib_common.Stdlib_error msg -> error None msg
     end
-  | VfunctionReturn vl -> begin
-    match vl with
+  | VfunctionReturn vl ->
+    begin match vl with
     | v :: _ -> interpret_fct v el env
     | _ -> assert false (* typing error *)
-  end
+    end
   | _ -> assert false
 
 and interpret_functioncall fc env =
@@ -376,13 +450,24 @@ and interpret_functioncall fc env =
     let* idx, env = interpret_expr exp env in
     let idx = Eval_utils.integer_of_float_value idx in
     begin match t with
-    | Vtable t -> begin
-      match LuaTable.get idx t with
+    | Vtable t ->
+      begin match LuaTable.get idx t with
       | None -> assert false
       | Some value ->
         let* _closure, return, env = interpret_fct value el env in
         Ok (return, env)
-    end
+      end
+    | Vref (VarName n) ->
+      begin match Ast_utils.get_luatable_value n env with
+      | Ok t ->
+        begin match LuaTable.get idx t with
+        | None -> assert false
+        | Some value ->
+          let* _closure, return, env = interpret_fct value el env in
+          Ok (return, env)
+        end
+      | _ -> assert false
+      end
     | _ -> assert false (* typing error *)
     end
   | FCpreargs (PEexp e, Aexpl el) ->
@@ -439,15 +524,15 @@ and interpret_stmt stmt env : _ result =
         interpret_stmt (Swhile (e, b)) env
       with Break_catch env -> Ok env )
     end
-  | Srepeat (b, e) -> begin
-    try
+  | Srepeat (b, e) ->
+    begin try
       let* env = interpret_block b env in
       let* cond, env = interpret_expr e env in
       match cond with
       | Vboolean false | Vnil () -> interpret_stmt (Srepeat (b, e)) env
       | _ -> Ok env
     with Break_catch env -> Ok env
-  end
+    end
   | Sif (e, b, ebl, ob) ->
     let rec interpret_elseif ebl env =
       match ebl with
@@ -467,9 +552,9 @@ and interpret_stmt stmt env : _ result =
       let* opt, env = interpret_elseif ebl env in
       begin match opt with
       | Some () -> Ok env
-      | None -> begin
-        match ob with Some b -> interpret_block b env | None -> Ok env
-      end
+      | None ->
+        begin match ob with Some b -> interpret_block b env | None -> Ok env
+        end
       end
     | _ -> interpret_block b env
     end
@@ -545,8 +630,8 @@ and interpret_stmt stmt env : _ result =
         let* closure, v, _cl_env = interpret_fct closure [] cl_env in
         match v with
         | Vnil () -> Ok env (* stop condition *)
-        | VfunctionReturn vl -> begin
-          match vl with
+        | VfunctionReturn vl ->
+          begin match vl with
           | [] -> Ok env
           | v :: tl ->
             let* env = Env.add_value (List.nth nl 0) v env in
@@ -562,7 +647,7 @@ and interpret_stmt stmt env : _ result =
                 (Ok env) tl
             in
             iter closure env
-        end
+          end
         | v ->
           let* env = Env.add_value (List.nth nl 0) v env in
           iter closure env )
@@ -580,8 +665,8 @@ and interpret_stmt stmt env : _ result =
         in
         let* ctrl_var, env =
           match v with
-          | VfunctionReturn vl -> begin
-            match vl with
+          | VfunctionReturn vl ->
+            begin match vl with
             | [] -> Ok (Vnil (), env)
             | v :: tl ->
               let* env = Env.add_value (List.nth nl 0) v env in
@@ -597,7 +682,7 @@ and interpret_stmt stmt env : _ result =
                   (Ok env) tl
               in
               Ok (v, env)
-          end
+            end
           | v ->
             let* env = Env.add_value (List.nth nl 0) v env in
             Ok (v, env)

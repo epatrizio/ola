@@ -6,6 +6,7 @@
   closure.lua
   error.lua
   function_rec.lua
+  function_ref.lua
   function.lua
   goto.lua
   iterators.lua

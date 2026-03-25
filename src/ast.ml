@@ -30,6 +30,7 @@ type typ =
   | Ttable
   | Tuserdata
   | Tthread
+  | Tref of typ
 
 type unop =
   | Unot
@@ -77,6 +78,7 @@ module rec Value : sig
       (* int32 = stdlib function unique id *)
     | VfunctionReturn of t list
     | Vtable of LuaTable.t
+    | Vref of var
 
   and expr = location * expr'
 
@@ -156,6 +158,7 @@ end = struct
     | VfunctionStdLib of int32 * (t list -> t Env.t -> t list * t Env.t)
     | VfunctionReturn of t list
     | Vtable of LuaTable.t
+    | Vref of var
 
   and expr = location * expr'
 
@@ -222,6 +225,28 @@ end
 
 and LuaTable : (Table.S with type kv = Value.t) = Table.Make (Value)
 
+(* utils *)
+
+module Ast_utils : sig
+  val get_table_value : string -> Value.t Env.t -> (Value.t, unit) result
+
+  val get_luatable_value : string -> Value.t Env.t -> (LuaTable.t, unit) result
+end = struct
+  open Value
+
+  let get_table_value name env =
+    match Env.get_value name env with
+    | Ok v ->
+      begin match v with Vtable _ -> Ok v | _ -> Error ()
+      end
+    | Error _ -> Error ()
+
+  let get_luatable_value name env =
+    match get_table_value name env with
+    | Ok (Vtable lt) -> Ok lt
+    | _ -> Error ()
+end
+
 (* pretty printer *)
 
 open Format
@@ -271,6 +296,14 @@ let print_number fmt number =
   | Ninteger i -> pp_print_int fmt i
   | Nfloat f -> pp_print_float fmt f
 
+let print_parlist fmt pl =
+  match pl with
+  | PLlist (nl, true) ->
+    fprintf fmt {|%a, ...|} (pp_print_list ~pp_sep pp_print_string) nl
+  | PLlist (nl, false) ->
+    fprintf fmt {|%a|} (pp_print_list ~pp_sep pp_print_string) nl
+  | PLvariadic -> fprintf fmt "..."
+
 let rec print_value fmt value =
   match value with
   | Vnil () -> pp_print_string fmt "nil"
@@ -282,14 +315,7 @@ let rec print_value fmt value =
   | VfunctionReturn vl | Vvariadic vl ->
     (pp_print_list ~pp_sep print_value) fmt vl
   | Vtable tbl -> fprintf fmt {|%s|} (LuaTable.to_string tbl)
-
-let rec print_parlist fmt pl =
-  match pl with
-  | PLlist (nl, true) ->
-    fprintf fmt {|%a, ...|} (pp_print_list ~pp_sep pp_print_string) nl
-  | PLlist (nl, false) ->
-    fprintf fmt {|%a|} (pp_print_list ~pp_sep pp_print_string) nl
-  | PLvariadic -> fprintf fmt "..."
+  | Vref v -> fprintf fmt {|ref: %a|} print_var v
 
 and print_var fmt v =
   match v with
