@@ -16,8 +16,8 @@ module Eval_utils : sig
 end = struct
   let number_of_string loc value =
     match value with
-    | Vstring str -> begin
-      match int_of_string_opt str with
+    | Vstring str ->
+      begin match int_of_string_opt str with
       | Some i -> Vnumber (Ninteger i)
       | None -> (
         match float_of_string_opt str with
@@ -25,7 +25,7 @@ end = struct
         | None ->
           error loc
             (Format.sprintf "attempt to perform on a string (%s) value" str) )
-    end
+      end
     | _ -> value
 
   let integer_of_float loc value =
@@ -68,12 +68,12 @@ let eval_unop unop (loc, v) env =
     | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
     | Vtable t ->
       Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
-    | Vref (VarName n) -> begin
-      match Ast_utils.get_luatable_value n env with
+    | Vref (VarName n) ->
+      begin match Ast_utils.get_luatable_value n env with
       | Ok t ->
         Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
       | _ -> assert false
-    end
+      end
     | _ -> assert false (* typing error *)
     end
   | Ulnot ->
@@ -93,8 +93,8 @@ let eval_arith_binop binop (loc1, v1) (loc2, v2) env =
       env
   in
   match (v1, v2) with
-  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
-    match binop with
+  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) ->
+    begin match binop with
     | Badd -> Ok (Vnumber (Ninteger (i1 + i2)), env)
     | Bsub -> Ok (Vnumber (Ninteger (i1 - i2)), env)
     | Bmul -> Ok (Vnumber (Ninteger (i1 * i2)), env)
@@ -104,9 +104,9 @@ let eval_arith_binop binop (loc1, v1) (loc2, v2) env =
     | Bexp ->
       Ok (Vnumber (Nfloat (Float.pow (float_of_int i1) (float_of_int i2))), env)
     | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f), Vnumber (Ninteger i) -> begin
-    match binop with
+    end
+  | Vnumber (Nfloat f), Vnumber (Ninteger i) ->
+    begin match binop with
     | Badd -> Ok (Vnumber (Nfloat (f +. float_of_int i)), env)
     | Bsub -> Ok (Vnumber (Nfloat (f -. float_of_int i)), env)
     | Bmul -> Ok (Vnumber (Nfloat (f *. float_of_int i)), env)
@@ -120,9 +120,9 @@ let eval_arith_binop binop (loc1, v1) (loc2, v2) env =
       Ok (Vnumber (Nfloat (f -. (fi *. q))), env)
     | Bexp -> Ok (Vnumber (Nfloat (Float.pow f (float_of_int i))), env)
     | _ -> assert false (* call error *)
-  end
-  | Vnumber (Ninteger i), Vnumber (Nfloat f) -> begin
-    match binop with
+    end
+  | Vnumber (Ninteger i), Vnumber (Nfloat f) ->
+    begin match binop with
     | Badd -> Ok (Vnumber (Nfloat (float_of_int i +. f)), env)
     | Bsub -> Ok (Vnumber (Nfloat (float_of_int i -. f)), env)
     | Bmul -> Ok (Vnumber (Nfloat (float_of_int i *. f)), env)
@@ -136,9 +136,9 @@ let eval_arith_binop binop (loc1, v1) (loc2, v2) env =
       Ok (Vnumber (Nfloat (fi -. (f *. q))), env)
     | Bexp -> Ok (Vnumber (Nfloat (Float.pow (float_of_int i) f)), env)
     | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) -> begin
-    match binop with
+    end
+  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) ->
+    begin match binop with
     | Badd -> Ok (Vnumber (Nfloat (f1 +. f2)), env)
     | Bsub -> Ok (Vnumber (Nfloat (f1 -. f2)), env)
     | Bmul -> Ok (Vnumber (Nfloat (f1 *. f2)), env)
@@ -151,7 +151,7 @@ let eval_arith_binop binop (loc1, v1) (loc2, v2) env =
       Ok (Vnumber (Nfloat (f1 -. (f2 *. q))), env)
     | Bexp -> Ok (Vnumber (Nfloat (Float.pow f1 f2)), env)
     | _ -> assert false (* call error *)
-  end
+    end
   | _ -> assert false (* typing error *)
 
 let eval_bitwise_binop binop (loc1, v1) (loc2, v2) env =
@@ -163,15 +163,15 @@ let eval_bitwise_binop binop (loc1, v1) (loc2, v2) env =
       env
   in
   match (v1, v2) with
-  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
-    match binop with
+  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) ->
+    begin match binop with
     | Bland -> Ok (Vnumber (Ninteger (i1 land i2)), env)
     | Blor -> Ok (Vnumber (Ninteger (i1 lor i2)), env)
     | Blxor -> Ok (Vnumber (Ninteger (i1 lxor i2)), env)
     | Blsl -> Ok (Vnumber (Ninteger (i1 lsl i2)), env)
     | Blsr -> Ok (Vnumber (Ninteger (i1 lsr i2)), env)
     | _ -> assert false (* call error *)
-  end
+    end
   | _ -> assert false (* typing error *)
 
 let eval_rel_binop binop (loc1, v1) (loc2, v2) env =
@@ -181,8 +181,8 @@ let eval_rel_binop binop (loc1, v1) (loc2, v2) env =
       env
   in
   match (v1, v2) with
-  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) -> begin
-    match binop with
+  | Vnumber (Ninteger i1), Vnumber (Ninteger i2) ->
+    begin match binop with
     | Blt -> Ok (Vboolean (i1 < i2), env)
     | Ble -> Ok (Vboolean (i1 <= i2), env)
     | Bgt -> Ok (Vboolean (i1 > i2), env)
@@ -190,9 +190,9 @@ let eval_rel_binop binop (loc1, v1) (loc2, v2) env =
     | Beq -> Ok (Vboolean (i1 = i2), env)
     | Bneq -> Ok (Vboolean (i1 != i2), env)
     | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f), Vnumber (Ninteger i) -> begin
-    match binop with
+    end
+  | Vnumber (Nfloat f), Vnumber (Ninteger i) ->
+    begin match binop with
     | Blt -> Ok (Vboolean (f < float_of_int i), env)
     | Ble -> Ok (Vboolean (f <= float_of_int i), env)
     | Bgt -> Ok (Vboolean (f > float_of_int i), env)
@@ -200,9 +200,9 @@ let eval_rel_binop binop (loc1, v1) (loc2, v2) env =
     | Beq -> Ok (Vboolean (f = float_of_int i), env)
     | Bneq -> Ok (Vboolean (f != float_of_int i), env)
     | _ -> assert false (* call error *)
-  end
-  | Vnumber (Ninteger i), Vnumber (Nfloat f) -> begin
-    match binop with
+    end
+  | Vnumber (Ninteger i), Vnumber (Nfloat f) ->
+    begin match binop with
     | Blt -> Ok (Vboolean (float_of_int i < f), env)
     | Ble -> Ok (Vboolean (float_of_int i <= f), env)
     | Bgt -> Ok (Vboolean (float_of_int i > f), env)
@@ -210,9 +210,9 @@ let eval_rel_binop binop (loc1, v1) (loc2, v2) env =
     | Beq -> Ok (Vboolean (float_of_int i = f), env)
     | Bneq -> Ok (Vboolean (float_of_int i != f), env)
     | _ -> assert false (* call error *)
-  end
-  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) -> begin
-    match binop with
+    end
+  | Vnumber (Nfloat f1), Vnumber (Nfloat f2) ->
+    begin match binop with
     | Blt -> Ok (Vboolean (f1 < f2), env)
     | Ble -> Ok (Vboolean (f1 <= f2), env)
     | Bgt -> Ok (Vboolean (f1 > f2), env)
@@ -220,21 +220,21 @@ let eval_rel_binop binop (loc1, v1) (loc2, v2) env =
     | Beq -> Ok (Vboolean (f1 = f2), env)
     | Bneq -> Ok (Vboolean (f1 != f2), env)
     | _ -> assert false (* call error *)
-  end
-  | Vnil (), Vnil () -> begin
-    match binop with
+    end
+  | Vnil (), Vnil () ->
+    begin match binop with
     | Beq -> Ok (Vboolean true, env)
     | Bneq -> Ok (Vboolean false, env)
     | _ -> assert false (* typing error *)
-  end
-  | Vboolean b1, Vboolean b2 -> begin
-    match binop with
+    end
+  | Vboolean b1, Vboolean b2 ->
+    begin match binop with
     | Beq -> Ok (Vboolean (b1 = b2), env)
     | Bneq -> Ok (Vboolean (b1 <> b2), env)
     | _ -> assert false (* typing error *)
-  end
-  | Vstring s1, Vstring s2 -> begin
-    match binop with
+    end
+  | Vstring s1, Vstring s2 ->
+    begin match binop with
     | Blt -> Ok (Vboolean (s1 < s2), env)
     | Ble -> Ok (Vboolean (s1 <= s2), env)
     | Bgt -> Ok (Vboolean (s1 > s2), env)
@@ -242,13 +242,13 @@ let eval_rel_binop binop (loc1, v1) (loc2, v2) env =
     | Beq -> Ok (Vboolean (s1 = s2), env)
     | Bneq -> Ok (Vboolean (s1 <> s2), env)
     | _ -> assert false
-  end
-  | v1, v2 when v1 <> v2 -> begin
-    match binop with
+    end
+  | v1, v2 when v1 <> v2 ->
+    begin match binop with
     | Beq -> Ok (Vboolean false, env)
     | Bneq -> Ok (Vboolean true, env)
     | _ -> assert false (* typing error *)
-  end
+    end
   | _ -> assert false
 (* todo: to be implemented (Ex. VfunctionReturn. Check Array.lua example) *)
 
@@ -289,12 +289,12 @@ let eval_binop binop (loc1, v1) (loc2, v2) env =
 
 let eval_bbinop binop v1 =
   match binop with
-  | Band -> begin
-    match v1 with Vboolean false | Vnil () -> Some v1 | _ -> None
-  end
-  | Bor -> begin
-    match v1 with
+  | Band ->
+    begin match v1 with Vboolean false | Vnil () -> Some v1 | _ -> None
+    end
+  | Bor ->
+    begin match v1 with
     | v when v <> Vnil () && v <> Vboolean false -> Some v1
     | _ -> None
-  end
+    end
   | _ -> assert false (* call error *)

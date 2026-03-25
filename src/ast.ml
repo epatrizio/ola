@@ -236,7 +236,9 @@ end = struct
 
   let get_table_value name env =
     match Env.get_value name env with
-    | Ok v -> begin match v with Vtable _ -> Ok v | _ -> Error () end
+    | Ok v ->
+      begin match v with Vtable _ -> Ok v | _ -> Error ()
+      end
     | Error _ -> Error ()
 
   let get_luatable_value name env =

@@ -129,14 +129,14 @@ end = struct
       List.iter
         (fun var ->
           match var with
-          | VarName name -> begin
-            match SMap.find_opt name env with
+          | VarName name ->
+            begin match SMap.find_opt name env with
             | Some true ->
               error None
                 (Format.sprintf "attempt to assign to const variable '%s'" name)
             | Some false -> ()
             | None -> ()
-          end
+            end
           | VarTableField _ -> () )
         vl;
       env
