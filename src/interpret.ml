@@ -202,7 +202,6 @@ and interpret_expr (loc, expr) env =
       ( ( Vnil ()
         | Vboolean _ | Vnumber _ | Vstring _ | Vvariadic _ | Vfunction _
         | VfunctionStdLib _ | VfunctionReturn _ | Vtable _ ) as v ) ->
-    (* WIP: | Vref _ ? *)
     Ok (v, env)
   | Evalue (Vref v) -> interpret_var v env
   | Eunop (unop, e) ->
@@ -264,7 +263,6 @@ and set_var v value env =
           value env
       | Error () -> assert false
     end
-    | Vref (VarTableField _) -> assert false (* WIP: TODO ? *)
     | _ -> assert false (* typing error *) )
 
 and to_vall ?(ref = false) el env =
@@ -286,7 +284,6 @@ and to_vall ?(ref = false) el env =
           let v = VarName n in
           let* t = typecheck_var v env in
           begin match t with
-          (* | Tref Ttable -> assert false *)
           | Ttable -> Ok (vl @ [ (l, Vref v) ], e)
           | _ -> interpret ()
           end
@@ -330,7 +327,6 @@ and lists_assign ?(is_local = false) vl vall env =
         assign_handler is_local v va vl vall env
     end
     | Vfunction (_i, _bl, cl_env) as f ->
-      (* wip *)
       if is_local then
         let name = match v with VarName name -> name | _ -> assert false in
         let* () = Env.update_value name f cl_env in
@@ -341,7 +337,7 @@ and lists_assign ?(is_local = false) vl vall env =
     match va with
     | VfunctionReturn vall | Vvariadic vall -> begin
       match vall with
-      | [] -> var_handler is_local v (Vnil ()) env (*set_var v (Vnil ()) env*)
+      | [] -> var_handler is_local v (Vnil ()) env
       | va :: _vall -> assign_handler is_local v va vl tl env
     end
     | va -> assign_handler is_local v va vl tl env )
