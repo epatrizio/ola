@@ -5,6 +5,7 @@
   env
   evaluator
   interpret
+  interpreter
   lexer
   lua_stdlib
   lua_stdlib_basic

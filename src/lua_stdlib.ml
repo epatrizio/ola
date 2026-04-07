@@ -28,6 +28,7 @@ let lib () =
   let lib_basic =
     LibMap.add "setmetatable" Lua_stdlib_basic.setmetatable lib_basic
   in
+  let lib_basic = LibMap.add "require" Lua_stdlib_basic.require lib_basic in
   let lib = LibMap.empty in
   let lib = LibMap.add "math" LibMap.empty lib in
   let lib = add_func "math" "abs" Lua_stdlib_math.abs lib in

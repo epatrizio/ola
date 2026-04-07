@@ -225,3 +225,13 @@ let rec setmetatable v env =
   | [] ->
     Lua_stdlib_common.typing_error
       "bad argument #1 to 'setmetatable' (nil or table expected)"
+
+let require v env =
+  match v with
+  | [ Vstring modul ] ->
+    let modul = Format.sprintf "%s.lua" modul in
+    begin match Interpreter.process modul false env with
+    | Ok () -> ([ Vnil () ], env) (* WIP: TODO return process *)
+    | Error _ -> assert false
+    end
+  | _ -> assert false
