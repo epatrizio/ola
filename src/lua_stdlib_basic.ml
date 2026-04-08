@@ -232,6 +232,8 @@ let require v env =
     let modul = Format.sprintf "%s.lua" modul in
     begin match Interpreter.process modul false env with
     | Ok () -> ([ Vnil () ], env) (* WIP: TODO return process *)
-    | Error _ -> assert false
+    | Error (_, msg) ->
+      let msg = Format.sprintf "error loading module %s: %s" modul msg in
+      Lua_stdlib_common.error msg
     end
   | _ -> assert false

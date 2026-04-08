@@ -4,6 +4,8 @@
   basics.lua
   blocks.lua
   closure.lua
+  error_require_ko.lua
+  error_require.lua
   error.lua
   function_rec.lua
   function_ref.lua
