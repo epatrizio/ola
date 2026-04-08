@@ -1,12 +1,5 @@
 open Format
-
-(* open Ola *)
 open Syntax
-
-(* TODO:
-  print_endline ?
-  try catch here or in bin.ola_interpreter ?
-  coherence Repl ? *)
 
 let process source_code_file debug env =
   let ic = open_in source_code_file in
@@ -17,25 +10,18 @@ let process source_code_file debug env =
     let parser =
       MenhirLib.Convert.Simplified.traditional2revised Parser.chunk
     in
-    print_endline "lexing parsing ...";
     let chunk = parser lexer in
     if debug then begin
       print_endline "debug mode: initial source view ...";
       Ast.print_block Format.std_formatter chunk
     end;
-    print_endline "static analyses ...";
     let* () = Static_analysis.Variadic_func.analyze chunk in
     let* () = Static_analysis.Const_var.analyze chunk in
-    (* let env = Env.empty () in -- WIP *)
-    print_endline "stdlib loading ...";
-    (* let* env = Lua_stdlib.load env in -- WIP *)
-    print_endline "scope analysis ...";
     let chunk, env = Scope.analysis chunk env in
     if debug then begin
       print_endline "debug mode: source after scope analysis view ...";
       Ast.print_block Format.std_formatter chunk
     end;
-    print_endline "interprete ...";
     let* vl, env = Interpret.run chunk env in
     let () = close_in ic in
     Ok (vl, env)
