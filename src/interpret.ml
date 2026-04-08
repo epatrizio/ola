@@ -412,13 +412,13 @@ and interpret_fct value el env =
         Ok (closure, v, env)
       | el ->
         let* vll, cl_env = to_vall el cl_env in
-        let vl = List.map (fun (_l, v) -> v) vll in
+        let vl = List.map snd vll in
         let closure = Vfunction (i, (pl, b), cl_env) in
         Ok (closure, VfunctionReturn vl, env)
       end
     end
   | VfunctionStdLib (i, fct) ->
-    let vall = List.map (fun (_l, v) -> v) vall in
+    let vall = List.map snd vall in
     begin try
       let ret, env = fct vall env in
       match ret with
@@ -724,7 +724,11 @@ and interpret_block b env =
 let rec run ?(pt = Begin) chunk env =
   try
     let bl = block_from_pointer pt chunk in
-    interpret_block bl env
+    let* env = interpret_block bl env in
+    Ok ([], env)
   with
   | Goto_catch (label, env) -> run ~pt:label chunk env
-  | Return_catch (_el, env) -> Ok env
+  | Return_catch (el, env) ->
+    let* vall, env = to_vall el env in
+    let vl = List.map snd vall in
+    Ok (vl, env)

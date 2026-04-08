@@ -16,4 +16,6 @@
   metatable.lua
   stdlib_basic.lua
   stdlib_math.lua
+  stdlib_require_mod.lua
+  stdlib_require.lua
   table.lua))

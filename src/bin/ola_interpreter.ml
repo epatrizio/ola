@@ -24,6 +24,6 @@ let () =
       let* env = Lua_stdlib.load env in
       Interpreter.process !in_file_name !debug env
   with
-  | Ok () -> ()
+  | Ok _ -> ()
   | Error (None, message) -> eprintf "%s@." message
   | Error (Some loc, message) -> eprintf "%a: %s@." Ast.pp_loc loc message

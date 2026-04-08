@@ -36,8 +36,9 @@ let process source_code_file debug env =
       Ast.print_block Format.std_formatter chunk
     end;
     print_endline "interprete ...";
-    let* _env = Interpret.run chunk env in
-    Ok (close_in ic)
+    let* vl, env = Interpret.run chunk env in
+    let () = close_in ic in
+    Ok (vl, env)
   with
   | Lexer.Lexing_error message ->
     let message = sprintf "Lexical error: %s" message in
