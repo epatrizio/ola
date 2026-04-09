@@ -1,2 +1,2 @@
 (cram
- (deps main.lua my_mod.lua))
+ (deps conf.lua main.lua mod/eucl_div.lua mod/utils.lua))

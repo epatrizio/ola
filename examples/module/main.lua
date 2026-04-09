@@ -1,4 +1,7 @@
-local eucl_div = require("my_mod")
+require("conf")
+local eucl_div = require("mod/eucl_div")
+
+print(Name)     -- From "conf"
 
 print(eucl_div._NAME)
 print(eucl_div._VERSION)

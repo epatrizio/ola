@@ -1,4 +1,6 @@
   $ dune exec ola main.lua
+  Configuration loading ...
+  Module example using 'require' stdlib function
   Euclidean division module
   1.0
   42, 1
