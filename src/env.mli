@@ -25,3 +25,9 @@ val add_value : string -> 'a -> 'a t -> ('a t, 'c option * 'b) result
 val get_locals : 'a t -> locals
 
 val with_locals : 'a t -> locals -> 'a t
+
+val add_package : string -> 'a list -> 'a t -> 'a t
+
+val get_package : string -> 'a t -> ('a list, 'b option * string) result
+
+val is_package_loaded : string -> 'a t -> bool

@@ -8,6 +8,7 @@ type 'a t =
   { values : 'a ref SMap.t
   ; globals : string SMap.t
   ; locals : locals
+  ; loaded_packages : 'a list SMap.t
   }
 
 (* hack: "unit option *" to get the right exception format (Ast.location option * string) *)
@@ -84,8 +85,22 @@ let get_locals env = env.locals
 
 let with_locals env locals = { env with locals }
 
+let add_package n vl env =
+  let loaded_packages = SMap.add n vl env.loaded_packages in
+  { env with loaded_packages }
+
+let get_package n env =
+  match SMap.find_opt n env.loaded_packages with
+  | None -> Error (None, Format.sprintf "package name: %s not loaded" n)
+  | Some vl -> Ok vl
+
+let is_package_loaded n env =
+  let find_opt = SMap.find_opt n env.loaded_packages in
+  Option.is_some find_opt
+
 let empty () =
   let values = SMap.empty in
   let globals = SMap.empty in
   let locals = SMap.empty in
-  { values; globals; locals }
+  let loaded_packages = SMap.empty in
+  { values; globals; locals; loaded_packages }
