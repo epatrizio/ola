@@ -13,6 +13,7 @@
   lua_stdlib_io
   lua_stdlib_math
   lua_stdlib_os
+  lua_stdlib_package
   parser
   scope
   static_analysis

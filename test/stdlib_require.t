@@ -7,3 +7,5 @@ stdlib require function:
   hello, world local!
   number
   42
+  true
+  false

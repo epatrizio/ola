@@ -9,3 +9,6 @@ print(hello)                -- hello, world local!
 
 print(type(i))              -- return from stdlib_require_mod
 print(i)                    -- 42
+
+print(package.loaded("stdlib_require_mod")) -- true
+print(package.loaded("ko_mod"))             -- false
