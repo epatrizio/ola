@@ -13,7 +13,7 @@ function To_constants(tbl)
       print("attempt to change constants", key, value)
     end
   }
-  proxy = setmetatable(proxy, mt)
+  setmetatable(proxy, mt)
   return proxy
 end
 

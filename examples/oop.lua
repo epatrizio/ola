@@ -14,9 +14,9 @@ C = { key3 = 333, key4 = 444 }
 D = { key2 = 2222, key5 = 5555 }
 
 -- A is a prototype for B (= B extends A)
-B = setmetatable(B, { __index = A })
+setmetatable(B, { __index = A })
 -- B is a prototype for C (= C extends B extends A)
-C = setmetatable(C, { __index = B })
+setmetatable(C, { __index = B })
 
 print(A.key1)   -- 1
 print(A.key2)   -- 2
@@ -35,7 +35,7 @@ print(C.key4)   -- 444
 
 -- Lua is dynamic, the type can change, the prototype can change!
 -- D is now the prototype for C (= C extends D)
-C = setmetatable(C, { __index = D })
+setmetatable(C, { __index = D })
 
 print(C.key1)   -- nil
 print(C.key2)   -- 2222

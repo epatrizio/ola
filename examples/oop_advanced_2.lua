@@ -88,9 +88,7 @@ function NewBlockAccount(initial_amount, initial_limit)
     setLimit(initial_limit)
 
     -- BlockAccount extends CheckingAccount
-    -- BUG: https://github.com/epatrizio/ola/issues/42
-    -- setmetatable(self, { __index = check_acc, __tostring = toString })
-    self = setmetatable(self, { __index = check_acc, __tostring = toString })
+    setmetatable(self, { __index = check_acc, __tostring = toString })
 
     return self
 end

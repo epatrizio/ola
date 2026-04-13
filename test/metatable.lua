@@ -8,16 +8,15 @@ mt1.__metatable = "protected metatable!"
 
 local tbl = {}
 
-tbl = setmetatable(tbl, mt1)
+setmetatable(tbl, mt1)
 print(getmetatable(tbl)) -- protected metatable!
 
-tbl = setmetatable(tbl, nil)
+setmetatable(tbl, nil)
 print(getmetatable(tbl)) -- nil
 
 local mt2 = { key_mt2 = "value_mt2" }
 
-tbl = setmetatable(tbl, mt2)
--- setmetatable(tbl, mt2)       -- BUG: same as tbl = setmetatable(tbl, mt2) (side effect on tbl, but env isn't updated)
+setmetatable(tbl, mt2)
 local mt = getmetatable(tbl)
 print(mt["key_mt2"]) -- value_mt2 (memo: ~ mt.key_mt2)
 
@@ -38,7 +37,7 @@ local mt3 = {
 
 tbl = { 11, 22, 33, key = "val" }
 
-tbl = setmetatable(tbl, mt3)
+setmetatable(tbl, mt3)
 print(tbl)
 
 -- __index tests
@@ -56,7 +55,7 @@ local mt4 = {
   end
 }
 
-tbl = setmetatable(tbl, mt4)
+setmetatable(tbl, mt4)
 
 print(tbl.key)       -- exists: val
 print(tbl.key_new)   -- not exists: fun call
@@ -71,7 +70,7 @@ local mt5 = {
   end
 }
 
-tbl = setmetatable(tbl, mt5)
+setmetatable(tbl, mt5)
 
 tbl[2] = 222            -- ok, already exists
 tbl.key_new = "val_new" -- new index: fun call
@@ -83,7 +82,7 @@ print(tbl[4])
 
 -- __name tests
 
-tbl = setmetatable(tbl, { __name = 42 })
+setmetatable(tbl, { __name = 42 })
 -- print(tbl)                                           -- table: uid (42 isn't a string)
-tbl = setmetatable(tbl, { __name = "custom_name" })
+setmetatable(tbl, { __name = "custom_name" })
 -- print(tbl)                                           -- custom_name: uid
