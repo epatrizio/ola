@@ -25,10 +25,7 @@ function CheckingAccount:new(obj, initial_amount)
             return "Balance checking_account: " .. a.balance
         end
     end
-    -- BUG: https://github.com/epatrizio/ola/issues/42
-    -- setmetatable(account, { __index = self, __tostring = toString })
-    account = setmetatable(account, { __index = self, __tostring = toString })
-
+    setmetatable(account, { __index = self, __tostring = toString })
     return account
 end
 

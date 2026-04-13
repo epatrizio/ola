@@ -184,8 +184,18 @@ let rec getmetatable v env =
     getmetatable [ vt ] env
   | _ -> ([ Vnil () ], env)
 
-(* TODO: memo, env must be updated. For now, it's impossible! *)
 let rec setmetatable v env =
+  let update_env name vl env =
+    match vl with
+    | [ (Vtable _ as vtbl) ] ->
+      begin match Env.update_value name vtbl env with
+      | Ok () -> (vl, env)
+      | Error (_, msg) -> Lua_stdlib_common.error msg
+      end
+    | _ ->
+      Lua_stdlib_common.typing_error
+        "bad return value for 'setmetatable' ([table] expected)"
+  in
   match v with
   | Vtable tbl :: Vnil () :: _tl ->
     let tbl = LuaTable.remove_metatable tbl in
@@ -205,17 +215,20 @@ let rec setmetatable v env =
     end
   | Vref (VarName n) :: Vnil () :: _tl ->
     let vt = get_table_value n env in
-    setmetatable [ vt; Vnil () ] env
+    let vl, env = setmetatable [ vt; Vnil () ] env in
+    update_env n vl env
   | Vref (VarName n) :: Vtable meta_tbl :: _tl ->
     let vt = get_table_value n env in
-    setmetatable [ vt; Vtable meta_tbl ] env
+    let vl, env = setmetatable [ vt; Vtable meta_tbl ] env in
+    update_env n vl env
   | Vtable tbl :: Vref (VarName n) :: _tl ->
     let vt = get_table_value n env in
     setmetatable [ Vtable tbl; vt ] env
   | Vref (VarName n_tbl) :: Vref (VarName n_meta_tbl) :: _tl ->
     let vtbl = get_table_value n_tbl env in
     let vmtbl = get_table_value n_meta_tbl env in
-    setmetatable [ vtbl; vmtbl ] env
+    let vl, env = setmetatable [ vtbl; vmtbl ] env in
+    update_env n_tbl vl env
   | Vtable _ :: _tl ->
     Lua_stdlib_common.typing_error
       "bad argument #2 to 'setmetatable' (nil or table expected)"
@@ -225,3 +238,15 @@ let rec setmetatable v env =
   | [] ->
     Lua_stdlib_common.typing_error
       "bad argument #1 to 'setmetatable' (nil or table expected)"
+
+let require v env =
+  match v with
+  | [ Vstring modul ] ->
+    let modul = Format.sprintf "%s.lua" modul in
+    begin match Interpreter.process modul false env with
+    | Ok (vl, env) -> (vl, env)
+    | Error (_, msg) ->
+      let msg = Format.sprintf "error loading module %s: %s" modul msg in
+      Lua_stdlib_common.error msg
+    end
+  | _ -> assert false

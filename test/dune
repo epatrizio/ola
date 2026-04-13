@@ -4,6 +4,8 @@
   basics.lua
   blocks.lua
   closure.lua
+  error_require_ko.lua
+  error_require.lua
   error.lua
   function_rec.lua
   function_ref.lua
@@ -11,7 +13,10 @@
   goto.lua
   iterators.lua
   len.lua
+  metatable_set.lua
   metatable.lua
   stdlib_basic.lua
   stdlib_math.lua
+  stdlib_require_mod.lua
+  stdlib_require.lua
   table.lua))

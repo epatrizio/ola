@@ -28,6 +28,7 @@ let lib () =
   let lib_basic =
     LibMap.add "setmetatable" Lua_stdlib_basic.setmetatable lib_basic
   in
+  let lib_basic = LibMap.add "require" Lua_stdlib_basic.require lib_basic in
   let lib = LibMap.empty in
   let lib = LibMap.add "math" LibMap.empty lib in
   let lib = add_func "math" "abs" Lua_stdlib_math.abs lib in
@@ -41,6 +42,8 @@ let lib () =
   let lib = add_func "io" "write" Lua_stdlib_io.write lib in
   let lib = LibMap.add "os" LibMap.empty lib in
   let lib = add_func "os" "execute" Lua_stdlib_os.execute lib in
+  let lib = LibMap.add "package" LibMap.empty lib in
+  let lib = add_func "package" "loaded" Lua_stdlib_package.loaded lib in
   (lib_basic, lib)
 
 let load env =

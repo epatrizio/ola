@@ -44,4 +44,17 @@ Here are some custom implemented examples (experimental, incomplete, but informa
   - Queue: `lua ./examples/data_structures/queue.lua`
   - Set: `dune exec ola -- ./examples/data_structures/set.lua`
 
+- [Modules](https://www.lua.org/manual/5.4/manual.html#6.3):
+*Another great native use of Lua tables!*\
+A real program must be organized into multiple files (best practice: one file, one module).
+Modules allow processes/routines/datas/... isolation.\
+[`require`](https://www.lua.org/manual/5.4/manual.html#pdf-require) stdlib function allows module loading by its name.
+This initial implementation is limited: Only Lua modules are supported,
+and they must be called using the format *dir/.../name*, without the *.lua* extension.
+In other words, for now, [`package.searchers`](https://www.lua.org/manual/5.4/manual.html#pdf-package.searchers)
+isn't implemented.\
+To run the example:
+  - `cd example/module`
+  - `dune exec ola -- main.lua`
+
 *Nb. Examples are part of the cram test suite except for Queue (Table stdlib not fully implemented)*

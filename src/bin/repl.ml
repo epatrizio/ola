@@ -44,7 +44,7 @@ let rec loop (chunk : Ast.Value.block) (env : Ast.Value.t Env.t) =
       let stmt = parser lexer in
       let stmt, env = Scope.analysis stmt env in
       let chunk = chunk @ stmt in
-      let* env = Interpret.run ~pt:Interpret.Last chunk env in
+      let* _, env = Interpret.run ~pt:Interpret.Last chunk env in
       loop chunk env
     with
     | Lexer.Lexing_error message ->
