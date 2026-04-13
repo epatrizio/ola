@@ -1,4 +1,6 @@
 metatables operations:
+  $ dune exec ola metatable_set.lua
+  nil
   $ dune exec ola metatable.lua
   nil
   nil
