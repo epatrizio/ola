@@ -28,7 +28,7 @@ module type S = sig
 
   type t
 
-  val empty : t
+  val empty : unit -> t
 
   val is_empty : t -> bool
 
@@ -75,7 +75,7 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
     ; uid : int32
     }
 
-  let empty =
+  let empty () =
     { ilist = []; klist = []; metatable = None; uid = Random.bits32 () }
 
   let rec k_add key value ktbl =

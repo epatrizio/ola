@@ -53,7 +53,7 @@ let load env =
     add_global_force func_name vfct env
   in
   let add_empty_lib name env =
-    let vtbl = Vtable LuaTable.empty in
+    let vtbl = Vtable (LuaTable.empty ()) in
     add_global_force name vtbl env
   in
   let add_function_lib lib_name fct_name fct env =

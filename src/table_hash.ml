@@ -32,7 +32,7 @@ module type S = sig
 
   type t
 
-  val empty : t
+  val empty : unit -> t
 
   val is_empty : t -> bool
 
@@ -78,9 +78,8 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
     ; uid : int32
     }
 
-  let empty =
-    let table = Hashtbl.create ~random:false 32 in
-    (* OK ? *)
+  let empty () =
+    let table = Hashtbl.create ~random:true 32 in
     { table; metatable = None; uid = Random.bits32 () }
 
   let add key value tbl =
@@ -100,38 +99,48 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
   (* "border" (~len) concept https://www.lua.org/manual/5.4/manual.html#3.4.7 *)
   (* TODO: remove: fun_border_up *)
   let border _fun_border_up tbl =
-    let int_key_arr = Array.make (length tbl) false in
-    let int_key_arr =
-      Hashtbl.fold
-        (fun key value acc ->
-          match Key.int_key_opt key with
-          | Some idx when idx > 0 && not (Key.is_nil value) ->
-            acc.(idx) <- true;
-            acc
-          | _ -> acc )
-        tbl.table int_key_arr
-    in
-    let rec cpt idx arr acc_len =
-      if not arr.(idx) then acc_len else cpt (idx + 1) arr (acc_len + 1)
-    in
-    cpt 1 int_key_arr 0
+    let len = length tbl in
+    if len = 0 then 0
+    else
+      let int_key_arr = Array.make len false in
+      let int_key_arr =
+        Hashtbl.fold
+          (fun key value acc ->
+            match Key.int_key_opt key with
+            | Some idx when idx > 0 && not (Key.is_nil value) ->
+              acc.(idx) <- true;
+              acc
+            | _ -> acc )
+          tbl.table int_key_arr
+      in
+      let rec cpt idx arr acc_len =
+        if not arr.(idx) then acc_len else cpt (idx + 1) arr (acc_len + 1)
+      in
+      cpt 1 int_key_arr 0
 
   let is_empty tbl = length tbl = 0
 
   (* https://www.lua.org/manual/5.4/manual.html#6.1
    TODO: Warning spec not fully implemented *)
   let next key_opt tbl =
+    let first_seq seq =
+      match seq () with Seq.Nil -> None | Seq.Cons ((k, v), _) -> Some (k, v)
+    in
     let rec next_seq key seq =
       match seq () with
       | Seq.Nil -> None
-      | Seq.Cons ((k, v), tl_seq) ->
-        if key = k then Some (k, v) else next_seq key tl_seq
+      | Seq.Cons ((k, _), tl_seq) ->
+        if key = k then first_seq tl_seq else next_seq key tl_seq
     in
     let seq_tbl = Hashtbl.to_seq tbl.table in
     match seq_tbl () with
     | Seq.Nil -> None
-    | Seq.Cons ((k, v), tl_seq) -> (
-      match key_opt with None -> Some (k, v) | Some key -> next_seq key tl_seq )
+    | Seq.Cons ((k, v), _tl_seq) -> (
+      match key_opt with
+      | None -> Some (k, v)
+      | Some key ->
+        if key_exists key tbl then next_seq key seq_tbl
+        else error "invalid key to 'next'" )
 
   (* TODO: remove: fun_border_up *)
   let inext fun_border_up idx tbl =

@@ -74,12 +74,14 @@ let rec next v env =
       begin match LuaTable.next None tbl with
       | Some (LuaTable.Ikey i, v) -> ([ Vnumber (Ninteger i); v ], env)
       | Some (LuaTable.Kkey k, v) -> ([ k; v ], env)
+      (* | Some (k, v) -> ([ k; v ], env) *)
       | None -> ([ Vnil () ], env)
       end
     | [ Vtable tbl; v ] ->
       begin match LuaTable.next (Some v) tbl with
       | Some (LuaTable.Ikey i, v) -> ([ Vnumber (Ninteger i); v ], env)
       | Some (LuaTable.Kkey k, v) -> ([ k; v ], env)
+      (* | Some (k, v) -> ([ k; v ], env) *)
       | None -> ([ Vnil () ], env)
       end
     | [ Vref (VarName n) ] ->

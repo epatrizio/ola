@@ -220,7 +220,8 @@ and interpret_expr (loc, expr) env =
   | Eprefix pexp -> interpret_prefixexp pexp env
   | Etableconstructor fl ->
     let idx = ref 0 in
-    let* table, env = tableconstructor LuaTable.empty idx fl env in
+    let empty_tbl = LuaTable.empty () in
+    let* table, env = tableconstructor empty_tbl idx fl env in
     Ok (Vtable table, env)
 
 and set_var v value env =

@@ -147,6 +147,8 @@ module rec Value : sig
   val key_of_string : string -> t
 
   val string_of_val : t -> string option
+
+  val is_nil : t -> bool
 end = struct
   type t =
     | Vnil of unit
@@ -221,9 +223,12 @@ end = struct
   let key_of_string str = Vstring str
 
   let string_of_val = function Vstring str -> Some str | _ -> None
+
+  let is_nil v = v = Vnil ()
 end
 
 and LuaTable : (Table.S with type kv = Value.t) = Table.Make (Value)
+(* and LuaTable : (Table_hash.S with type kv = Value.t) = Table_hash.Make (Value) *)
 
 (* utils *)
 
