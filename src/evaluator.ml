@@ -66,12 +66,10 @@ let eval_unop unop (loc, v) env =
     let* _ = typecheck_expr (loc, Eunop (Usharp, (loc, Evalue v))) env in
     begin match v with
     | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
-    | Vtable t ->
-      Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
+    | Vtable t -> Ok (Vnumber (Ninteger (LuaTable.border t)), env)
     | Vref (VarName n) ->
       begin match Ast_utils.get_luatable_value n env with
-      | Ok t ->
-        Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
+      | Ok t -> Ok (Vnumber (Ninteger (LuaTable.border t)), env)
       | _ -> assert false
       end
     | _ -> assert false (* typing error *)

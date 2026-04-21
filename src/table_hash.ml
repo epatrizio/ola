@@ -46,13 +46,13 @@ module type S = sig
 
   val get : kv -> t -> kv option
 
-  val border : (kv -> bool) -> t -> int
+  val border : t -> int
 
   val length : t -> int
 
   val next : kv option -> t -> (kv * kv) option
 
-  val inext : (kv -> bool) -> int -> t -> (int * kv) option
+  val inext : int -> t -> (int * kv) option
 
   val get_metatable : t -> t option
 
@@ -99,8 +99,7 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
   let length tbl = Hashtbl.length tbl.table
 
   (* "border" (~len) concept https://www.lua.org/manual/5.4/manual.html#3.4.7 *)
-  (* TODO: remove: fun_border_up *)
-  let border _fun_border_up tbl =
+  let border tbl =
     let rec cpt idx tbl acc_len =
       let key_idx = Key.key_of_int idx in
       match get key_idx tbl with
@@ -134,9 +133,8 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
         if key_exists key tbl then next_seq key seq_tbl
         else error "invalid key to 'next'" )
 
-  (* TODO: remove: fun_border_up *)
-  let inext fun_border_up idx tbl =
-    let border = border fun_border_up tbl in
+  let inext idx tbl =
+    let border = border tbl in
     if idx < border then
       let key_idx = Key.key_of_int (idx + 1) in
       match get key_idx tbl with None -> None | Some v -> Some (idx + 1, v)

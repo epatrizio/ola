@@ -107,12 +107,12 @@ let rec pairs v env =
 let rec inext v env =
   match v with
   | [ Vtable tbl ] | [ Vtable tbl; Vnil () ] ->
-    begin match LuaTable.inext (fun v -> v = Vnil ()) 0 tbl with
+    begin match LuaTable.inext 0 tbl with
     | Some (i, v) -> ([ Vnumber (Ninteger i); v ], env)
     | None -> ([ Vnil () ], env)
     end
   | [ Vtable tbl; Vnumber (Ninteger i) ] when i > 0 ->
-    begin match LuaTable.inext (fun v -> v = Vnil ()) i tbl with
+    begin match LuaTable.inext i tbl with
     | Some (i, v) -> ([ Vnumber (Ninteger i); v ], env)
     | None -> ([ Vnil () ], env)
     end
