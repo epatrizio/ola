@@ -144,6 +144,8 @@ module rec Value : sig
 
   val int_key_opt : t -> int option
 
+  val key_of_int : int -> t
+
   val key_of_string : string -> t
 
   val string_of_val : t -> string option
@@ -219,6 +221,8 @@ end = struct
   let int_key_opt = function
     | Vnumber (Ninteger i) when i > 0 -> Some i
     | _ -> None
+
+  let key_of_int i = Vnumber (Ninteger i)
 
   let key_of_string str = Vstring str
 

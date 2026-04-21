@@ -12,6 +12,8 @@ module type KeyType = sig
 
   val int_key_opt : t -> int option
 
+  val key_of_int : int -> t
+
   val key_of_string : string -> t
 
   val string_of_val : t -> string option
@@ -99,24 +101,14 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
   (* "border" (~len) concept https://www.lua.org/manual/5.4/manual.html#3.4.7 *)
   (* TODO: remove: fun_border_up *)
   let border _fun_border_up tbl =
-    let len = length tbl in
-    if len = 0 then 0
-    else
-      let int_key_arr = Array.make len false in
-      let int_key_arr =
-        Hashtbl.fold
-          (fun key value acc ->
-            match Key.int_key_opt key with
-            | Some idx when idx > 0 && not (Key.is_nil value) ->
-              acc.(idx) <- true;
-              acc
-            | _ -> acc )
-          tbl.table int_key_arr
-      in
-      let rec cpt idx arr acc_len =
-        if not arr.(idx) then acc_len else cpt (idx + 1) arr (acc_len + 1)
-      in
-      cpt 1 int_key_arr 0
+    let rec cpt idx tbl acc_len =
+      let key_idx = Key.key_of_int idx in
+      match get key_idx tbl with
+      | None -> acc_len
+      | Some v ->
+        if Key.is_nil v then acc_len else cpt (idx + 1) tbl (acc_len + 1)
+    in
+    cpt 1 tbl 0
 
   let is_empty tbl = length tbl = 0
 
