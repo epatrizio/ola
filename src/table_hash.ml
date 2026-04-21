@@ -27,11 +27,6 @@ module type S = sig
   (* kv: key-value (same type for key and value) *)
   type kv
 
-  (* TODO: remove *)
-  (* type key =
-    | Ikey of int
-    | Kkey of kv *)
-
   type t
 
   val empty : unit -> t
@@ -69,10 +64,6 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
   let error message = raise (Table_error message)
 
   type kv = Key.t
-
-  (* type key =
-    | Ikey of int
-    | Kkey of kv *)
 
   type t =
     { table : (Key.t, Key.t) Hashtbl.t
