@@ -137,12 +137,10 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
   (* TODO: remove: fun_border_up *)
   let inext fun_border_up idx tbl =
     let border = border fun_border_up tbl in
-    if idx < border then None
-    (* TODO *)
-    (* match i_get (idx + 1) tbl with
-      | Some v -> Some (idx + 1, v)
-      | None -> None *)
-      else None
+    if idx < border then
+      let key_idx = Key.key_of_int (idx + 1) in
+      match get key_idx tbl with None -> None | Some v -> Some (idx + 1, v)
+    else None
 
   let get_metatable tbl = tbl.metatable
 
