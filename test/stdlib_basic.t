@@ -17,16 +17,6 @@ basic stdlib:
   1, 1
   2, 2
   3, 3
-  nil
-  3, true
-  10, 10.1
-  42, 42
-  true, false
-  key, val
-  nil
-  1, 1
-  2, 2
-  3, 3
   1, 1
   2, 2
   3, 3

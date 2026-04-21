@@ -45,9 +45,10 @@ local function pairs_impl(table)
   return next, table, nil
 end
 
-for k, v in pairs_impl(tbl) do
-  print(k, v)
-end
+-- remove for deterministic test (hashtbl refacto PR#50)
+-- for k, v in pairs_impl(tbl) do
+--   print(k, v)
+-- end
 
 -- 3. table_map
 -- Builds a new table by applying a "transform" function to each element of an initial table
@@ -70,9 +71,17 @@ local function hello(str)
   return "hello, " .. str .. "!"
 end
 
-for k, v in pairs_impl(table_map(hello, tbl_names)) do
-  print(k, v)
-end
+-- remove for deterministic test (hashtbl refacto PR#50)
+-- for k, v in pairs_impl(table_map(hello, tbl_names)) do
+--   print(k, v)
+-- end
+-- => replace for deterministic test
+local tbl_names_map = table_map(hello, tbl_names)
+print(1, tbl_names_map[1])
+print(2, tbl_names_map[2])
+print(3, tbl_names_map[3])
+print("name1", tbl_names_map["name1"])
+print("name2", tbl_names_map["name2"])
 
 -- 4. table_filter
 -- Builds a new table by filtering each element with a condition function
@@ -97,9 +106,19 @@ local function is_positive(num)
   return num > 0
 end
 
-for k, v in pairs_impl(table_filter(is_positive, tbl_nums)) do
-  print(k, v)
-end
+-- remove for deterministic test (hashtbl refacto PR#50)
+-- for k, v in pairs_impl(table_filter(is_positive, tbl_nums)) do
+--   print(k, v)
+-- end
+-- => replace for deterministic test
+local tbl_nums_filter = table_filter(is_positive, tbl_nums)
+print(1, tbl_nums_filter[1])
+print(2, tbl_nums_filter[2])
+print(3, tbl_nums_filter[3])
+print(4, tbl_nums_filter[4])
+print(5, tbl_nums_filter[5])
+print(6, tbl_nums_filter[6])
+print(7, tbl_nums_filter[7])
 
 -- 5. table_fold
 -- Iterate over the whole table to calculate an accumulator by a step function
@@ -138,8 +157,9 @@ local function table_iteri(fun_iteri, table)
   end
 end
 
-table_iter(print, tbl_names)
-table_iteri(print, tbl_names)
+-- remove for deterministic test (hashtbl refacto PR#50)
+-- table_iter(print, tbl_names)
+-- table_iteri(print, tbl_names)
 
 -- 7. table_find
 -- find the first table element that satisfies the predicate function

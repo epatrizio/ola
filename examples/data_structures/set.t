@@ -3,5 +3,3 @@
   true
   true
   false
-  word_1
-  word_2

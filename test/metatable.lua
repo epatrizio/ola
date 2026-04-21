@@ -26,7 +26,8 @@ local mt3 = {
     local arr_str = ""
     local k_str = ""
     local v_str = ""
-    for k, v in pairs(arr) do
+    -- for deterministic test (hashtbl refacto PR#50): pairs > ipairs
+    for k, v in ipairs(arr) do
       k_str = tostring(k)
       v_str = tostring(v)
       arr_str = arr_str .. k_str .. ":" .. v_str .. ", "

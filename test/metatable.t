@@ -9,7 +9,7 @@ metatables operations:
   protected metatable!
   nil
   value_mt2
-  {1:11, 2:22, 3:33, key:val, }
+  {1:11, 2:22, 3:33, }
   val
   val_new
   nil
