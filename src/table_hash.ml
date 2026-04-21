@@ -4,8 +4,7 @@
 
 let () = Random.self_init ()
 
-(* TODO: rename KeyValueType *)
-module type KeyType = sig
+module type ValueType = sig
   type t
 
   val is_nil : t -> bool
@@ -58,15 +57,15 @@ module type S = sig
   val to_string : t -> string
 end
 
-module Make (Key : KeyType) : S with type kv = Key.t = struct
+module Make (KeyValue : ValueType) : S with type kv = KeyValue.t = struct
   exception Table_error of string
 
   let error message = raise (Table_error message)
 
-  type kv = Key.t
+  type kv = KeyValue.t
 
   type t =
-    { table : (Key.t, Key.t) Hashtbl.t
+    { table : (kv, kv) Hashtbl.t
     ; metatable : t option
     ; uid : int32
     }
@@ -92,11 +91,11 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
   (* "border" (~len) concept https://www.lua.org/manual/5.4/manual.html#3.4.7 *)
   let border tbl =
     let rec cpt idx tbl acc_len =
-      let key_idx = Key.key_of_int idx in
+      let key_idx = KeyValue.key_of_int idx in
       match get key_idx tbl with
       | None -> acc_len
       | Some v ->
-        if Key.is_nil v then acc_len else cpt (idx + 1) tbl (acc_len + 1)
+        if KeyValue.is_nil v then acc_len else cpt (idx + 1) tbl (acc_len + 1)
     in
     cpt 1 tbl 0
 
@@ -127,7 +126,7 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
   let inext idx tbl =
     let border = border tbl in
     if idx < border then
-      let key_idx = Key.key_of_int (idx + 1) in
+      let key_idx = KeyValue.key_of_int (idx + 1) in
       match get key_idx tbl with None -> None | Some v -> Some (idx + 1, v)
     else None
 
@@ -141,9 +140,11 @@ module Make (Key : KeyType) : S with type kv = Key.t = struct
     let str_prefix =
       match get_metatable tbl with
       | Some mt ->
-        begin match get (Key.key_of_string "__name") mt with
+        begin match get (KeyValue.key_of_string "__name") mt with
         | Some k ->
-          begin match Key.string_of_val k with Some s -> s | None -> "table"
+          begin match KeyValue.string_of_val k with
+          | Some s -> s
+          | None -> "table"
           end
         | None -> "table"
         end
