@@ -16,3 +16,5 @@ metatable typer checks:
   Interpretation error: metatable.__index: attempt to index a non table or function value
   $ dune exec ola metatable_8.lua
   Interpretation error: metatable.__newindex: attempt to index a non table or function value
+  $ dune exec ola metatable_9.lua
+  Interpretation error: Typing error: metatable.__pairs: attempt to call a non function value

@@ -87,3 +87,17 @@ setmetatable(tbl, { __name = 42 })
 -- print(tbl)                                           -- table: uid (42 isn't a string)
 setmetatable(tbl, { __name = "custom_name" })
 -- print(tbl)                                           -- custom_name: uid
+
+-- __pairs test
+
+setmetatable(tbl, {__pairs =
+  function(t)
+    return
+      function()
+        print("custom metamethod __pairs")
+        return nil
+      end
+  end
+})
+
+for k, v in pairs(tbl) do print(k, v) end

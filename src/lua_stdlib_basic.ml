@@ -91,8 +91,26 @@ let rec next v env =
 
 let rec pairs v env =
   match v with
-  | [ Vtable tbl ] ->
-    ([ VfunctionStdLib (Random.bits32 (), next); Vtable tbl; Vnil () ], env)
+  | [ (Vtable tbl as t) ] ->
+    begin match LuaTable.get_metatable tbl with
+    | Some mt ->
+      begin match LuaTable.get (Vstring "__pairs") mt with
+      | Some (Vfunction (_, _, _) as f) ->
+        let _, v, env =
+          match
+            Interpret.interpret_fct f [ (Ast.empty_location (), Evalue t) ] env
+          with
+          | Error (_, msg) -> Lua_stdlib_common.error msg
+          | Ok v -> v
+        in
+        ([ v; t; Vnil () ], env)
+      | Some _ ->
+        Lua_stdlib_common.typing_error
+          "metatable.__pairs: attempt to call a non function value"
+      | None -> ([ VfunctionStdLib (Random.bits32 (), next); t; Vnil () ], env)
+      end
+    | None -> ([ VfunctionStdLib (Random.bits32 (), next); t; Vnil () ], env)
+    end
   | [ Vref (VarName n) ] ->
     let vt = get_table_value n env in
     pairs [ vt ] env

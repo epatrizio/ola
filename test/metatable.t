@@ -27,3 +27,4 @@ metatables operations:
   222
   nil
   nil
+  custom metamethod __pairs
