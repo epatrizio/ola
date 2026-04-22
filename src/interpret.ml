@@ -247,15 +247,10 @@ and set_var v value env =
     in
     let idx = Eval_utils.integer_of_float_value idx in
     match t with
-    | Vtable t as tbl ->
-      if value = Vnil () then
-        let t = LuaTable.remove idx t in
-        let v = var_of_prefixexp pexp env in
-        set_var v (Vtable t) env
-      else
-        let* tbl, env = newindex_metamechanism idx value tbl env in
-        let v = var_of_prefixexp pexp env in
-        set_var v tbl env
+    | Vtable _ as tbl ->
+      let* tbl, env = newindex_metamechanism idx value tbl env in
+      let v = var_of_prefixexp pexp env in
+      set_var v tbl env
     | Vref (VarName v) ->
       begin match Ast_utils.get_table_value v env with
       | Ok _ ->

@@ -75,7 +75,8 @@ module Make (KeyValue : ValueType) : S with type kv = KeyValue.t = struct
     { table; metatable = None; uid = Random.bits32 () }
 
   let add key value tbl =
-    Hashtbl.replace tbl.table key value;
+    if KeyValue.is_nil value then Hashtbl.remove tbl.table key
+    else Hashtbl.replace tbl.table key value;
     tbl
 
   let remove key tbl =
