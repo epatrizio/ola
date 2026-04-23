@@ -76,35 +76,31 @@ and interpret_var v env =
 and index_metamechanism idx tbl env =
   match tbl with
   | Vtable t ->
-    begin match LuaTable.get_metatable t with
-    | Some mt ->
-      begin match LuaTable.get (Vstring "__index") mt with
-      | Some v ->
-        begin match v with
-        | Vtable t as tbl ->
+    begin match LuaTable.get_metatable_field "__index" t with
+    | Some v ->
+      begin match v with
+      | Vtable t as tbl ->
+        begin match LuaTable.get idx t with
+        | None -> index_metamechanism idx tbl env
+        | Some v -> Ok (v, env)
+        end
+      | Vfunction (_i, _pb, _env) as f ->
+        let arr = (empty_location (), Evalue tbl) in
+        let key = (empty_location (), Evalue idx) in
+        let* _, v, _env = interpret_fct f [ arr; key ] _env in
+        Ok (v, env)
+      | Vref (VarName n) ->
+        begin match Ast_utils.get_table_value n env with
+        | Ok (Vtable t as tbl) ->
           begin match LuaTable.get idx t with
           | None -> index_metamechanism idx tbl env
           | Some v -> Ok (v, env)
           end
-        | Vfunction (_i, _pb, _env) as f ->
-          let arr = (empty_location (), Evalue tbl) in
-          let key = (empty_location (), Evalue idx) in
-          let* _, v, _env = interpret_fct f [ arr; key ] _env in
-          Ok (v, env)
-        | Vref (VarName n) ->
-          begin match Ast_utils.get_table_value n env with
-          | Ok (Vtable t as tbl) ->
-            begin match LuaTable.get idx t with
-            | None -> index_metamechanism idx tbl env
-            | Some v -> Ok (v, env)
-            end
-          | _ -> assert false
-          end
-        | _ ->
-          error None
-            "metatable.__index: attempt to index a non table or function value"
+        | _ -> assert false
         end
-      | None -> Ok (Vnil (), env)
+      | _ ->
+        error None
+          "metatable.__index: attempt to index a non table or function value"
       end
     | None -> Ok (Vnil (), env)
     end
@@ -117,26 +113,21 @@ and newindex_metamechanism idx value tbl env =
   in
   match tbl with
   | Vtable t ->
-    begin match LuaTable.get_metatable t with
-    | Some mt ->
-      begin match LuaTable.get (Vstring "__newindex") mt with
-      | Some v ->
-        begin match v with
-        | Vtable _ -> assert false (* TODO *)
-        | Vfunction (_i, _pb, _env) as f ->
-          if LuaTable.key_exists idx t then tbl_add idx value t env
-          else
-            let arr = (empty_location (), Evalue tbl) in
-            let key = (empty_location (), Evalue idx) in
-            let value = (empty_location (), Evalue value) in
-            let* _, _v, _env = interpret_fct f [ arr; key; value ] _env in
-            Ok (Vtable t, env)
-        | _ ->
-          error None
-            "metatable.__newindex: attempt to index a non table or function \
-             value"
-        end
-      | None -> tbl_add idx value t env
+    begin match LuaTable.get_metatable_field "__newindex" t with
+    | Some v ->
+      begin match v with
+      | Vtable _ -> assert false (* TODO *)
+      | Vfunction (_i, _pb, _env) as f ->
+        if LuaTable.key_exists idx t then tbl_add idx value t env
+        else
+          let arr = (empty_location (), Evalue tbl) in
+          let key = (empty_location (), Evalue idx) in
+          let value = (empty_location (), Evalue value) in
+          let* _, _v, _env = interpret_fct f [ arr; key; value ] _env in
+          Ok (Vtable t, env)
+      | _ ->
+        error None
+          "metatable.__newindex: attempt to index a non table or function value"
       end
     | None -> tbl_add idx value t env
     end

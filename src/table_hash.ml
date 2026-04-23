@@ -2,6 +2,8 @@
    All functions ignore non-numeric keys in the tables given as arguments.
 *)
 
+open Syntax
+
 let () = Random.self_init ()
 
 module type ValueType = sig
@@ -49,6 +51,8 @@ module type S = sig
   val inext : int -> t -> (int * kv) option
 
   val get_metatable : t -> t option
+
+  val get_metatable_field : string -> t -> kv option
 
   val set_metatable : t -> t -> t
 
@@ -133,23 +137,20 @@ module Make (KeyValue : ValueType) : S with type kv = KeyValue.t = struct
 
   let get_metatable tbl = tbl.metatable
 
+  let get_metatable_field name tbl =
+    let+ mt = get_metatable tbl in
+    get (KeyValue.key_of_string name) mt
+
   let set_metatable meta_tbl tbl = { tbl with metatable = Some meta_tbl }
 
   let remove_metatable tbl = { tbl with metatable = None }
 
   let to_string tbl =
     let str_prefix =
-      match get_metatable tbl with
-      | Some mt ->
-        begin match get (KeyValue.key_of_string "__name") mt with
-        | Some k ->
-          begin match KeyValue.string_of_val k with
-          | Some s -> s
-          | None -> "table"
-          end
-        | None -> "table"
-        end
+      match get_metatable_field "__name" tbl with
       | None -> "table"
+      | Some k -> (
+        match KeyValue.string_of_val k with Some s -> s | None -> "table" )
     in
     Format.sprintf "%s: %i" str_prefix (Int32.to_int tbl.uid)
 end
