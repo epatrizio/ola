@@ -107,31 +107,21 @@ and index_metamechanism idx tbl env =
   | _ -> assert false
 
 and newindex_metamechanism idx value tbl env =
-  let tbl_add idx value t env =
-    let t = LuaTable.add idx value t in
-    Ok (Vtable t, env)
-  in
-  match tbl with
-  | Vtable t ->
-    begin match LuaTable.get_metatable_field "__newindex" t with
-    | Some v ->
-      begin match v with
-      | Vtable _ -> assert false (* TODO *)
-      | Vfunction (_i, _pb, _env) as f ->
-        if LuaTable.key_exists idx t then tbl_add idx value t env
-        else
-          let arr = (empty_location (), Evalue tbl) in
-          let key = (empty_location (), Evalue idx) in
-          let value = (empty_location (), Evalue value) in
-          let* _, _v, _env = interpret_fct f [ arr; key; value ] _env in
-          Ok (Vtable t, env)
-      | _ ->
-        error None
-          "metatable.__newindex: attempt to index a non table or function value"
-      end
-    | None -> tbl_add idx value t env
+  match LuaTable.add_meta_newindex idx value tbl with
+  | Ok tbl -> Ok (Vtable tbl, env)
+  | Error mt ->
+    begin match mt with
+    | Vtable _ -> assert false (* TODO *)
+    | Vfunction (_i, _pb, _env) as f ->
+      let arr = (empty_location (), Evalue (Vtable tbl)) in
+      let key = (empty_location (), Evalue idx) in
+      let value = (empty_location (), Evalue value) in
+      let* _, _v, _env = interpret_fct f [ arr; key; value ] _env in
+      Ok (Vtable tbl, env)
+    | _ ->
+      error None
+        "metatable.__newindex: attempt to index a non table or function value"
     end
-  | _ -> assert false
 
 and interpret_field field env =
   match field with
@@ -238,8 +228,8 @@ and set_var v value env =
     in
     let idx = Eval_utils.integer_of_float_value idx in
     match t with
-    | Vtable _ as tbl ->
-      let* tbl, env = newindex_metamechanism idx value tbl env in
+    | Vtable t ->
+      let* tbl, env = newindex_metamechanism idx value t env in
       let v = var_of_prefixexp pexp env in
       set_var v tbl env
     | Vref (VarName v) ->

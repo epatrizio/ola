@@ -36,6 +36,8 @@ module type S = sig
 
   val add : kv -> kv -> t -> t
 
+  val add_meta_newindex : kv -> kv -> t -> (t, kv) result
+
   val remove : kv -> t -> t
 
   val key_exists : kv -> t -> bool
@@ -144,6 +146,13 @@ module Make (KeyValue : ValueType) : S with type kv = KeyValue.t = struct
   let set_metatable meta_tbl tbl = { tbl with metatable = Some meta_tbl }
 
   let remove_metatable tbl = { tbl with metatable = None }
+
+  let add_meta_newindex key value tbl =
+    if key_exists key tbl then Ok (add key value tbl)
+    else
+      match get_metatable_field "__newindex" tbl with
+      | None -> Ok (add key value tbl)
+      | Some mt -> Error mt
 
   let to_string tbl =
     let str_prefix =
