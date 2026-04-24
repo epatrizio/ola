@@ -18,7 +18,6 @@
   scope
   static_analysis
   syntax
-  table_hash
   table
   typer
   utils)

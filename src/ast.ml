@@ -235,8 +235,7 @@ end = struct
   let is_nil v = v = Vnil ()
 end
 
-(* and LuaTable : (Table.S with type kv = Value.t) = Table.Make (Value) *)
-and LuaTable : (Table_hash.S with type kv = Value.t) = Table_hash.Make (Value)
+and LuaTable : (Table.S with type kv = Value.t) = Table.Make (Value)
 
 (* utils *)
 
