@@ -14,8 +14,7 @@ module Eval_utils : sig
 
   val integer_of_float_value : Ast.Value.t -> Ast.Value.t
 end = struct
-  let number_of_string loc value =
-    match value with
+  let number_of_string loc = function
     | Vstring str ->
       begin match int_of_string_opt str with
       | Some i -> Vnumber (Ninteger i)
@@ -26,16 +25,15 @@ end = struct
           error loc
             (Format.sprintf "attempt to perform on a string (%s) value" str) )
       end
-    | _ -> value
+    | v -> v
 
-  let integer_of_float loc value =
-    match value with
+  let integer_of_float loc = function
     | Vnumber (Nfloat f) ->
       if Float.is_integer f then Vnumber (Ninteger (int_of_float f))
       else
         error (Some loc)
           ("number has no integer representation: " ^ string_of_float f)
-    | _ -> value
+    | v -> v
 
   let integer_of_float_value = function
     | Vnumber (Nfloat f) as v ->

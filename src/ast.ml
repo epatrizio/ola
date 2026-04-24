@@ -304,21 +304,18 @@ let print_binop fmt binop =
   | Bneq -> "~="
   | Bddot -> ".."
 
-let print_number fmt number =
-  match number with
+let print_number fmt = function
   | Ninteger i -> pp_print_int fmt i
   | Nfloat f -> pp_print_float fmt f
 
-let print_parlist fmt pl =
-  match pl with
+let print_parlist fmt = function
   | PLlist (nl, true) ->
     fprintf fmt {|%a, ...|} (pp_print_list ~pp_sep pp_print_string) nl
   | PLlist (nl, false) ->
     fprintf fmt {|%a|} (pp_print_list ~pp_sep pp_print_string) nl
   | PLvariadic -> fprintf fmt "..."
 
-let rec print_value fmt value =
-  match value with
+let rec print_value fmt = function
   | Vnil () -> pp_print_string fmt "nil"
   | Vboolean b -> pp_print_bool fmt b
   | Vnumber num -> print_number fmt num
@@ -330,15 +327,13 @@ let rec print_value fmt value =
   | Vtable tbl -> fprintf fmt {|%s|} (LuaTable.to_string tbl)
   | Vref v -> fprintf fmt {|ref: %a|} print_var v
 
-and print_var fmt v =
-  match v with
+and print_var fmt = function
   | VarName n -> pp_print_string fmt n
   | VarTableField (pexp, exp) ->
     fprintf fmt {|%a[%a]|} print_prefixexp pexp print_expr exp
 (* | VarTableFieldName (pexp, n) -> fprintf fmt {|%a.%s|} print_prefixexp pexp n *)
 
-and print_field fmt f =
-  match f with
+and print_field fmt = function
   | Fexp e -> print_expr fmt e
   | Fname (n, e) -> fprintf fmt {|%s = %a|} n print_expr e
   | Fcol (e1, e2) -> fprintf fmt {|[%a] = %a|} print_expr e1 print_expr e2
@@ -351,20 +346,17 @@ and print_eo fmt eo = Option.iter (fprintf fmt {|, %a|} print_expr) eo
 and print_funcbody fmt (pl, b) =
   fprintf fmt {|(%a)@,%aend|} print_parlist pl print_block b
 
-and print_prefixexp fmt prexp =
-  match prexp with
+and print_prefixexp fmt = function
   | PEvar v -> print_var fmt v
   | PEfunctioncall fc -> print_functioncall fmt fc
   | PEexp e -> fprintf fmt {|(%a)|} print_expr e
 
-and print_args fmt args =
-  match args with
+and print_args fmt = function
   | Aexpl el -> fprintf fmt {|(%a)|} (pp_print_list ~pp_sep print_expr) el
 (* | Atable fl -> print_fieldlist fmt fl *)
 (* | Astr s -> pp_print_string fmt s *)
 
-and print_functioncall fmt fc =
-  match fc with
+and print_functioncall fmt = function
   | FCpreargs (pexp, args) ->
     fprintf fmt {|%a%a|} print_prefixexp pexp print_args args
   | FCprename (pexp, n, args) ->
