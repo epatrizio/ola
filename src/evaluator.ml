@@ -14,8 +14,7 @@ module Eval_utils : sig
 
   val integer_of_float_value : Ast.Value.t -> Ast.Value.t
 end = struct
-  let number_of_string loc value =
-    match value with
+  let number_of_string loc = function
     | Vstring str ->
       begin match int_of_string_opt str with
       | Some i -> Vnumber (Ninteger i)
@@ -26,16 +25,15 @@ end = struct
           error loc
             (Format.sprintf "attempt to perform on a string (%s) value" str) )
       end
-    | _ -> value
+    | v -> v
 
-  let integer_of_float loc value =
-    match value with
+  let integer_of_float loc = function
     | Vnumber (Nfloat f) ->
       if Float.is_integer f then Vnumber (Ninteger (int_of_float f))
       else
         error (Some loc)
           ("number has no integer representation: " ^ string_of_float f)
-    | _ -> value
+    | v -> v
 
   let integer_of_float_value = function
     | Vnumber (Nfloat f) as v ->
@@ -66,12 +64,10 @@ let eval_unop unop (loc, v) env =
     let* _ = typecheck_expr (loc, Eunop (Usharp, (loc, Evalue v))) env in
     begin match v with
     | Vstring s -> Ok (Vnumber (Ninteger (String.length s)), env)
-    | Vtable t ->
-      Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
+    | Vtable t -> Ok (Vnumber (Ninteger (LuaTable.border t)), env)
     | Vref (VarName n) ->
       begin match Ast_utils.get_luatable_value n env with
-      | Ok t ->
-        Ok (Vnumber (Ninteger (LuaTable.border (fun v -> v = Vnil ()) t)), env)
+      | Ok t -> Ok (Vnumber (Ninteger (LuaTable.border t)), env)
       | _ -> assert false
       end
     | _ -> assert false (* typing error *)

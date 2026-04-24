@@ -37,6 +37,7 @@ print(set.has("word_1", s))   -- true
 print(set.has("word_2", s))   -- true
 print(set.has("word_3", s))   -- false
 
-for k, _v in pairs(s) do
-  print(k)
-end
+-- remove for deterministic test (hashtbl refacto PR#50)
+-- for k, _v in pairs(s) do
+--   print(k)
+-- end

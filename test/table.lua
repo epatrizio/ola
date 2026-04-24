@@ -148,7 +148,14 @@ nothing { 42 }
 
 -- remove
 
-local tbl7 = { ["key_1"] = "val_1", ["key_2"] = "val_2" }
+local tbl7 = { ["key_1"] = nil }
+tbl7["key_2"] = nil
+
+for k, v in pairs(tbl7) do
+    print(k, v)
+end
+
+tbl7 = { ["key_1"] = "val_1", ["key_2"] = "val_2" }
 tbl7["key_1"] = nil
 
 for k, _v in pairs(tbl7) do

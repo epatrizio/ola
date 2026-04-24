@@ -20,23 +20,19 @@ let rec tostring_value v env =
   | Vnumber (Nfloat f) -> (string_of_float f, env)
   | Vstring s -> (s, env)
   | Vtable tbl as t ->
-    begin match LuaTable.get_metatable tbl with
-    | Some mt ->
-      begin match LuaTable.get (Vstring "__tostring") mt with
-      | Some (Vfunction (_, _, _) as f) ->
-        let _, v2, env =
-          match
-            Interpret.interpret_fct f [ (Ast.empty_location (), Evalue t) ] env
-          with
-          | Error (_, msg) -> Lua_stdlib_common.error msg
-          | Ok v -> v
-        in
-        tostring_value v2 env
-      | Some _ ->
-        Lua_stdlib_common.typing_error
-          "metatable.__tostring: attempt to call a non function value"
-      | None -> (LuaTable.to_string tbl, env)
-      end
+    begin match LuaTable.get_metatable_field "__tostring" tbl with
+    | Some (Vfunction (_, _, _) as f) ->
+      let _, v2, env =
+        match
+          Interpret.interpret_fct f [ (Ast.empty_location (), Evalue t) ] env
+        with
+        | Error (_, msg) -> Lua_stdlib_common.error msg
+        | Ok v -> v
+      in
+      tostring_value v2 env
+    | Some _ ->
+      Lua_stdlib_common.typing_error
+        "metatable.__tostring: attempt to call a non function value"
     | None -> (LuaTable.to_string tbl, env)
     end
   | Vfunction (i, _, _) | VfunctionStdLib (i, _) ->
@@ -72,14 +68,12 @@ let rec next v env =
     match v with
     | [ Vtable tbl ] | [ Vtable tbl; Vnil () ] ->
       begin match LuaTable.next None tbl with
-      | Some (LuaTable.Ikey i, v) -> ([ Vnumber (Ninteger i); v ], env)
-      | Some (LuaTable.Kkey k, v) -> ([ k; v ], env)
+      | Some (k, v) -> ([ k; v ], env)
       | None -> ([ Vnil () ], env)
       end
     | [ Vtable tbl; v ] ->
       begin match LuaTable.next (Some v) tbl with
-      | Some (LuaTable.Ikey i, v) -> ([ Vnumber (Ninteger i); v ], env)
-      | Some (LuaTable.Kkey k, v) -> ([ k; v ], env)
+      | Some (k, v) -> ([ k; v ], env)
       | None -> ([ Vnil () ], env)
       end
     | [ Vref (VarName n) ] ->
@@ -93,8 +87,22 @@ let rec next v env =
 
 let rec pairs v env =
   match v with
-  | [ Vtable tbl ] ->
-    ([ VfunctionStdLib (Random.bits32 (), next); Vtable tbl; Vnil () ], env)
+  | [ (Vtable tbl as t) ] ->
+    begin match LuaTable.get_metatable_field "__pairs" tbl with
+    | Some (Vfunction (_, _, _) as f) ->
+      let _, v, env =
+        match
+          Interpret.interpret_fct f [ (Ast.empty_location (), Evalue t) ] env
+        with
+        | Error (_, msg) -> Lua_stdlib_common.error msg
+        | Ok v -> v
+      in
+      ([ v; t; Vnil () ], env)
+    | Some _ ->
+      Lua_stdlib_common.typing_error
+        "metatable.__pairs: attempt to call a non function value"
+    | None -> ([ VfunctionStdLib (Random.bits32 (), next); t; Vnil () ], env)
+    end
   | [ Vref (VarName n) ] ->
     let vt = get_table_value n env in
     pairs [ vt ] env
@@ -105,12 +113,12 @@ let rec pairs v env =
 let rec inext v env =
   match v with
   | [ Vtable tbl ] | [ Vtable tbl; Vnil () ] ->
-    begin match LuaTable.inext (fun v -> v = Vnil ()) 0 tbl with
+    begin match LuaTable.inext 0 tbl with
     | Some (i, v) -> ([ Vnumber (Ninteger i); v ], env)
     | None -> ([ Vnil () ], env)
     end
   | [ Vtable tbl; Vnumber (Ninteger i) ] when i > 0 ->
-    begin match LuaTable.inext (fun v -> v = Vnil ()) i tbl with
+    begin match LuaTable.inext i tbl with
     | Some (i, v) -> ([ Vnumber (Ninteger i); v ], env)
     | None -> ([ Vnil () ], env)
     end
@@ -174,8 +182,8 @@ let rec getmetatable v env =
     begin match LuaTable.get_metatable tbl with
     | Some mt ->
       begin match LuaTable.get (Vstring "__metatable") mt with
-      | Some v -> ([ v ], env)
-      | None -> ([ Vtable mt ], env)
+      | Ok v -> ([ v ], env)
+      | Error _ -> ([ Vtable mt ], env)
       end
     | None -> ([ Vnil () ], env)
     end
@@ -201,14 +209,8 @@ let rec setmetatable v env =
     let tbl = LuaTable.remove_metatable tbl in
     ([ Vtable tbl ], env)
   | Vtable tbl :: Vtable meta_tbl :: _tl ->
-    begin match LuaTable.get_metatable tbl with
-    | Some mt ->
-      begin match LuaTable.get (Vstring "__metatable") mt with
-      | Some _ -> Lua_stdlib_common.error "cannot change a protected metatable"
-      | None ->
-        let tbl = LuaTable.set_metatable meta_tbl tbl in
-        ([ Vtable tbl ], env)
-      end
+    begin match LuaTable.get_metatable_field "__metatable" tbl with
+    | Some _ -> Lua_stdlib_common.error "cannot change a protected metatable"
     | None ->
       let tbl = LuaTable.set_metatable meta_tbl tbl in
       ([ Vtable tbl ], env)

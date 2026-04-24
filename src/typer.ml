@@ -34,8 +34,7 @@ let rec typecheck_value value env =
     | Ok typ -> Tref typ
     | Error (loc_opt, msg) -> error loc_opt msg )
 
-and typecheck_function value =
-  match value with
+and typecheck_function = function
   | Vfunction _ -> Ok Tfunction
   | VfunctionStdLib _ -> Ok TfunctionStdLib
   | VfunctionReturn [] -> error None "attempt to call a nil value"

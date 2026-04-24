@@ -14,8 +14,7 @@ let error loc_opt message = raise (Static_analysis_error (loc_opt, message))
 module Variadic_func : sig
   val analyze : Ast.Value.block -> (unit, 'a) result
 end = struct
-  let is_variadic_function parlist =
-    match parlist with
+  let is_variadic_function = function
     | PLvariadic | PLlist (_, true) -> true
     | PLlist (_, false) -> false
 
@@ -37,18 +36,15 @@ end = struct
         error (Some loc) "cannot use '...' outside a vararg function near '...'"
       else false
 
-  and analyze_prefixexp prefixexp =
-    match prefixexp with
+  and analyze_prefixexp = function
     | PEvar _ | PEfunctioncall _ -> false
     | PEexp e -> analyze_expr e
 
-  and analyze_field field =
-    match field with
+  and analyze_field = function
     | Fexp e | Fname (_, e) -> analyze_expr e
     | Fcol (e1, e2) -> analyze_expr e1 || analyze_expr e2
 
-  and analyze_stmt stmt =
-    match stmt with
+  and analyze_stmt = function
     | Sassign (_, el) | SassignLocal (_, el) -> check_list el analyze_expr
     | Sempty | Sbreak | Sreturn _ | Slabel _ | Sgoto _ | SfunctionCall _ ->
       false

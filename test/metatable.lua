@@ -26,7 +26,8 @@ local mt3 = {
     local arr_str = ""
     local k_str = ""
     local v_str = ""
-    for k, v in pairs(arr) do
+    -- for deterministic test (hashtbl refacto PR#50): pairs > ipairs
+    for k, v in ipairs(arr) do
       k_str = tostring(k)
       v_str = tostring(v)
       arr_str = arr_str .. k_str .. ":" .. v_str .. ", "
@@ -86,3 +87,17 @@ setmetatable(tbl, { __name = 42 })
 -- print(tbl)                                           -- table: uid (42 isn't a string)
 setmetatable(tbl, { __name = "custom_name" })
 -- print(tbl)                                           -- custom_name: uid
+
+-- __pairs test
+
+setmetatable(tbl, {__pairs =
+  function(t)
+    return
+      function()
+        print("custom metamethod __pairs")
+        return nil
+      end
+  end
+})
+
+for k, v in pairs(tbl) do print(k, v) end
