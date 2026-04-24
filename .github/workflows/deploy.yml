@@ -50,7 +50,7 @@ jobs:
       - name: coverage
         run: |
           BISECT_FILE=$(pwd)/bisect opam exec -- dune runtest --force --instrument-with bisect_ppx
-          opam exec -- bisect-ppx-report html
+    # opam exec -- bisect-ppx-report html
       - name: coverage-badge
         run: |
           label=coverage

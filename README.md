@@ -1,4 +1,4 @@
-# ola - An OCaml Lua language interpreter [![build status](https://github.com/epatrizio/ola/workflows/build/badge.svg)](https://github.com/epatrizio/ola/actions)
+# ola - An OCaml Lua language interpreter [![build status](https://github.com/epatrizio/ola/workflows/build/badge.svg)](https://github.com/epatrizio/ola/actions) ![coverage status](https://github.com/epatrizio/ola/_coverage/badge.svg)
 
 This project is an interpreter of the [Lua 5.4](https://www.lua.org/manual/5.4/manual.html) programming language
 written in [OCaml](https://ocaml.org) with the [Dune](https://dune.build) build system.
