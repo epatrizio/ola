@@ -182,8 +182,8 @@ let rec getmetatable v env =
     begin match LuaTable.get_metatable tbl with
     | Some mt ->
       begin match LuaTable.get (Vstring "__metatable") mt with
-      | Some v -> ([ v ], env)
-      | None -> ([ Vtable mt ], env)
+      | Ok v -> ([ v ], env)
+      | Error _ -> ([ Vtable mt ], env)
       end
     | None -> ([ Vnil () ], env)
     end

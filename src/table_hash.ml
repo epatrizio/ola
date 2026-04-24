@@ -9,6 +9,8 @@ let () = Random.self_init ()
 module type ValueType = sig
   type t
 
+  val nil : t
+
   val is_nil : t -> bool
 
   val int_key_opt : t -> int option
@@ -42,7 +44,7 @@ module type S = sig
 
   val key_exists : kv -> t -> bool
 
-  val get : kv -> t -> kv option
+  val get : kv -> t -> (kv, kv) result
 
   val border : t -> int
 
@@ -80,6 +82,12 @@ module Make (KeyValue : ValueType) : S with type kv = KeyValue.t = struct
     let table = Hashtbl.create ~random:true 32 in
     { table; metatable = None; uid = Random.bits32 () }
 
+  let get_metatable tbl = tbl.metatable
+
+  let set_metatable meta_tbl tbl = { tbl with metatable = Some meta_tbl }
+
+  let remove_metatable tbl = { tbl with metatable = None }
+
   let add key value tbl =
     if KeyValue.is_nil value then Hashtbl.remove tbl.table key
     else Hashtbl.replace tbl.table key value;
@@ -91,7 +99,19 @@ module Make (KeyValue : ValueType) : S with type kv = KeyValue.t = struct
 
   let key_exists key tbl = Hashtbl.mem tbl.table key
 
-  let get key tbl = Hashtbl.find_opt tbl.table key
+  let get_metatable_field name tbl =
+    let+ mt = get_metatable tbl in
+    let key = KeyValue.key_of_string name in
+    Hashtbl.find_opt mt.table key
+
+  let get key tbl =
+    if key_exists key tbl then
+      let val_opt = Hashtbl.find_opt tbl.table key in
+      Option.to_result ~none:KeyValue.nil val_opt
+    else
+      match get_metatable_field "__index" tbl with
+      | None -> Error KeyValue.nil
+      | Some mt -> Error mt
 
   let length tbl = Hashtbl.length tbl.table
 
@@ -100,8 +120,8 @@ module Make (KeyValue : ValueType) : S with type kv = KeyValue.t = struct
     let rec cpt idx tbl acc_len =
       let key_idx = KeyValue.key_of_int idx in
       match get key_idx tbl with
-      | None -> acc_len
-      | Some v ->
+      | Error _ -> acc_len
+      | Ok v ->
         if KeyValue.is_nil v then acc_len else cpt (idx + 1) tbl (acc_len + 1)
     in
     cpt 1 tbl 0
@@ -134,18 +154,8 @@ module Make (KeyValue : ValueType) : S with type kv = KeyValue.t = struct
     let border = border tbl in
     if idx < border then
       let key_idx = KeyValue.key_of_int (idx + 1) in
-      match get key_idx tbl with None -> None | Some v -> Some (idx + 1, v)
+      match get key_idx tbl with Error _ -> None | Ok v -> Some (idx + 1, v)
     else None
-
-  let get_metatable tbl = tbl.metatable
-
-  let get_metatable_field name tbl =
-    let+ mt = get_metatable tbl in
-    get (KeyValue.key_of_string name) mt
-
-  let set_metatable meta_tbl tbl = { tbl with metatable = Some meta_tbl }
-
-  let remove_metatable tbl = { tbl with metatable = None }
 
   let add_meta_newindex key value tbl =
     if key_exists key tbl then Ok (add key value tbl)

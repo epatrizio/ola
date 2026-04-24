@@ -150,6 +150,8 @@ module rec Value : sig
 
   val string_of_val : t -> string option
 
+  val nil : t
+
   val is_nil : t -> bool
 end = struct
   type t =
@@ -227,6 +229,8 @@ end = struct
   let key_of_string str = Vstring str
 
   let string_of_val = function Vstring str -> Some str | _ -> None
+
+  let nil = Vnil ()
 
   let is_nil v = v = Vnil ()
 end

@@ -48,11 +48,6 @@ and interpret_prefixexp pexp env =
   | PEfunctioncall fc -> interpret_functioncall fc env
 
 and interpret_var v env =
-  let value_from_table idx tbl env =
-    match LuaTable.get idx tbl with
-    | None -> index_metamechanism idx (Vtable tbl) env
-    | Some v -> Ok (v, env)
-  in
   match v with
   | VarName n ->
     let* v = Env.get_value n env in
@@ -65,46 +60,35 @@ and interpret_var v env =
     in
     let idx = Eval_utils.integer_of_float_value idx in
     match t with
-    | VfunctionReturn (Vtable t :: _) | Vtable t -> value_from_table idx t env
+    | VfunctionReturn (Vtable t :: _) | Vtable t ->
+      index_metamechanism idx t env
     | Vref (VarName n) ->
       begin match Ast_utils.get_luatable_value n env with
-      | Ok t -> value_from_table idx t env
+      | Ok t -> index_metamechanism idx t env
       | _ -> assert false
       end
     | _ -> Ok (Vnil (), env) )
 
 and index_metamechanism idx tbl env =
-  match tbl with
-  | Vtable t ->
-    begin match LuaTable.get_metatable_field "__index" t with
-    | Some v ->
-      begin match v with
-      | Vtable t as tbl ->
-        begin match LuaTable.get idx t with
-        | None -> index_metamechanism idx tbl env
-        | Some v -> Ok (v, env)
-        end
-      | Vfunction (_i, _pb, _env) as f ->
-        let arr = (empty_location (), Evalue tbl) in
-        let key = (empty_location (), Evalue idx) in
-        let* _, v, _env = interpret_fct f [ arr; key ] _env in
-        Ok (v, env)
-      | Vref (VarName n) ->
-        begin match Ast_utils.get_table_value n env with
-        | Ok (Vtable t as tbl) ->
-          begin match LuaTable.get idx t with
-          | None -> index_metamechanism idx tbl env
-          | Some v -> Ok (v, env)
-          end
-        | _ -> assert false
-        end
-      | _ ->
-        error None
-          "metatable.__index: attempt to index a non table or function value"
+  match LuaTable.get idx tbl with
+  | Ok v -> Ok (v, env)
+  | Error (Vnil ()) -> Ok (Vnil (), env)
+  | Error v -> (
+    match v with
+    | Vtable t -> index_metamechanism idx t env
+    | Vfunction (_i, _pb, _env) as f ->
+      let arr = (empty_location (), Evalue (Vtable tbl)) in
+      let key = (empty_location (), Evalue idx) in
+      let* _, v, _env = interpret_fct f [ arr; key ] _env in
+      Ok (v, env)
+    | Vref (VarName n) ->
+      begin match Ast_utils.get_table_value n env with
+      | Ok (Vtable t) -> index_metamechanism idx t env
+      | _ -> assert false
       end
-    | None -> Ok (Vnil (), env)
-    end
-  | _ -> assert false
+    | _ ->
+      error None
+        "metatable.__index: attempt to index a non table or function value" )
 
 and newindex_metamechanism idx value tbl env =
   match LuaTable.add_meta_newindex idx value tbl with
@@ -429,8 +413,8 @@ and interpret_functioncall fc env =
     begin match t with
     | Vtable t ->
       begin match LuaTable.get idx t with
-      | None -> assert false
-      | Some value ->
+      | Error _ -> assert false
+      | Ok value ->
         let* _closure, return, env = interpret_fct value el env in
         Ok (return, env)
       end
@@ -438,8 +422,8 @@ and interpret_functioncall fc env =
       begin match Ast_utils.get_luatable_value n env with
       | Ok t ->
         begin match LuaTable.get idx t with
-        | None -> assert false
-        | Some value ->
+        | Error _ -> assert false
+        | Ok value ->
           let* _closure, return, env = interpret_fct value el env in
           Ok (return, env)
         end
@@ -458,13 +442,9 @@ and interpret_functioncall fc env =
   | FCprename ((PEvar (VarName v) as var), name, Aexpl el) ->
     let* value = Env.get_value v env in
     begin match value with
-    | Vtable t as tbl ->
+    | Vtable t ->
       let name = Vstring name in
-      let* value, env =
-        match LuaTable.get name t with
-        | None -> index_metamechanism name tbl env
-        | Some value -> Ok (value, env)
-      in
+      let* value, env = index_metamechanism name t env in
       (* colon(:) syntactic sugar: self (first arg) *)
       let self = (empty_location (), Eprefix var) in
       let el = self :: el in
