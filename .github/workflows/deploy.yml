@@ -39,24 +39,24 @@ jobs:
           opam init --disable-sandboxing --reinit
           opam install . --deps-only --with-test --with-doc
           opam install bisect_ppx ocb
-    #   - name: api
-    #     run: |
-    #       touch doc/.nojekyll
-    #       opam exec -- dune build @doc
-    #       mv _build/default/_doc/_html doc/api
+      - name: api
+        run: |
+          touch docs/.nojekyll
+          opam exec -- dune build @doc
+          mv _build/default/_doc/_html docs/api
       - name: build
         run: |
           opam exec -- dune build @install
       - name: coverage
         run: |
           BISECT_FILE=$(pwd)/bisect opam exec -- dune runtest --force --instrument-with bisect_ppx
-    # opam exec -- bisect-ppx-report html
+          opam exec -- bisect-ppx-report html -o docs/coverage
       - name: coverage-badge
         run: |
           label=coverage
           percentage=$(opam exec -- bisect-ppx-report summary | sed -E 's/.*\((..).*/\1/g')
           color=$(printf "%x%x%x" $((255-$percentage)) $((155+$percentage)) 85)
-          opam exec -- ocb --style classic --label $label --status $percentage'%' --color $color > _coverage/badge.svg
+          opam exec -- ocb --style classic --label $label --status $percentage'%' --color $color > docs/coverage/badge.svg
     #   - name: deploy
     #     uses: JamesIves/github-pages-deploy-action@v4.6.3
     #     with:
