@@ -1,3 +1,0 @@
-const assignment static analysis checks:
-  $ dune exec ola assign_const.lua
-  Static analysis error: attempt to assign to const variable 'd'

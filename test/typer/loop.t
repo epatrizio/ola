@@ -1,7 +1,0 @@
-loop (for, iterator) typer checks:
-  $ dune exec ola loop_1.lua
-  File "loop_1.lua", line 1, char 15: Evaluation error: attempt to perform on a string (str) value
-  $ dune exec ola loop_2.lua
-  File "loop_2.lua", line 1, char 13: Typing error: bad 'for' initial, limit, step (number expected)
-  $ dune exec ola loop_3.lua
-  File "loop_3.lua", line 1, char 12: Typing error: attempt to call a non function value (for iterator 'for iterator')

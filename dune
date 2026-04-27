@@ -1,4 +1,0 @@
-(mdx
- (libraries ola)
- (deps %{bin:ola})
- (files README.md))

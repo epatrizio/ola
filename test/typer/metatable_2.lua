@@ -1,1 +1,0 @@
-setmetatable(42)

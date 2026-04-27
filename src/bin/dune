@@ -1,5 +1,0 @@
-(executable
- (public_name ola)
- (name main)
- (modules main repl)
- (libraries sedlex menhirLib ola))
