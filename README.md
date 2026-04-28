@@ -1,4 +1,4 @@
-# ola - An OCaml Lua language interpreter [![build status](https://github.com/epatrizio/ola/workflows/build/badge.svg)](https://github.com/epatrizio/ola/actions) ![coverage status](https://github.com/epatrizio/ola/_coverage/badge.svg)
+# ola - An OCaml Lua language interpreter [![build-badge]][build status] [![coverage-badge]][coverage status]
 
 This project is an interpreter of the [Lua 5.4](https://www.lua.org/manual/5.4/manual.html) programming language
 written in [OCaml](https://ocaml.org) with the [Dune](https://dune.build) build system.
@@ -22,12 +22,6 @@ $ dune exec ola -- examples/hello.lua
 Hello, world!
 ```
 
-```console
-$ BISECT_FILE=$(pwd)/bisect opam exec -- dune runtest --force --instrument-with bisect_ppx
-$ bisect-ppx-report summary
-Coverage: 225/1379 (16.32%)
-```
-
 - Install in current [opam OCaml switch](https://ocaml.org/docs/opam-switch-introduction): `dune install`
 - Run: `ola file_name.lua` - `ola file_name.lua --debug`
 
@@ -38,6 +32,9 @@ Debug mode displays the Lua input file twice in the console: original version - 
 To enhance the test suite, I imported one from the experimental
 [lua-wasm](https://github.com/Qcode/lua-wasm) project. Thanks to the author.
 By the way, this is a very interesting exploratory work on compiling Lua to WebAssembly!
+
+For more information, please refer to the [documentation](https://github.com/epatrizio/ola/tree/main/docs)
+(#WIP)
 
 ## Why ?
 
@@ -56,8 +53,8 @@ its syntax is minimalist and its semantics well defined.
 
 Implementing a whole Lua interpreter is a very big deal (a good experience to understand that),
 I'm so far from it. For now, there are the basics, including the fundamental concepts of tables and closures
-and the very beginnings of StdLib.
-This already allows to do a lot of fun stuffs :-) #WIP
+and the very beginning of StdLib.
+This already allows to do a lot of fun stuffs :-) (#WIP)
 
 - See [examples](https://github.com/epatrizio/ola/tree/main/examples)
 - See [releases](https://github.com/epatrizio/ola/releases)
@@ -68,5 +65,10 @@ This already allows to do a lot of fun stuffs :-) #WIP
 
 Feel free: Contact me, suggest issues and pull requests.
 
-Thanks [@zapashcanon](https://github.com/zapashcanon), an active member of the OCaml community,
+Thanks [Léo @redianthus](https://github.com/redianthus), an active member of the OCaml community,
 for first feedbacks and reviews.
+
+[build-badge]: https://github.com/epatrizio/ola/workflows/build/badge.svg
+[build status]: https://github.com/epatrizio/ola/actions
+[coverage-badge]: https://mpns.fr/ola/coverage/badge.svg
+[coverage status]: https://mpns.fr/ola/coverage/
