@@ -1,0 +1,8 @@
+(executable
+ (public_name ola_ocaml)
+ (name main)
+ (modules main)
+ (libraries ola))
+
+(cram
+ (deps init.lua))
