@@ -36,6 +36,12 @@ let int_of_int_key key tbl =
   | Ok _ -> Error (None, "wrong value type, int expected")
   | Error (l, msg) -> Error (l, msg ^ string_of_int key)
 
+(* best practice is to return a single table in the lua file to load *)
+
+let get_luatable = function
+  | Value.Vtable tbl :: _ -> Ok tbl
+  | _ -> Error (None, "wrong value type, luatable expected")
+
 (* **** *)
 
 let () =
@@ -48,28 +54,26 @@ let () =
 
     (* let* data = Env.get_value "v0" env in *)
     (* WARNING! Limitation: we only have var names after scoping *)
-    begin match vl with
-    | Vtable tbl :: _ ->
-      let* version = str_of_str_key "__version" tbl in
-      print_endline version;
-      begin match LuaTable.get (Vstring "hello") tbl with
-      | Ok (Vfunction (_, _, _) as fct) ->
-        let _ =
-          Interpret.interpret_fct fct
-            [ (Ast.empty_location (), Evalue (Vstring "lua")) ]
-            env
-        in
-        ()
-      | Ok _ -> assert false
-      | Error _v -> assert false (* TODO *)
-      end;
-      let* tbl = tbl_of_str_key "data" tbl in
-      let* i1 = int_of_int_key 1 tbl in
-      print_int i1;
-      print_newline ();
-      Ok ()
-    | _ -> assert false
-    end
+
+    let* tbl = get_luatable vl in
+    let* version = str_of_str_key "__version" tbl in
+    print_endline version;
+    begin match LuaTable.get (Vstring "hello") tbl with
+    | Ok (Vfunction (_, _, _) as fct) ->
+      let _ =
+        Interpret.interpret_fct fct
+          [ (Ast.empty_location (), Evalue (Vstring "lua")) ]
+          env
+      in
+      ()
+    | Ok _ -> assert false
+    | Error _v -> assert false (* TODO *)
+    end;
+    let* tbl = tbl_of_str_key "data" tbl in
+    let* i1 = int_of_int_key 1 tbl in
+    print_int i1;
+    print_newline ();
+    Ok ()
   with
   | Error (None, message) -> eprintf "%s@." message
   | Error (Some loc, message) -> eprintf "%a: %s@." Ast.pp_loc loc message
