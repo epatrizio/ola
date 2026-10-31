@@ -30,11 +30,11 @@ let tbl_of_str_key key tbl =
   | Ok _ -> Error (None, "wrong value type, table expected")
   | Error (l, msg) -> Error (l, msg ^ key)
 
-let int_of_int_key key tbl =
+(* let int_of_int_key key tbl =
   match val_of_val_key (Vnumber (Ninteger key)) tbl with
   | Ok (Vnumber (Ninteger i)) -> Ok i
   | Ok _ -> Error (None, "wrong value type, int expected")
-  | Error (l, msg) -> Error (l, msg ^ string_of_int key)
+  | Error (l, msg) -> Error (l, msg ^ string_of_int key) *)
 
 (* best practice is to return a single table in the lua file to load *)
 
@@ -49,7 +49,7 @@ let () =
   let env = Env.empty () in
   match
     let* env = Lua_stdlib.load env in
-    let* vl, _env = Interpreter.process "init.lua" false env in
+    let* vl, _env = Interpreter.process "mod.lua" false env in
     (* let* vl, _env = Interpreter.process "examples/ocaml/init.lua" false env in *)
 
     (* let* data = Env.get_value "v0" env in *)
@@ -70,9 +70,8 @@ let () =
     | Error _v -> assert false (* TODO *)
     end;
     let* tbl = tbl_of_str_key "data" tbl in
-    let* i1 = int_of_int_key 1 tbl in
-    print_int i1;
-    print_newline ();
+    let* s1 = str_of_str_key "key_1" tbl in
+    print_endline s1;
     Ok ()
   with
   | Error (None, message) -> eprintf "%s@." message

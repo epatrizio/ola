@@ -5,4 +5,4 @@
  (libraries ola))
 
 (cram
- (deps init.lua))
+ (deps mod.lua data.lua))

@@ -2,4 +2,4 @@
   Hello, ocaml!
   1.0
   Hello, lua!
-  1
+  value_1
