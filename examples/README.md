@@ -54,7 +54,17 @@ and they must be called using the format *dir/.../name*, without the *.lua* exte
 In other words, for now, [`package.searchers`](https://www.lua.org/manual/5.4/manual.html#pdf-package.searchers)
 isn't implemented.\
 To run the example:
-  - `cd example/module`
+  - `cd examples/module`
   - `dune exec ola -- main.lua`
+
+- Lua embedded in an OCaml program: *`ola` used as a library, not as an interpreter*\
+  - `examples/ocaml/main.ml` ocaml module loads `data.lua` lua module which contains data (table) and functions.
+    - `Helper` module in main.ml is an *experimental* interface for data accessing.
+    - **Limitation**: via `Env` we only have *after scoping* var names.
+    So, a good practice for Lua module, is to return a single table.
+    (Lua global variables are not easily accessible in OCaml)
+  - To run the example:
+    - `cd examples/ocaml`
+    - `dune exec ola_ocaml`
 
 *Nb. Examples are part of the cram test suite except for Queue (Table stdlib not fully implemented)*
