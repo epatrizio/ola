@@ -46,6 +46,10 @@ module type S = sig
 
   val get : kv -> t -> (kv, kv) result
 
+  val get_from_str_key : string -> t -> (kv, kv) result
+
+  val get_from_int_key : int -> t -> (kv, kv) result
+
   val border : t -> int
 
   val length : t -> int
@@ -112,6 +116,14 @@ module Make (KeyValue : ValueType) : S with type kv = KeyValue.t = struct
       match get_metatable_field "__index" tbl with
       | None -> Error KeyValue.nil
       | Some mt -> Error mt
+
+  let get_from_str_key str_key tbl =
+    let key = KeyValue.key_of_string str_key in
+    get key tbl
+
+  let get_from_int_key int_key tbl =
+    let key = KeyValue.key_of_int int_key in
+    get key tbl
 
   let length tbl = Hashtbl.length tbl.table
 

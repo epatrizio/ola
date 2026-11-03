@@ -1,5 +1,6 @@
   $ dune exec ola_ocaml
-  Hello, ocaml!
-  1.0
-  Hello, lua!
-  value_1
+  Hello, OCaml!
+  Lua module
+  "1.0"
+  Hello, Lua!
+  "value_1"
