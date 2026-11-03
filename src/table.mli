@@ -38,6 +38,10 @@ module type S = sig
 
   val get : kv -> t -> (kv, kv) result
 
+  val get_from_str_key : string -> t -> (kv, kv) result
+
+  val get_from_int_key : int -> t -> (kv, kv) result
+
   val border : t -> int
 
   val length : t -> int
@@ -79,6 +83,10 @@ module Make : functor (KeyValue : ValueType) -> sig
   val key_exists : kv -> t -> bool
 
   val get : kv -> t -> (kv, kv) result
+
+  val get_from_str_key : string -> t -> (kv, kv) result
+
+  val get_from_int_key : int -> t -> (kv, kv) result
 
   val border : t -> int
 

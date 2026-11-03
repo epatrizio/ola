@@ -5,73 +5,74 @@ open Ola
 open Ola.Ast
 open Syntax
 
-(* WIP: LuaTable helpers (create a specific module ?) *)
+module Helper : sig
+  val get_from_str_key :
+    string -> LuaTable.t -> (Value.t, 'a option * string) result
 
-let val_of_val_key key tbl =
-  match LuaTable.get key tbl with
-  | Ok v -> Ok v
-  | Error (Vnil ()) -> Error (None, "attempt to access a non-existent table key")
-  | Error v -> Ok v (* metatable_field "__index" *)
+  val get_function_from_str_key :
+    string -> LuaTable.t -> (Value.t, 'a option * string) result
 
-let str_of_str_key key tbl =
-  match val_of_val_key (Vstring key) tbl with
-  | Ok (Vstring str) -> Ok str
-  | Ok _ -> Error (None, "wrong value type, string expected")
-  | Error (l, msg) -> Error (l, msg ^ key)
+  val get_table_from_str_key :
+    string -> LuaTable.t -> (LuaTable.t, 'a option * string) result
 
-(* let int_of_str_key key tbl =
-  match LuaTable.get (Vstring key) tbl with
-  | Ok (Vnumber (Ninteger i)) -> i
-  | _ -> assert false *)
+  val get_luatable : Value.t list -> (LuaTable.t, 'a option * string) result
 
-let tbl_of_str_key key tbl =
-  match val_of_val_key (Vstring key) tbl with
-  | Ok (Vtable tbl) -> Ok tbl
-  | Ok _ -> Error (None, "wrong value type, table expected")
-  | Error (l, msg) -> Error (l, msg ^ key)
+  val print : Value.t -> unit
+end = struct
+  let get_from_str_key key tbl =
+    match LuaTable.get_from_str_key key tbl with
+    | Ok value -> Ok value
+    | Error _ -> Error (None, "key does not exists in table: " ^ key)
 
-(* let int_of_int_key key tbl =
-  match val_of_val_key (Vnumber (Ninteger key)) tbl with
-  | Ok (Vnumber (Ninteger i)) -> Ok i
-  | Ok _ -> Error (None, "wrong value type, int expected")
-  | Error (l, msg) -> Error (l, msg ^ string_of_int key) *)
+  let get_function_from_str_key key tbl =
+    match get_from_str_key key tbl with
+    | Ok (Vfunction _ as fct) -> Ok fct
+    | Ok _ -> Error (None, "wrong value type, function expected")
+    | Error _ as err -> err
 
-(* best practice is to return a single table in the lua file to load *)
+  let get_table_from_str_key key tbl =
+    match get_from_str_key key tbl with
+    | Ok (Vtable tbl) -> Ok tbl
+    | Ok _ -> Error (None, "wrong value type, table expected")
+    | Error _ as err -> err
 
-let get_luatable = function
-  | Value.Vtable tbl :: _ -> Ok tbl
-  | _ -> Error (None, "wrong value type, luatable expected")
+  let get_luatable = function
+    | Value.Vtable tbl :: _ -> Ok tbl
+    | _ -> Error (None, "wrong value type, luatable expected")
+
+  let print value =
+    print_value Format.std_formatter value;
+    print_newline ()
+end
 
 (* **** *)
 
-let () =
-  print_endline "Hello, ocaml!";
-  let env = Env.empty () in
-  match
-    let* env = Lua_stdlib.load env in
-    let* vl, _env = Interpreter.process "mod.lua" false env in
-    (* let* vl, _env = Interpreter.process "examples/ocaml/init.lua" false env in *)
+open Helper
 
-    (* let* data = Env.get_value "v0" env in *)
-    (* WARNING! Limitation: we only have var names after scoping *)
+let env_init () =
+  let env = Env.empty () in
+  Lua_stdlib.load env
+
+let () =
+  print_endline "Hello, OCaml!";
+  match
+    let* env = env_init () in
+    let* vl, _env = Interpreter.process "mod.lua" false env in
 
     let* tbl = get_luatable vl in
-    let* version = str_of_str_key "__version" tbl in
-    print_endline version;
-    begin match LuaTable.get (Vstring "hello") tbl with
-    | Ok (Vfunction (_, _, _) as fct) ->
-      let _ =
-        Interpret.interpret_fct fct
-          [ (Ast.empty_location (), Evalue (Vstring "lua")) ]
-          env
-      in
-      ()
-    | Ok _ -> assert false
-    | Error _v -> assert false (* TODO *)
-    end;
-    let* tbl = tbl_of_str_key "data" tbl in
-    let* s1 = str_of_str_key "key_1" tbl in
-    print_endline s1;
+    let* version = get_from_str_key "__version" tbl in
+    print version;
+
+    let* fct = get_function_from_str_key "hello" tbl in
+    let _ =
+      Interpret.interpret_fct fct
+        [ (Ast.empty_location (), Evalue (Vstring "Lua")) ]
+        env
+    in
+    ();
+    let* tbl = get_table_from_str_key "data" tbl in
+    let* s1 = get_from_str_key "key_1" tbl in
+    print s1;
     Ok ()
   with
   | Error (None, message) -> eprintf "%s@." message

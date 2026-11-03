@@ -1,5 +1,7 @@
 -- lua module for ocaml
 
+print("Lua module")
+
 local data = require("data")
 
 local function hello_str(name)
